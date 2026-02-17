@@ -10,14 +10,14 @@ const api = axios.create({
   },
 });
 
-// Interceptor: Setiap request akan otomatis disisipkan ID User & Token
-api.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  if (user) {
-    // Header simulasi untuk Middleware backend
-    config.headers['x-user-id'] = user.id; 
-  }
-  return config;
-});
+// // Interceptor: Setiap request akan otomatis disisipkan ID User & Token
+// api.interceptors.request.use((config) => {
+//   const user = JSON.parse(localStorage.getItem("user"));
+//   if (user) {
+//     // Header simulasi untuk Middleware backend
+//     config.headers['x-user-id'] = user.id; 
+//   }
+//   return config;
+// });
 
 export default api;

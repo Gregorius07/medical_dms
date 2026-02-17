@@ -38,7 +38,6 @@ function MainLayout(props) {
             <A href="/dashboard" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/dashboard')}`}>
                 Dashboard
             </A>
-            <Show when={user().role === "Administrator"}>
             <div class="pt-4 text-xs font-semibold text-gray-400 uppercase px-4">Configuration</div>
             <A href="/positions" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/positions')}`}>
                 Position
@@ -49,7 +48,6 @@ function MainLayout(props) {
             <A href="/users" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/users')}`}>
                 Users
             </A>
-            </Show>
         </nav>
       </div>
 

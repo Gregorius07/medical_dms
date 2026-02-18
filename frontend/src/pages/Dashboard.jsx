@@ -12,7 +12,7 @@ function Dashboard() {
   const [uploadLoading, setUploadLoading] = createSignal(false);
 
   // User Session (Untuk tahu siapa uploader)
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+//   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const fetchStats = async () => {
     try {

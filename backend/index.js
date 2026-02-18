@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors'); //biar fe bisa konek ke be
 const bodyParser = require('body-parser'); //untuk baca data json
+const cookieParser = require('cookie-parser');
 
 // Import Routes
 const positionRoutes = require('./routes/positionRoutes');
@@ -14,8 +15,12 @@ const app = express();
 const PORT = 5000; //port server
 const path = require('path');
 
-app.use(cors()); //pake ini untuk request yang masuk
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true //biar cookie bisa lewat
+})); //pake ini untuk request yang masuk
 app.use(bodyParser.json()); //ngubah json ke objek js (req.body)
+app.use(cookieParser()); //biar backend bisa baca req.cookies
 
 // ubah ke string UNTUK BIGINT (Supaya JSON tidak error saat baca ID User dari postgre) ---
 BigInt.prototype.toJSON = function() { return this.toString() }

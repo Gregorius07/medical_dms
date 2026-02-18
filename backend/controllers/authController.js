@@ -1,4 +1,5 @@
 const UserModel = require('../models/userModel');
+const jwt = require('jsonwebtoken');
 
 const AuthController = {
     login: async (req, res) => {
@@ -13,7 +14,6 @@ const AuthController = {
                 return res.status(200).json({
                     success: true,
                     message: "Login berhasil",
-                    token: "mock-jwt-token-mvc", 
                     user: {
                         id: user.id_user,
                         name: user.full_name,
@@ -23,6 +23,30 @@ const AuthController = {
                     }
                 });
             }
+
+            //buat jwt token
+            const token = jwt.sign(
+                {
+                    id: user.id_user //payload
+                },
+                'secret', //secret key
+                {
+                    expiresIn: '2h'
+                }
+            )
+            
+            console.log('Sebelum token dibuat:');
+            console.log(token);
+            
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'lax',
+                maxAge: 2*60*60*1000
+            });
+
+            console.log('setelah token dibuat:');
+            console.log(token);
 
             return res.status(401).json({
                 success: false,

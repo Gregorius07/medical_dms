@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const DepartmentController = require('../controllers/departmentController');
-
+const {verifyToken} = require('../middleware/authMiddleware');
 // Definisi Route
-router.get('/', DepartmentController.findAll);
-router.post('/', DepartmentController.create);
-router.put('/:id', DepartmentController.update);
-router.delete('/:id',DepartmentController.delete);
+router.get('/', verifyToken, DepartmentController.findAll);
+router.post('/', verifyToken, DepartmentController.create);
+router.put('/:id', verifyToken, DepartmentController.update);
+router.delete('/:id',verifyToken, DepartmentController.delete);
 
 module.exports = router;

@@ -48,6 +48,15 @@ const AuthController = {
             console.log('setelah token dibuat:');
             console.log(token);
 
+            res.json({
+                message: "Login berhasil!",
+                user:{
+                    id: user.id_user,
+                    email: user.email,
+                    name: user.full_name
+                }
+            })
+
             return res.status(401).json({
                 success: false,
                 message: "Username atau password salah"
@@ -57,7 +66,12 @@ const AuthController = {
             console.error(err);
             res.status(500).json({ message: "Terjadi kesalahan server" });
         }
-    }
+    },
+
+    // logout: async(req, res) =>{
+    //     res.clearCookie('token');
+    //     res.json({message: "Logout berhasil!"})   
+    // }
 };
 
 module.exports = AuthController;

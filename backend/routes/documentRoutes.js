@@ -4,6 +4,7 @@ const DocumentController = require('../controllers/documentController');
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const {verifyToken} = require('../middleware/authMiddleware');
 
 // Konfigurasi Penyimpanan File
 const storage = multer.diskStorage({
@@ -20,9 +21,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Routes
-router.get('/', DocumentController.findAll);
+router.get('/', verifyToken, DocumentController.findAll);
 // 'file' adalah nama field di FormData frontend
-router.post('/', upload.single('file'), DocumentController.upload);
-router.delete('/:id', DocumentController.delete);
+router.post('/',verifyToken, upload.single('file'), DocumentController.upload);
+router.delete('/:id', verifyToken,DocumentController.delete);
 
 module.exports = router;

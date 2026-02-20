@@ -1,6 +1,7 @@
 import { createSignal, onMount } from "solid-js";
 import { A, useNavigate, useLocation } from "@solidjs/router";
 import { currentUser , setCurrentUser} from "../store/authStore";
+import api from "../api";
 function MainLayout(props) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -11,8 +12,10 @@ function MainLayout(props) {
     } 
   });
 
-  const handleLogout = () => {
+  const handleLogout = async() => {
     setCurrentUser(null);
+    const response = await api.get("/logout");
+    console.log(response.data);
     navigate("/");
   };
 
@@ -56,8 +59,8 @@ function MainLayout(props) {
             </h1>
             <div class="text-right flex items-center gap-4">
                 <div class="text-right">
-                    <p class="font-bold text-gray-800 text-sm">{currentUser().name}</p>
-                    <p class="text-xs text-gray-500">{currentUser().role}</p>
+                    <p class="font-bold text-gray-800 text-sm">{currentUser()?.name}</p>
+                    <p class="text-xs text-gray-500">{currentUser()?.role}</p>
                 </div>
                 <button onClick={handleLogout} class="px-4 py-2 bg-red-50 text-red-500 text-xs rounded hover:bg-red-100">
                     Logout

@@ -2,6 +2,8 @@ import { createSignal, onMount, createEffect } from "solid-js";
 import api from "../api";
 import { currentUser } from "../store/authStore";//untuk userdata
 function Dashboard() {
+    console.log("Halaman berhasil dimuat!");
+    
   const [stats, setStats] = createSignal({});
   const [documents, setDocuments] = createSignal([]);
   

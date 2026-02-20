@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import api from "../api";
+import { setCurrentUser, setIsAuthLoading } from "../store/authStore";
 
 function Login() {
   const [email, setEmail] = createSignal("");
@@ -21,9 +22,11 @@ function Login() {
         password: password(),
       });
 
-      if (response.data.success) {
+      if (response.data.user) {
         // localStorage.setItem("user", JSON.stringify(response.data.user));
         // localStorage.setItem("token", response.data.token);
+        setIsAuthLoading(false);
+        setCurrentUser(response.data.user);
         navigate("/dashboard");
       }
     } catch (err) {

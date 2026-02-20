@@ -47,15 +47,6 @@ const login = async (req, res) => {
         });
       }
 
-      res.json({
-        message: "Login berhasil!",
-        user: {
-          id: user.id_user,
-          email: user.email,
-          name: user.full_name,
-        },
-      });
-
       return res.status(401).json({
         success: false,
         message: "Username atau password salah",
@@ -86,6 +77,7 @@ const getMe = async (req, res) => {
 
 const logout = (req, res) => {
     res.clearCookie('token'); // Hancurkan cookie saat logout
+    console.log("token berhasil dihapus");
     res.json({ message: "Logout berhasil" });
 };
 

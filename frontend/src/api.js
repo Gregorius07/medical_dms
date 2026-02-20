@@ -11,7 +11,7 @@ const api = axios.create({
   },
 });
 
-// // Interceptor: Setiap request akan otomatis disisipkan ID User & Token
+// Interceptor: Setiap request akan otomatis disisipkan ID User & Token
 // api.interceptors.request.use((config) => {
 //   const user = JSON.parse(localStorage.getItem("user"));
 //   if (user) {

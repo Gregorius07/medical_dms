@@ -107,6 +107,18 @@ const UserModel = {
         `;
         const result = await db.query(query, [username]);
         return result.rows[0];
+    },
+
+    findById: async (id) =>{
+        const query = `
+            SELECT u.*, p.position_name, d.department_name
+            FROM "user" u
+            LEFT JOIN position p ON u.id_position = p.id_position
+            LEFT JOIN department d ON u.id_department = d.id_department
+            WHERE u.id_user = $1
+        `;
+        const result = await db.query(query, [id]);
+        return result.rows[0];
     }
 };
 

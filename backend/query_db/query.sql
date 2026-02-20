@@ -56,7 +56,8 @@ CREATE TABLE document_version (
     created_by          VARCHAR(150) NOT NULL,
     is_active           BOOLEAN NOT NULL DEFAULT TRUE,
     id_document         INT NOT NULL REFERENCES document(id_document),
-    id_folder           INT REFERENCES folder(id_folder)
+    id_folder           INT REFERENCES folder(id_folder),
+    created_at          TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE permission (
@@ -119,7 +120,8 @@ VALUES
 (1002, 'Siti Rahmawati', 'siti.rahma', 'hashed_password_2', FALSE, 1, 1),
 (1003, 'Budi Santoso', 'budi.s', 'hashed_password_3', FALSE, 2, 2),
 (1004, 'Nina Lestari', 'nina.l', 'hashed_password_4', FALSE, 3, 3),
-(1005, 'Maria Kristina', 'maria.k', 'hashed_password_5', FALSE, 5, 5);
+(1005, 'Maria Kristina', 'maria.k', 'hashed_password_5', FALSE, 5, 5),
+(1006, 'Gregorius Denmas', 'bagus', 'bagus123', FALSE, 5, 5);
 
 INSERT INTO folder (folder_name, metadata_schema, created_by, parent_folder) VALUES
 ('Patient Registrations', '{"fields": ["patient_name", "registration_date"]}', 'andi.pratama', NULL),
@@ -137,13 +139,13 @@ INSERT INTO document (file_name, is_deleted, id_folder) VALUES
 
 
 INSERT INTO document_version
-(version_number, file_name, file_path, file_format, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder)
+(version_number, file_name, file_path, file_format, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder, created_at)
 VALUES
-(1, 'patient_registration_001_v1.pdf', 'uploads/patient_registration_001_v1.pdf', 'PDF', 245, '{"patient_name":"John Doe"}', 'APPROVED', 'andi.pratama', TRUE, 1, 1),
-(1, 'lab_result_hemoglobin_2025_v1.pdf', 'uploads/lab_result_hemoglobin_2025_v1.pdf', 'PDF', 300, '{"hemoglobin": "13.5"}', 'UNDER REVIEW', 'siti.rahma', TRUE, 2, 2),
-(1, 'radiology_ctscan_7781_v1.pdf', 'uploads/radiology_ctscan_7781_v1.pdf', 'PDF', 512, '{"scan_type": "CT-Scan"}', 'APPROVED', 'budi.s', TRUE, 3, 3),
-(1, 'inpatient_record_22431_v1.pdf', 'uploads/inpatient_record_22431_v1.pdf', 'PDF', 600, '{"ward": "ICU"}', 'DRAFT', 'maria.k', TRUE, 4, 4),
-(1, 'pharmacy_dispense_5501_v1.pdf', 'uploads/pharmacy_dispense_5501_v1.pdf', 'PDF', 150, '{"drug_name": "Amoxicillin"}', 'APPROVED', 'andi.pratama', TRUE, 5, 5);
+(1, 'patient_registration_001_v1.pdf', 'uploads/patient_registration_001_v1.pdf', 'PDF', 245, '{"patient_name":"John Doe"}', 'APPROVED', 'andi.pratama', TRUE, 1, 1, NOW()),
+(1, 'lab_result_hemoglobin_2025_v1.pdf', 'uploads/lab_result_hemoglobin_2025_v1.pdf', 'PDF', 300, '{"hemoglobin": "13.5"}', 'UNDER REVIEW', 'siti.rahma', TRUE, 2, 2, NOW()),
+(1, 'radiology_ctscan_7781_v1.pdf', 'uploads/radiology_ctscan_7781_v1.pdf', 'PDF', 512, '{"scan_type": "CT-Scan"}', 'APPROVED', 'budi.s', TRUE, 3, 3, NOW()),
+(1, 'inpatient_record_22431_v1.pdf', 'uploads/inpatient_record_22431_v1.pdf', 'PDF', 600, '{"ward": "ICU"}', 'DRAFT', 'maria.k', TRUE, 4, 4, NOW()),
+(1, 'pharmacy_dispense_5501_v1.pdf', 'uploads/pharmacy_dispense_5501_v1.pdf', 'PDF', 150, '{"drug_name": "Amoxicillin"}', 'APPROVED', 'andi.pratama', TRUE, 5, 5, NOW());
 
 INSERT INTO permission
 (preview, download, upload, edit_metadata, resource_type, created_at, created_by, id_user, id_folder, id_document)

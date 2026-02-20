@@ -1,6 +1,6 @@
 import { createSignal, onMount, createEffect } from "solid-js";
 import api from "../api";
-
+import { currentUser } from "../store/authStore";//untuk userdata
 function Dashboard() {
   const [stats, setStats] = createSignal({});
   const [documents, setDocuments] = createSignal([]);
@@ -10,9 +10,6 @@ function Dashboard() {
   const [uploadFile, setUploadFile] = createSignal(null);
   const [docTitle, setDocTitle] = createSignal("");
   const [uploadLoading, setUploadLoading] = createSignal(false);
-
-  // User Session (Untuk tahu siapa uploader)
-//   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const fetchStats = async () => {
     try {
@@ -52,7 +49,8 @@ function Dashboard() {
     const formData = new FormData();
     formData.append("file", uploadFile());
     formData.append("title", docTitle());
-    formData.append("uploaderName", user.name || "Admin");
+    formData.append("uploaderId", currentUser.id);
+    formData.append("uploaderName", currentUser.name);
     // formData.append("folderId", selectedFolder); // Nanti jika ada fitur folder
 
     try {

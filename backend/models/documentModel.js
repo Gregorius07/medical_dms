@@ -6,7 +6,7 @@ const DocumentModel = {
         let query = `
             SELECT d.id_document, d.file_name as title, f.folder_name,
                    v.file_name as physical_filename, v.version_number, v.file_size, v.created_by, v.approval_status,
-                   v.created_at
+                   v.created_at, v.file_path
             FROM document d
             JOIN document_version v ON d.id_document = v.id_document
             LEFT JOIN folder f ON d.id_folder = f.id_folder
@@ -46,12 +46,13 @@ const DocumentModel = {
             );
             const docId = docRes.rows[0].id_document;
             const now = new Date().toISOString();
+            const filePath = 'uploads/' + data.storedFilename;
 
             // B. Insert ke Tabel Version (File Fisik)
             await db.query(
                 `INSERT INTO document_version 
-                (version_number, file_name, file_format, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder,  created_at)
-                VALUES ($1, $2, $3, $4, $5, 'DRAFT', $6, true, $7, $8, $9)`,
+                (version_number, file_name, file_format, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder,  created_at, file_path)
+                VALUES ($1, $2, $3, $4, $5, 'DRAFT', $6, true, $7, $8, $9, $10)`,
                 [
                     1, // Versi pertama
                     data.storedFilename, // Nama file fisik (UUID)
@@ -61,7 +62,8 @@ const DocumentModel = {
                     data.uploader, // Nama user
                     docId,
                     data.folderId || null,
-                    now
+                    now,
+                    filePath
                 ]
             );
 

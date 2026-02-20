@@ -1,22 +1,18 @@
 import { createSignal, onMount } from "solid-js";
 import { A, useNavigate, useLocation } from "@solidjs/router";
-
+import { currentUser , setCurrentUser} from "../store/authStore";
 function MainLayout(props) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = createSignal({ name: "", role: "" });
-
+  
   onMount(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
+    if (!currentUser()) {
       navigate("/");
-    } else {
-      setUser(JSON.parse(userData));
-    }
+    } 
   });
 
   const handleLogout = () => {
-    localStorage.clear();
+    setCurrentUser(null);
     navigate("/");
   };
 
@@ -60,8 +56,8 @@ function MainLayout(props) {
             </h1>
             <div class="text-right flex items-center gap-4">
                 <div class="text-right">
-                    <p class="font-bold text-gray-800 text-sm">{user().name}</p>
-                    <p class="text-xs text-gray-500">{user().role}</p>
+                    <p class="font-bold text-gray-800 text-sm">{currentUser().name}</p>
+                    <p class="text-xs text-gray-500">{currentUser().role}</p>
                 </div>
                 <button onClick={handleLogout} class="px-4 py-2 bg-red-50 text-red-500 text-xs rounded hover:bg-red-100">
                     Logout

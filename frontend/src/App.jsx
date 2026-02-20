@@ -5,9 +5,15 @@ import Position from "./pages/Position";
 import Department from "./pages/Department";
 import MainLayout from "./components/MainLayout";
 import User from "./pages/User";
+import {checkSession, isAuthLoading} from './store/authStore';
+import { onMount, Show } from "solid-js";
 
 function App() {
+  onMount(()=>{
+    checkSession();
+  })
   return (
+    <Show when={!isAuthLoading()} fallback={<div>Loading aplikasi...</div>}>
       <Router>
         <Route path="/" component={Login} />
         
@@ -20,6 +26,7 @@ function App() {
         </Route>
 
       </Router>
+    </Show>
   );
 }
 

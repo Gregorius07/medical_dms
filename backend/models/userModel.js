@@ -52,7 +52,7 @@ const UserModel = {
     },
 
     // 2. CREATE
-    create: async (data) => {
+    create: async (data, client) => {
         // Generate ID manual karena BIGINT (Simple Timestamp workaround)
         const id = Date.now(); 
         const query = `
@@ -60,7 +60,7 @@ const UserModel = {
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
-        return await db.query(query, [
+        return await db.client.query(query, [
             id, data.fullName, data.username, data.password, 
             data.isAdmin || false, data.idPosition, data.idDepartment
         ]);

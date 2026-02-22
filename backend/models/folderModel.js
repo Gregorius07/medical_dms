@@ -63,7 +63,7 @@ class FolderModel {
         return rows;
     }
 
-    static async createFolder(folderName, createdBy, parentFolder = null) {
+    static async createFolder(folderName, createdBy, parentFolder = null, client) {
         const query = `
             INSERT INTO folder (folder_name, metadata_schema, created_by, parent_folder)
             VALUES ($1, $2, $3, $4)
@@ -72,7 +72,7 @@ class FolderModel {
         // metadata_schema kita isi '{}' (kosong) sebagai default untuk folder draft
         const metadataSchema = JSON.stringify({}); 
         
-        const { rows } = await pool.query(query, [folderName, metadataSchema, createdBy, parentFolder]);
+        const { rows } = await client.query(query, [folderName, metadataSchema, createdBy, parentFolder]);
         return rows[0]; // Mengembalikan data folder yang baru dibuat (termasuk id_folder-nya)
     }
 }

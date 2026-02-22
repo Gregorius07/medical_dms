@@ -2,7 +2,7 @@ const pool = require('../config/db');
 
 class PermissionModel {
     // 1. Fungsi untuk memberikan akses penuh (Draft) ke suatu folder
-    static async createFolderPermission(idUser, idFolder, createdBy) {
+    static async createFolderPermission(idUser, idFolder, createdBy, client) {
         const query = `
             INSERT INTO permission 
             (preview, download, upload, edit_metadata, resource_type, created_at, created_by, id_user, id_folder)
@@ -11,7 +11,7 @@ class PermissionModel {
             RETURNING id_permission;
         `;
         // Nilai $1=createdBy, $2=idUser, $3=idFolder
-        const { rows } = await pool.query(query, [createdBy, idUser, idFolder]);
+        const { rows } = await client.query(query, [createdBy, idUser, idFolder]);
         return rows[0];
     }
 

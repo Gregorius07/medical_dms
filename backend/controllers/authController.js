@@ -59,9 +59,8 @@ const login = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
-    //token dapet dari middleware
     const userId = req.userId;
-
+    
     //cek data user
     const userData = await UserModel.findById(userId);
 

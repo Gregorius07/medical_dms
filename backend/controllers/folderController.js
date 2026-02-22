@@ -1,10 +1,20 @@
 const FolderModel = require('../models/folderModel');
+const PermissionModel = require('../models/permissionModel');
 
 const getFolderContents = async (req, res) => {
     try {
-        const parentId = req.query.parentId || null; 
+        let parentId = req.query.parentId || null; 
+        
+        const userId = req.userId;
 
-        // Controller tinggal menyuruh Model bekerja, tidak perlu tahu bahasa SQL
+        if (!parentId) { 
+            const draftFolder = await PermissionModel.getUserDraftFolder(userId);
+
+            if (draftFolder) {
+                parentId = draftFolder.id_folder;
+            }
+        }
+        // Controller memanggil model
         const folders = await FolderModel.getSubFolders(parentId);
         const documents = await FolderModel.getDocumentsInFolder(parentId);
 

@@ -1,5 +1,8 @@
 const UserModel = require('../models/userModel');
 const { getPagination } = require('../utils/pagination');
+const PermissionModel = require('../models/permissionModel');
+const FolderModel = require('../models/folderModel');
+const pool = require('../config/db');
 
 const UserController = {
     findAll: async (req, res) => {
@@ -26,11 +29,23 @@ const UserController = {
     },
 
     create: async (req, res) => {
+        const client = await pool.connect();
         try {
-            await UserModel.create(req.body);
+            await client.query('BEGIN');
+
+            const newUser = await UserModel.create(req.body,client);
+            const folderName = `Draft - ${newUser.name}`;
+            const newFolder = await FolderModel.createFolder(folderName, 'system', null, client);
+            await PermissionModel.createFolderPermission(newUser.id_user, newFolder.id_folder, 'system', client);
+
+            await client.query('COMMIT');
+
             res.status(201).json({ success: true, message: "User berhasil ditambahkan" });
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            await client.query('ROLLBACK');
+            res.status(500).json({ message: 'Gagal menambahkan User' });
+        } finally{
+            client.release();
         }
     },
 

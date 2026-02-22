@@ -62,6 +62,19 @@ class FolderModel {
         const { rows } = await pool.query(query, [folderId]);
         return rows;
     }
+
+    static async createFolder(folderName, createdBy, parentFolder = null) {
+        const query = `
+            INSERT INTO folder (folder_name, metadata_schema, created_by, parent_folder)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id_folder, folder_name;
+        `;
+        // metadata_schema kita isi '{}' (kosong) sebagai default untuk folder draft
+        const metadataSchema = JSON.stringify({}); 
+        
+        const { rows } = await pool.query(query, [folderName, metadataSchema, createdBy, parentFolder]);
+        return rows[0]; // Mengembalikan data folder yang baru dibuat (termasuk id_folder-nya)
+    }
 }
 
 module.exports = FolderModel;

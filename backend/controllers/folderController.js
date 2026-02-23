@@ -3,9 +3,8 @@ const PermissionModel = require('../models/permissionModel');
 const {getMe} = require('../controllers/authController');
 const getFolderContents = async (req, res) => {
     try {
-        let parentId = req.query.parentId || null; 
-        
-        const userId = await getMe().id;
+        let parentId = Number(req.query.parentId) || null; 
+        const userId = await (getMe()).id;
 
         if (!parentId) { 
             const draftFolder = await PermissionModel.getUserDraftFolder(userId);
@@ -45,7 +44,18 @@ const getFolderBreadcrumbs = async (req, res) => {
     }
 };
 
+const getDraftFolderByUserId = async (req,res) =>{
+    try {
+        const result = await FolderModel.getDraftFolderByUserId(Number(req.userId));
+        console.log(result);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil draft" });
+    }
+}
+
 module.exports = {
     getFolderContents,
-    getFolderBreadcrumbs
+    getFolderBreadcrumbs,
+    getDraftFolderByUserId
 };

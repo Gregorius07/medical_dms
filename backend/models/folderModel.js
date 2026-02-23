@@ -75,6 +75,29 @@ class FolderModel {
         const { rows } = await client.query(query, [folderName, metadataSchema, createdBy, parentFolder]);
         return rows[0]; // Mengembalikan data folder yang baru dibuat (termasuk id_folder-nya)
     }
+
+    static async getDraftFolderByUserId(idUser) {
+        const query = `
+            SELECT f.* FROM folder f
+            JOIN permission p ON f.id_folder = p.id_folder
+            WHERE p.id_user = $1 
+              AND p.resource_type = 'FOLDER' 
+              AND f.parent_folder IS NULL
+              AND f.folder_name LIKE 'Draft - %'
+            LIMIT 1;
+        `;
+
+        try {
+            // $1 akan digantikan dengan nilai idUser
+            const { rows } = await pool.query(query, [idUser]);
+            
+            // Mengembalikan baris pertama (objek folder) jika ada, jika tidak kembalikan null
+            return rows.length > 0 ? rows[0] : null;
+        } catch (error) {
+            console.error("Ralat pada getDraftFolderByUserId:", error);
+            throw error; // Melempar ralat supaya boleh ditangkap (catch) oleh Controller
+        }
+    }
 }
 
 module.exports = FolderModel;

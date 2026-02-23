@@ -13,6 +13,7 @@ function Dashboard() {
   const [currentFolderId, setCurrentFolderId] = createSignal(null);
   const [folders, setFolders] = createSignal([]);
   const [breadcrumbs, setBreadcrumbs] = createSignal([]);
+  const [draftFolderId, setDraftFolderId] = createSignal(null);
 
   const fetchStats = async () => {
     try {
@@ -60,13 +61,27 @@ function Dashboard() {
       setBreadcrumbs(res.data);
     } catch (err) {
       console.error("Gagal memuat breadcrumbs", err);
-    }
+    } 
   };
 
-  onMount(() => {
+  const loadUserDraft = async () =>{
+    try {
+      const draftFolder = await api.post('/folders/getdraft',{
+        userId : currentUser().id
+      });
+      console.log(draftFolder.data.id_folder);
+      setDraftFolderId(draftFolder.data.id_folder);
+    } catch (error) {
+      console.error("Gagal meload draft", error);
+    }
+  }
+
+  onMount(async () => {
+    await loadUserDraft();
+    
     fetchStats();
     // fetchDocuments();
-    loadFolderContents();
+    loadFolderContents(draftFolderId());
   });
 
   const navigateToFolder = (folderId) => {
@@ -91,12 +106,9 @@ function Dashboard() {
     const formData = new FormData();
     formData.append("file", uploadFile());
     formData.append("title", docTitle());
-    formData.append("uploaderId", currentUser.id);
-    formData.append("uploaderName", currentUser.name);
-    // formData.append("folderId", selectedFolder); // Nanti jika ada fitur folder
-    if (currentFolderId()) {
-      formData.append("folderId", currentFolderId());
-    }
+    formData.append("uploaderId", currentUser().id);
+    formData.append("uploaderName", currentUser().name);
+    formData.append("folderId", draftFolderId()); // Nanti jika ada fitur folder
     try {
       await api.post("/documents", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -108,7 +120,8 @@ function Dashboard() {
 
       // Refresh data
       fetchStats();
-      fetchDocuments();
+      // fetchDocuments();
+      loadFolderContents(draftFolderId());
     } catch (err) {
       alert("Upload Gagal: " + (err.response?.data?.message || err.message));
     } finally {
@@ -120,7 +133,7 @@ function Dashboard() {
     if (!confirm("Hapus dokumen ini?")) return;
     try {
       await api.delete(`/documents/${id}`);
-      fetchDocuments();
+      // fetchDocuments();
       fetchStats();
     } catch (err) {
       alert("Gagal hapus");
@@ -165,6 +178,13 @@ function Dashboard() {
             class="text-blue-600 hover:underline font-medium"
           >
             Home
+          </button>
+
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+          >
+            <span class="text-lg">+</span> Upload Document
           </button>
 
           <For each={breadcrumbs()}>
@@ -224,7 +244,7 @@ function Dashboard() {
       {/* SECTION DOKUMEN */}
       <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div class="flex justify-between items-center mb-6">
-          <h3 class="font-bold text-gray-800 text-lg">Newest Document</h3>
+          <h3 class="font-bold text-gray-800 text-lg">My Draft</h3>
           <button
             onClick={() => setIsUploadOpen(true)}
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"

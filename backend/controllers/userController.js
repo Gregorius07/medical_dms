@@ -37,7 +37,7 @@ const UserController = {
 
             const newUser = await UserModel.create(req.body,client);
             console.log("data user :", newUser);
-            const folderName = `Draft - ${newUser.username}`;
+            const folderName = `Draft - ${newUser.id_user}`;
             const newFolder = await FolderModel.createFolder(folderName, 'system', null, client);
             await PermissionModel.createFolderPermission(newUser.id_user, newFolder.id_folder, 'system', client);
 

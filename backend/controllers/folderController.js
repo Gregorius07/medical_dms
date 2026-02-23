@@ -1,11 +1,11 @@
 const FolderModel = require('../models/folderModel');
 const PermissionModel = require('../models/permissionModel');
-
+const {getMe} = require('../controllers/authController');
 const getFolderContents = async (req, res) => {
     try {
         let parentId = req.query.parentId || null; 
         
-        const userId = req.userId;
+        const userId = await getMe().id;
 
         if (!parentId) { 
             const draftFolder = await PermissionModel.getUserDraftFolder(userId);

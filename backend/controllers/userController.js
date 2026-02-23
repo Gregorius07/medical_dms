@@ -31,10 +31,13 @@ const UserController = {
     create: async (req, res) => {
         const client = await pool.connect();
         try {
+            console.log('Memulai create user!');
+            
             await client.query('BEGIN');
 
             const newUser = await UserModel.create(req.body,client);
-            const folderName = `Draft - ${newUser.name}`;
+            console.log("data user :", newUser);
+            const folderName = `Draft - ${newUser.username}`;
             const newFolder = await FolderModel.createFolder(folderName, 'system', null, client);
             await PermissionModel.createFolderPermission(newUser.id_user, newFolder.id_folder, 'system', client);
 

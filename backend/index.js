@@ -10,6 +10,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const departmentRoutes = require('./routes/departmentRoutes'); 
 const userRoutes = require('./routes/userRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const folderRoutes = require ('./routes/folderRoutes');
 
 const app = express();
 const PORT = 5000; //port server
@@ -35,6 +36,7 @@ app.use('/api/positions', positionRoutes);    // Akses: GET /api/positions
 app.use('/api/departments', departmentRoutes);
 app.use('/api/users',userRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/folders', folderRoutes);
 // Root Endpoint
 app.get('/', (req, res) => {
     res.json({ message: "MedAdmin API is Running (MVC Version)" });

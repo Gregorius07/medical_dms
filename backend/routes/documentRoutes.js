@@ -25,5 +25,6 @@ router.get('/', verifyToken, DocumentController.findAll);
 // 'file' adalah nama field di FormData frontend
 router.post('/',verifyToken, upload.single('file'), DocumentController.upload);
 router.delete('/:id', verifyToken,DocumentController.delete);
+router.get('/getaccesibledocs',verifyToken, DocumentController.getAccessibleDocumentsId);
 
 module.exports = router;

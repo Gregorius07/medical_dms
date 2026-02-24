@@ -2,6 +2,7 @@ const DocumentModel = require('../models/documentModel');
 const { getPagination } = require('../utils/pagination');
 const path = require('path');
 const fs = require('fs');
+const { getMe } = require('./authController');
 
 const DocumentController = {
     findAll: async (req, res) => {
@@ -65,6 +66,15 @@ const DocumentController = {
             res.json({ success: true, message: "Dokumen berhasil dihapus (Soft Delete)" });
         } catch (err) {
             res.status(500).json({ message: err.message });
+        }
+    },
+
+    getAccessibleDocumentsId: async (req,res) =>{
+        try {
+            const result = await DocumentModel.getAccessibleDocuments(req.userId);
+            res.json(result.map(item => item.id_document));
+        } catch (error) {
+            res.status(500).json({ message: "Gagal mengambil accesible document" });
         }
     }
 };

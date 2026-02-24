@@ -1,21 +1,33 @@
 const FolderModel = require('../models/folderModel');
+const DocumentModel = require ('../models/documentModel');
 const PermissionModel = require('../models/permissionModel');
 const {getMe} = require('../controllers/authController');
+
 const getFolderContents = async (req, res) => {
     try {
-        let parentId = Number(req.query.parentId) || null; 
-        const userId = await (getMe()).id;
+        const parentId = req.query.parentId || null; 
+        const userId = req.userId; // Dari middleware verifyToken
 
-        if (!parentId) { 
-            const draftFolder = await PermissionModel.getUserDraftFolder(userId);
+        let folders = [];
+        let documents = [];
 
-            if (draftFolder) {
-                parentId = draftFolder.id_folder;
-            }
+        // KONDISI 1: User di halaman depan (Dashboard Root)
+        if (!parentId) {
+            // Ambil semua folder dan dokumen yang dizinkan dari tabel permission
+            folders = await FolderModel.getAccessibleFolders(userId);
+            console.log('Isi variabel folders:',folders);
+            
+            documents = await DocumentModel.getAccessibleDocuments(userId);
+            console.log('Isi variabel documents:',documents);
+            
+        } 
+        // KONDISI 2: User sedang menelusuri isi di dalam sebuah folder
+        else {
+            // Ambil sub-folder dan dokumen murni berdasarkan parentId
+            // (Catatan: Akses ke sini sudah dilindungi oleh middleware 'checkPermission' di routes)
+            folders = await FolderModel.getSubFolders(parentId);
+            documents = await DocumentModel.getDocumentsInFolder(parentId);
         }
-        // Controller memanggil model
-        const folders = await FolderModel.getSubFolders(parentId);
-        const documents = await FolderModel.getDocumentsInFolder(parentId);
 
         res.json({
             currentFolderId: parentId,
@@ -25,10 +37,9 @@ const getFolderContents = async (req, res) => {
 
     } catch (error) {
         console.error("Error getFolderContents:", error);
-        res.status(500).json({ message: "Gagal mengambil isi folder" });
+        res.status(500).json({ message: "Gagal mengambil data folder dan dokumen" });
     }
 };
-
 const getFolderBreadcrumbs = async (req, res) => {
     try {
         const { id } = req.params;
@@ -47,15 +58,25 @@ const getFolderBreadcrumbs = async (req, res) => {
 const getDraftFolderByUserId = async (req,res) =>{
     try {
         const result = await FolderModel.getDraftFolderByUserId(Number(req.userId));
-        console.log(result);
         res.json(result);
     } catch (error) {
         res.status(500).json({ message: "Gagal mengambil draft" });
     }
 }
 
+const getAccessibleFoldersId = async (req,res) =>{
+    try {
+        const result = await FolderModel.getAccessibleFolders(req.userId);
+        res.json(result.map(item => item.id_folder));
+    } catch (error) {
+        res.status(500).json({ message: "Gagal mengambil accesible folder" });
+    }
+}
+
+
 module.exports = {
     getFolderContents,
     getFolderBreadcrumbs,
-    getDraftFolderByUserId
+    getDraftFolderByUserId,
+    getAccessibleFoldersId
 };

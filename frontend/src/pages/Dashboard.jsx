@@ -3,9 +3,8 @@ import api from "../api";
 import { currentUser } from "../store/authStore"; //untuk userdata
 function Dashboard() {
   const [stats, setStats] = createSignal({});
-  const [documents, setDocuments] = createSignal([]);
-
-  // State Upload
+  
+  // State untuk section Home
   const [isUploadOpen, setIsUploadOpen] = createSignal(false);
   const [uploadFile, setUploadFile] = createSignal(null);
   const [docTitle, setDocTitle] = createSignal("");
@@ -13,8 +12,19 @@ function Dashboard() {
   const [currentFolderId, setCurrentFolderId] = createSignal(null);
   const [folders, setFolders] = createSignal([]);
   const [breadcrumbs, setBreadcrumbs] = createSignal([]);
-  const [draftFolderId, setDraftFolderId] = createSignal(null);
-
+  const [documents, setDocuments] = createSignal([]);
+  
+  // State untuk section My Draft
+  const [draftId, setdraftId] = createSignal(null);
+  const [isUploadOpenDraft, setIsUploadOpenDraft] = createSignal(false);
+  const [uploadFileDraft, setUploadFileDraft] = createSignal(null);
+  const [docTitleDraft, setDocTitleDraft] = createSignal("");
+  const [uploadLoadingDraft, setUploadLoadingDraft] = createSignal(false);
+  const [foldersDraft, setFoldersDraft] = createSignal([]);
+  const [currentFolderIdDraft, setCurrentFolderIdDraft] = createSignal(null);
+  const [breadcrumbsDraft, setBreadcrumbsDraft] = createSignal([]);
+  const [documentsDraft, setDocumentsDraft] = createSignal([]);
+  
   const fetchStats = async () => {
     try {
       const res = await api.get("/dashboard/stats");
@@ -37,12 +47,19 @@ function Dashboard() {
   const loadFolderContents = async (folderId = null) => {
     try {
       const url = folderId ? `/folders?parentId=${folderId}` : `/folders`; //kalo ada folderId, kirim sebagai query
-      const res = await api.get(url);
+      
+      const res = await api.post(url,{
+        id_folder : folderId
+      });
 
       setFolders(res.data.folders);
+      console.log(res.data.folders);
+      
       setDocuments(res.data.documents);
+      console.log(res.data.documents);
 
       const activeFolderId = res.data.currentFolderId;
+      console.log(activeFolderId);
       setCurrentFolderId(activeFolderId);
 
       // Jika sedang berada di dalam sebuah folder, ambil jalur breadcrumbs-nya
@@ -57,7 +74,9 @@ function Dashboard() {
   // 2. Mengambil jalur navigasi (Breadcrumbs)
   const loadBreadcrumbs = async (folderId) => {
     try {
-      const res = await api.get(`/folders/${folderId}/breadcrumbs`);
+      const res = await api.post(`/folders/${folderId}/breadcrumbs`,{
+        userId : currentUser().id
+      });
       setBreadcrumbs(res.data);
     } catch (err) {
       console.error("Gagal memuat breadcrumbs", err);
@@ -70,18 +89,41 @@ function Dashboard() {
         userId : currentUser().id
       });
       console.log(draftFolder.data.id_folder);
-      setDraftFolderId(draftFolder.data.id_folder);
+      setdraftId(draftFolder.data.id_folder);
     } catch (error) {
       console.error("Gagal meload draft", error);
     }
   }
 
+  const fetchDraftMenu = async (folderId = draftId()) =>{
+    try {
+      const url = folderId ? `/folders?parentId=${folderId}` : `/folders`; //kalo ada folderId, kirim sebagai query
+      const res = await api.post(url,{
+        id_folder : folderId
+      });
+
+      setFoldersDraft(res.data.folders);
+      setDocumentsDraft(res.data.documents);
+
+      // const activeFolderId = res.data.currentFolderId;
+      // setCurrentFolderId(activeFolderId);
+
+      // // Jika sedang berada di dalam sebuah folder, ambil jalur breadcrumbs-nya
+      // if (activeFolderId) {
+      //   loadBreadcrumbs(activeFolderId);
+      // } else {
+      //   setBreadcrumbs([]); // Kosongkan jika berada di Root
+      // }
+    } catch (error) {
+      console.error("Gagal memuat isi folder:", error);
+    }
+  }
+
   onMount(async () => {
     await loadUserDraft();
-    
     fetchStats();
-    // fetchDocuments();
-    loadFolderContents(draftFolderId());
+    loadFolderContents();
+    fetchDraftMenu(draftId());
   });
 
   const navigateToFolder = (folderId) => {
@@ -108,7 +150,7 @@ function Dashboard() {
     formData.append("title", docTitle());
     formData.append("uploaderId", currentUser().id);
     formData.append("uploaderName", currentUser().name);
-    formData.append("folderId", draftFolderId()); // Nanti jika ada fitur folder
+    formData.append("folderId", draftId()); // Nanti jika ada fitur folder
     try {
       await api.post("/documents", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -121,7 +163,7 @@ function Dashboard() {
       // Refresh data
       fetchStats();
       // fetchDocuments();
-      loadFolderContents(draftFolderId());
+      loadFolderContents(draftId());
     } catch (err) {
       alert("Upload Gagal: " + (err.response?.data?.message || err.message));
     } finally {
@@ -169,69 +211,85 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* --- SECTION BREADCRUMBS & FOLDERS (BARU) --- */}
+      {/* --- SECTION EXPLORER: BREADCRUMBS, FOLDERS & DOCUMENTS --- */}
       <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-        {/* Breadcrumb Navigation */}
-        <div class="flex items-center gap-2 mb-6 text-sm">
-          <button
-            onClick={() => navigateToFolder(null)}
-            class="text-blue-600 hover:underline font-medium"
-          >
-            Home
-          </button>
+        
+        {/* HEADER AREA: Breadcrumbs (Kiri) & Action Buttons (Kanan) */}
+        <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8 border-b pb-4">
+          
+          {/* SISI KIRI: Breadcrumb Navigation */}
+          <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">
+            <button
+              onClick={() => navigateToFolder(null)}
+              class="text-blue-600 hover:underline font-medium flex items-center gap-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Home
+            </button>
 
-          <button
-            onClick={() => setIsUploadOpen(true)}
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-          >
-            <span class="text-lg">+</span> Upload Document
-          </button>
+            <For each={breadcrumbs()}>
+              {(crumb) => (
+                <>
+                  <span class="text-gray-400">/</span>
+                  <button
+                    onClick={() => navigateToFolder(crumb.id_folder)}
+                    class={`hover:underline ${currentFolderId() === crumb.id_folder ? "text-gray-800 font-bold" : "text-blue-600"}`}
+                  >
+                    {crumb.folder_name}
+                  </button>
+                </>
+              )}
+            </For>
+          </div>
 
-          <For each={breadcrumbs()}>
-            {(crumb) => (
-              <>
-                <span class="text-gray-400">/</span>
-                <button
-                  onClick={() => navigateToFolder(crumb.id_folder)}
-                  class={`hover:underline ${currentFolderId() === crumb.id_folder ? "text-gray-800 font-bold" : "text-blue-600"}`}
-                >
-                  {crumb.folder_name}
-                </button>
-              </>
-            )}
-          </For>
+          {/* SISI KANAN: Action Buttons */}
+          <div class="flex items-center gap-2 shrink-0">
+            {/* Tombol Tambah Folder (Persiapan fitur selanjutnya) */}
+            <button
+              onClick={() => alert("Fitur Tambah Folder akan segera hadir!")}
+              class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              New Folder
+            </button>
+
+            {/* Tombol Upload Document */}
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-sm"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Upload Document
+            </button>
+          </div>
         </div>
 
-        {/* Grid Sub-Folders */}
+        {/* --- KONTEN AREA --- */}
+
+        {/* 1. Grid Sub-Folders */}
         <Show when={folders().length > 0}>
-          <h4 class="text-gray-500 text-xs uppercase font-bold mb-3">
-            All Folders
+          <h4 class="text-gray-500 text-xs uppercase font-bold mb-3 tracking-wider">
+            Folders
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <For each={folders()}>
               {(folder) => (
                 <div
                   onClick={() => navigateToFolder(folder.id_folder)}
-                  class="flex items-center gap-3 p-4 border rounded-lg hover:bg-blue-50 cursor-pointer transition border-gray-200"
+                  class="flex items-center gap-3 p-4 border rounded-xl hover:bg-blue-50 cursor-pointer transition border-gray-200 shadow-sm"
                 >
-                  {/* Ikon Folder (Bisa pakai SVG) */}
-                  <div class="w-10 h-10 rounded bg-blue-100 flex items-center justify-center text-blue-600">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                      stroke="currentColor"
-                      class="size-6"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"
-                      />
+                  <div class="w-10 h-10 rounded bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
                     </svg>
                   </div>
-                  <div class="font-medium text-gray-800 truncate">
+                  <div class="font-medium text-gray-800 truncate w-full">
                     {folder.folder_name}
                   </div>
                 </div>
@@ -239,6 +297,86 @@ function Dashboard() {
             </For>
           </div>
         </Show>
+
+        {/* 2. List Documents */}
+        <Show when={documents().length > 0}>
+          <h4 class="text-gray-500 text-xs uppercase font-bold mb-3 tracking-wider">
+            Files & Documents
+          </h4>
+          <div class="overflow-x-auto border border-gray-200 rounded-xl">
+            <table class="w-full text-left">
+              <thead class="bg-gray-50 text-gray-600 text-xs uppercase font-semibold border-b border-gray-200">
+                <tr>
+                  <th class="px-4 py-3">Document Title</th>
+                  <th class="px-4 py-3">Uploader</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Date</th>
+                  <th class="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm divide-y divide-gray-100">
+                <For each={documents()}>
+                  {(doc) => (
+                    <tr class="hover:bg-gray-50 transition">
+                      <td class="px-4 py-3 font-medium text-gray-800 flex items-center gap-3">
+                        {/* Ikon File Dokumen */}
+                        <div class="text-gray-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          {doc.title || doc.file_name}
+                          <div class="text-xs text-gray-400 font-normal mt-0.5">
+                            {(doc.file_size / 1024).toFixed(2)} KB
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-gray-600">{doc.created_by}</td>
+                      <td class="px-4 py-3">
+                        <span class={`px-2 py-1 rounded text-xs font-bold ${
+                            doc.approval_status === 'APPROVED' ? 'bg-green-100 text-green-700' : 
+                            doc.approval_status === 'DRAFT' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                          {doc.approval_status}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-gray-500">
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </td>
+                      <td class="px-4 py-3 text-right space-x-3">
+                        <button
+                          onClick={() => handleDownload(doc.physical_filename)}
+                          class="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                        >
+                          Download
+                        </button>
+                        <button
+                          onClick={() => handleDelete(doc.id_document)}
+                          class="text-red-500 hover:text-red-700 font-medium text-sm"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
+          </div>
+        </Show>
+
+        {/* 3. Empty State (Jika Folder kosong & tidak ada dokumen) */}
+        <Show when={folders().length === 0 && documents().length === 0}>
+           <div class="flex flex-col items-center justify-center py-12 text-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+              </svg>
+              <h3 class="text-sm font-medium text-gray-900">Folder Kosong</h3>
+              <p class="text-xs text-gray-500 mt-1">Belum ada dokumen atau sub-folder di sini.</p>
+           </div>
+        </Show>
+
       </div>
 
       {/* SECTION DOKUMEN */}
@@ -265,14 +403,14 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody class="text-sm">
-              {documents().length === 0 ? (
+              {documentsDraft().length === 0 ? (
                 <tr>
                   <td colspan="5" class="text-center py-6 text-gray-400">
                     No documents yet
                   </td>
                 </tr>
               ) : (
-                documents().map((doc) => (
+                documentsDraft().map((doc) => (
                   <tr class="border-b last:border-0 hover:bg-gray-50">
                     <td class="px-4 py-3 font-medium text-gray-800">
                       {doc.title}

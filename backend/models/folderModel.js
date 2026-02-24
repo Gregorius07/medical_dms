@@ -15,31 +15,7 @@ class FolderModel {
         return rows;
     }
 
-    // 2. Ambil daftar dokumen di dalam folder tersebut
-    static async getDocumentsInFolder(parentId) {
-        let query = `
-            SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status
-            FROM document d
-            JOIN document_version dv ON d.id_document = dv.id_document
-            WHERE d.id_folder IS NULL AND dv.is_active = true
-            ORDER BY dv.created_at DESC
-        `;
-        let params = [];
-
-        if (parentId) {
-            query = `
-                SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status
-                FROM document d
-                JOIN document_version dv ON d.id_document = dv.id_document
-                WHERE d.id_folder = $1 AND dv.is_active = true
-                ORDER BY dv.created_at DESC
-            `;
-            params = [parentId];
-        }
-
-        const { rows } = await pool.query(query, params);
-        return rows;
-    }
+    
 
     // 3. Ambil breadcrumbs (seluruh isi folder tersebut)
     static async getBreadcrumbs(folderId) {
@@ -97,6 +73,25 @@ class FolderModel {
             console.error("Ralat pada getDraftFolderByUserId:", error);
             throw error; // Melempar ralat supaya boleh ditangkap (catch) oleh Controller
         }
+    }
+
+    // 1. Ambil SEMUA folder yang user punya hak akses (termasuk Draft)
+    static async getAccessibleFolders(userId) {
+        const query = `
+            SELECT f.id_folder, f.folder_name, f.parent_folder, 
+                   p.preview, p.upload, p.download, p.edit_metadata
+            FROM folder f
+            JOIN permission p ON f.id_folder = p.id_folder
+            WHERE p.id_user = $1 
+              AND p.resource_type = 'FOLDER' 
+              AND p.preview = TRUE
+            ORDER BY 
+                -- Trik agar folder Draft selalu di urutan paling atas
+                CASE WHEN f.folder_name LIKE 'Draft - %' THEN 0 ELSE 1 END, 
+                f.folder_name ASC;
+        `;
+        const { rows } = await pool.query(query, [userId]);
+        return rows;
     }
 }
 

@@ -32,6 +32,62 @@ class PermissionModel {
         const { rows } = await pool.query(query, [idUser]);
         return rows[0]; // Akan mengembalikan { id_folder: X, folder_name: '...' }
     }
+
+    /**
+     * Mengecek apakah user memiliki hak akses tertentu pada sebuah resource
+     * @param {number} idUser - ID User yang sedang login
+     * @param {number} resourceId - ID Folder atau ID Dokumen
+     * @param {string} resourceType - 'FOLDER' atau 'DOCUMENT'
+     * @param {string} action - 'preview', 'download', 'upload', atau 'edit_metadata'
+     * @returns {boolean} - true jika diizinkan, false jika ditolak
+     */
+    static async checkAccess(idUser, resourceId, resourceType, action) {
+        // Mencegah SQL Injection pada nama kolom
+        const validActions = ['preview', 'download', 'upload', 'edit_metadata'];
+        if (!validActions.includes(action)) throw new Error("Aksi tidak valid");
+
+        // Tentukan kolom mana yang akan dicocokkan berdasarkan tipe resource
+        const idColumn = resourceType === 'FOLDER' ? 'id_folder' : 'id_document';
+
+        const query = `
+            SELECT ${action} 
+            FROM permission 
+            WHERE id_user = $1 AND ${idColumn} = $2 AND resource_type = $3
+            LIMIT 1;
+        `;
+
+        const { rows } = await pool.query(query, [idUser, resourceId, resourceType]);
+
+        // Jika data tidak ditemukan, atau nilainya FALSE, berarti akses ditolak
+        if (rows.length === 0) return false;
+        
+        return rows[0][action] === true;
+    }
+
+    static async checkMultipleAccess(idUser, resourceIds, resourceType, action) {
+        const validActions = ['preview', 'download', 'upload', 'edit_metadata'];
+        if (!validActions.includes(action)) throw new Error("Aksi tidak valid");
+
+        const idColumn = resourceType === 'FOLDER' ? 'id_folder' : 'id_document';
+        
+        // Hilangkan duplikat ID jika frontend tidak sengaja mengirim ID ganda
+        const uniqueIds = [...new Set(resourceIds)];
+
+        // Gunakan ANY($3::int[]) untuk mengecek array di PostgreSQL
+        const query = `
+            SELECT COUNT(DISTINCT ${idColumn}) as granted_count
+            FROM permission 
+            WHERE id_user = $1 
+              AND resource_type = $2 
+              AND ${idColumn} = ANY($3::int[]) 
+              AND ${action} = TRUE;
+        `;
+
+        const { rows } = await pool.query(query, [idUser, resourceType, uniqueIds]);
+
+        // Jika jumlah baris yang diizinkan SAMA dengan jumlah ID yang diminta, maka TRUE
+        return parseInt(rows[0].granted_count) === uniqueIds.length;
+    }
 }
 
 module.exports = PermissionModel;

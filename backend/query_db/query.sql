@@ -155,6 +155,7 @@ VALUES
 (TRUE, FALSE, FALSE, FALSE, 'DOCUMENT', NOW(), 'budi.s', 1004, NULL, 3),
 (TRUE, TRUE, TRUE, FALSE, 'FOLDER', NOW(), 'maria.k', 1005, 4, NULL),
 (TRUE, TRUE, TRUE, TRUE, 'DOCUMENT', NOW(), 'andi.pratama', 1001, NULL, 1);
+(TRUE, TRUE, TRUE, TRUE, 'DOCUMENT', NOW(), 'andi.pratama', 1771842238329, 10, NULL);
 
 INSERT INTO audit_log
 (action, resource_type, details, timestamp, id_user, id_folder, id_document)

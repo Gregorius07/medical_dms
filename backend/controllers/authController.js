@@ -14,6 +14,7 @@ const login = async (req, res) => {
         const token = jwt.sign(
           {
             id: user.id_user, //payload
+            name: user.full_name
           },
           "secret", //secret key
           {
@@ -67,10 +68,12 @@ const getMe = async (req, res) => {
     res.json({
       id: userData.id_user,
       name: userData.full_name,
-      role: userData.is_admin ? "Administrator" : "User",
+      role: userData.is_admin ? "admin" : "user",
       position: userData.position_name,
       department: userData.department_name,
     });
+    console.log("Data user", res);
+    
   } catch (error) {}
 };
 

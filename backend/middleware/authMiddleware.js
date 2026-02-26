@@ -12,9 +12,8 @@ const verifyToken = (req,res,next) => {
     try{
         //verifikasi token
         const decoded = jwt.verify(token, 'secret');
-
         req.userId = decoded.id;
-
+        req.name = decoded.name;
         next();
     }catch(error){
         res.status(403).json({

@@ -42,50 +42,85 @@ class PermissionModel {
      * @returns {boolean} - true jika diizinkan, false jika ditolak
      */
     static async checkAccess(idUser, resourceId, resourceType, action) {
-        // Mencegah SQL Injection pada nama kolom
         const validActions = ['preview', 'download', 'upload', 'edit_metadata'];
         if (!validActions.includes(action)) throw new Error("Aksi tidak valid");
 
-        // Tentukan kolom mana yang akan dicocokkan berdasarkan tipe resource
-        const idColumn = resourceType === 'FOLDER' ? 'id_folder' : 'id_document';
+        let query;
+        let params;
 
-        const query = `
-            SELECT ${action} 
-            FROM permission 
-            WHERE id_user = $1 AND ${idColumn} = $2 AND resource_type = $3
-            LIMIT 1;
-        `;
+        if (resourceType === 'FOLDER') {
+            // Pengecekan normal untuk Folder (Apakah punya akses ke folder ini?)
+            query = `
+                SELECT ${action} 
+                FROM permission 
+                WHERE id_user = $1 AND id_folder = $2 AND resource_type = 'FOLDER'
+                LIMIT 1;
+            `;
+            params = [idUser, resourceId];
+            
+            const { rows } = await pool.query(query, params);
+            return rows.length > 0 ? rows[0][action] : false;
 
-        const { rows } = await pool.query(query, [idUser, resourceId, resourceType]);
+        } else if (resourceType === 'DOCUMENT') {
+            // PENGECEKAN PEWARISAN UNTUK DOKUMEN (Level Skripsi!)
+            // Cek permission langsung di dokumen, ATAU di folder tempat dokumen itu berada
+            query = `
+                SELECT 
+                    COALESCE(p_doc.${action}, p_folder.${action}, FALSE) as has_access
+                FROM document d
+                -- Cari permission langsung di level dokumen
+                LEFT JOIN permission p_doc ON p_doc.id_document = d.id_document AND p_doc.id_user = $1
+                -- Cari permission di level folder induknya
+                LEFT JOIN permission p_folder ON p_folder.id_folder = d.id_folder AND p_folder.id_user = $1
+                WHERE d.id_document = $2;
+            `;
+            params = [idUser, resourceId];
 
-        // Jika data tidak ditemukan, atau nilainya FALSE, berarti akses ditolak
-        if (rows.length === 0) return false;
-        
-        return rows[0][action] === true;
+            const { rows } = await pool.query(query, params);
+            return rows.length > 0 ? rows[0].has_access : false;
+        }
     }
 
     static async checkMultipleAccess(idUser, resourceIds, resourceType, action) {
         const validActions = ['preview', 'download', 'upload', 'edit_metadata'];
         if (!validActions.includes(action)) throw new Error("Aksi tidak valid");
 
-        const idColumn = resourceType === 'FOLDER' ? 'id_folder' : 'id_document';
-        
         // Hilangkan duplikat ID jika frontend tidak sengaja mengirim ID ganda
         const uniqueIds = [...new Set(resourceIds)];
+        
+        let query;
+        let params;
 
-        // Gunakan ANY($3::int[]) untuk mengecek array di PostgreSQL
-        const query = `
-            SELECT COUNT(DISTINCT ${idColumn}) as granted_count
-            FROM permission 
-            WHERE id_user = $1 
-              AND resource_type = $2 
-              AND ${idColumn} = ANY($3::int[]) 
-              AND ${action} = TRUE;
-        `;
+        if (resourceType === 'FOLDER') {
+            // Untuk Folder: Cek langsung karena folder tidak mewarisi dari dokumen
+            query = `
+                SELECT COUNT(DISTINCT id_folder) as granted_count
+                FROM permission 
+                WHERE id_user = $1 
+                  AND resource_type = 'FOLDER' 
+                  AND id_folder = ANY($2::int[]) 
+                  AND ${action} = TRUE;
+            `;
+            params = [idUser, uniqueIds];
 
-        const { rows } = await pool.query(query, [idUser, resourceType, uniqueIds]);
+        } else if (resourceType === 'DOCUMENT') {
+            // Untuk Dokumen: Cek permission di level dokumen ATAU di level folder induknya secara massal
+            query = `
+                SELECT COUNT(DISTINCT d.id_document) as granted_count
+                FROM document d
+                LEFT JOIN permission p_doc 
+                  ON p_doc.id_document = d.id_document AND p_doc.id_user = $1
+                LEFT JOIN permission p_folder 
+                  ON p_folder.id_folder = d.id_folder AND p_folder.id_user = $1
+                WHERE d.id_document = ANY($2::int[])
+                  AND (p_doc.${action} = TRUE OR p_folder.${action} = TRUE);
+            `;
+            params = [idUser, uniqueIds];
+        }
 
-        // Jika jumlah baris yang diizinkan SAMA dengan jumlah ID yang diminta, maka TRUE
+        const { rows } = await pool.query(query, params);
+
+        // Jika jumlah dokumen/folder yang diizinkan SAMA dengan jumlah ID yang diminta, maka TRUE (Lolos Semua)
         return parseInt(rows[0].granted_count) === uniqueIds.length;
     }
 }

@@ -9,4 +9,5 @@ router.post('/', verifyToken, requirePermission('preview', 'FOLDER'), folderCont
 router.post('/:id/breadcrumbs', verifyToken, requirePermission('preview', 'FOLDER'), folderController.getFolderBreadcrumbs);
 router.post('/getdraft',verifyToken,folderController.getDraftFolderByUserId);
 router.get('/getaccesiblefolders', verifyToken, folderController.getAccessibleFoldersId);
+router.post('/create', verifyToken, folderController.createFolder);
 module.exports = router;

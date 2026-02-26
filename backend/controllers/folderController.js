@@ -1,7 +1,6 @@
 const FolderModel = require('../models/folderModel');
 const DocumentModel = require ('../models/documentModel');
 const PermissionModel = require('../models/permissionModel');
-const {getMe} = require('../controllers/authController');
 
 const getFolderContents = async (req, res) => {
     try {
@@ -73,10 +72,31 @@ const getAccessibleFoldersId = async (req,res) =>{
     }
 }
 
+const createFolder = async (req, res) => {
+    try {
+        const { folder_name, parent_folder } = req.body;
+        const userId = req.userId; // Dari token JWT
+        const name = req.name;
+        if (!folder_name) {
+            return res.status(400).json({ message: "Nama folder tidak boleh kosong" });
+        }
+
+        const newFolderId = await FolderModel.createFolder(folder_name, parent_folder || null, userId, name);
+
+        res.status(201).json({ 
+            message: "Folder berhasil dibuat", 
+            id_folder: newFolderId 
+        });
+    } catch (error) {
+        console.error("Error creating folder:", error);
+        res.status(500).json({ message: "Gagal membuat folder baru" });
+    }
+};
 
 module.exports = {
     getFolderContents,
     getFolderBreadcrumbs,
     getDraftFolderByUserId,
-    getAccessibleFoldersId
+    getAccessibleFoldersId,
+    createFolder
 };

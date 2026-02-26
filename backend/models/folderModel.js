@@ -93,6 +93,40 @@ class FolderModel {
         const { rows } = await pool.query(query, [userId]);
         return rows;
     }
+
+    /**
+     * Membuat folder baru dan otomatis memberikan permission penuh kepada pembuatnya
+     */
+    static async createFolder(folderName, parentId, userId, name) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN'); // Mulai Transaksi
+
+            // 1. Insert ke tabel folder
+            const insertFolderQuery = `
+                INSERT INTO folder (folder_name, parent_folder, created_by)
+                VALUES ($1, $2, $3)
+                RETURNING id_folder;
+            `;
+            const folderResult = await client.query(insertFolderQuery, [folderName, parentId, name]);
+            const newFolderId = folderResult.rows[0].id_folder;
+
+            // 2. Insert ke tabel permission (Beri hak akses penuh ke pembuatnya)
+            const insertPermissionQuery = `
+                INSERT INTO permission (id_user, id_folder, resource_type, preview, upload, download, edit_metadata, created_at, created_by)
+                VALUES ($1, $2, 'FOLDER', TRUE, TRUE, TRUE, TRUE, NOW(), $3);
+            `;
+            await client.query(insertPermissionQuery, [userId, newFolderId, name]);
+
+            await client.query('COMMIT'); // Simpan Permanen
+            return newFolderId;
+        } catch (error) {
+            await client.query('ROLLBACK'); // Batalkan jika terjadi error
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = FolderModel;

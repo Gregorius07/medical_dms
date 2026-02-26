@@ -37,6 +37,12 @@ function MainLayout(props) {
             <A href="/dashboard" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/dashboard')}`}>
                 Dashboard
             </A>
+            <A href="/draft" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/draft')}`}>
+                Draft
+            </A>
+            <A href="/folders" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/folders')}`}>
+                Folder
+            </A>
             <div class="pt-4 text-xs font-semibold text-gray-400 uppercase px-4">Configuration</div>
             <A href="/positions" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/positions')}`}>
                 Position

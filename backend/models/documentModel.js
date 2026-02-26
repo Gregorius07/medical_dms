@@ -56,7 +56,7 @@ const DocumentModel = {
                 VALUES ($1, $2, $3, $4, $5, 'DRAFT', $6, true, $7, $8, $9, $10)`,
         [
           1, // Versi pertama
-          data.storedFilename, // Nama file fisik (UUID)
+          data.title, // Nama file fisik (UUID)
           data.fileFormat,
           data.fileSize,
           data.metadata || {},

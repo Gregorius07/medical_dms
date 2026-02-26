@@ -22,8 +22,8 @@ const login = async (req, res) => {
           },
         );
 
-        console.log("Sebelum token dibuat:");
-        console.log(token);
+        // console.log("Sebelum token dibuat:");
+        // console.log(token);
 
         res.cookie("token", token, {
           httpOnly: true,
@@ -32,8 +32,8 @@ const login = async (req, res) => {
           maxAge: 2 * 60 * 60 * 1000,
         });
 
-        console.log("setelah token dibuat:");
-        console.log(token);
+        // console.log("setelah token dibuat:");
+        // console.log(token);
 
         return res.status(200).json({
           success: true,

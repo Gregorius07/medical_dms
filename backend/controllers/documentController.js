@@ -40,7 +40,6 @@ const DocumentController = {
             const docData = {
                 title: title,
                 folderId: folderId ? parseInt(folderId) : null,
-                storedFilename: req.file.filename, // Nama file UUID dari Multer
                 fileFormat: path.extname(req.file.originalname).substring(1), // pdf, docx
                 fileSize: req.file.size,
                 uploader: uploaderName || "Unknown",

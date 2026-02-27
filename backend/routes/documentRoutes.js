@@ -31,5 +31,6 @@ router.get('/:id',
     requirePermission('preview', 'DOCUMENT'), 
     DocumentController.getDocumentDetail
 );
-
+router.get('/:id/download', verifyToken, requirePermission('download', 'DOCUMENT'), DocumentController.downloadDocument);
+router.post('/:id/revisions', verifyToken, requirePermission('upload', 'DOCUMENT'), upload.single('file'), DocumentController.uploadRevision);
 module.exports = router;

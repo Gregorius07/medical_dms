@@ -5,6 +5,7 @@ const requirePermission = (action, resourceType) => {
     return async (req, res, next) => {
         try {
             const userId = req.userId; 
+            console.log("PERMISSION MIDDLEWARE, USER ID:", userId);
             
             // 1. CEK ADMIN
             const adminQuery = await pool.query(`SELECT is_admin FROM "user" WHERE id_user = $1`, [userId]);

@@ -150,7 +150,46 @@ const DocumentModel = {
         `;
         const { rows } = await pool.query(query, [idDocument]);
         return rows[0]; // Akan undefined jika tidak ada
+    },
+
+    /**
+     * Menambahkan versi baru dari sebuah dokumen
+     */
+    addDocumentRevision: async(idDocument, fileName, physicalFilename, fileSize, createdBy, fileFormat) => {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Matikan (Deactivate) versi lama yang sedang aktif
+            await client.query(`
+                UPDATE document_version 
+                SET is_active = FALSE 
+                WHERE id_document = $1 AND is_active = TRUE
+            `, [idDocument]);
+
+            // 2. Insert versi baru (version_number otomatis nambah 1 dari versi tertinggi)
+            const insertQuery = `
+                INSERT INTO document_version 
+                (id_document, version_number, file_name, file_path, file_size, file_format, created_by, is_active, approval_status, created_at, custom_metadata)
+                VALUES (
+                    $1, 
+                    (SELECT COALESCE(MAX(version_number), 0) + 1 FROM document_version WHERE id_document = $1), 
+                    $2, $3, $4, $5, $6, TRUE, 'DRAFT', NOW(), $7
+                )
+            `;
+            const path = 'uploads/'+physicalFilename;
+            await client.query(insertQuery, [idDocument, fileName, path, fileSize, fileFormat ,createdBy,{}]);
+
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
+
+
 };
 
 module.exports = DocumentModel;

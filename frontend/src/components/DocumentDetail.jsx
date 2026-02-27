@@ -11,6 +11,10 @@ function DocumentDetail() {
 
   const [doc, setDoc] = createSignal(null);
   const [loading, setLoading] = createSignal(true);
+
+  const [isUploadOpen, setIsUploadOpen] = createSignal(false);
+  const [uploadFile, setUploadFile] = createSignal(null);
+  const [uploadLoading, setUploadLoading] = createSignal(false);
   
   // Nanti kita akan isi ini dari API berdasarkan tabel 'permission'
   const [permissions, setPermissions] = createSignal({
@@ -41,9 +45,28 @@ function DocumentDetail() {
   });
 
   // --- HANDLERS ---
-  const handleDownload = () => {
-    if (doc()?.file_path) {
-      window.open(`http://localhost:5000/${doc()?.file_path}`, "_blank");
+  const handleDownload = async () => {
+    try {
+      // Kita gunakan responseType 'blob' karena kita menerima file fisik, bukan teks JSON
+      const res = await api.get(`/documents/${documentId}/download`, {
+        responseType: 'blob'
+      });
+
+      // Trik Javascript untuk memaksa browser mengunduh file
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      // Gunakan nama asli file dari state dokumen
+      link.setAttribute('download', doc()?.file_name || 'document.pdf'); 
+      document.body.appendChild(link);
+      link.click();
+      
+      // Bersihkan memori browser setelah klik
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Gagal mengunduh dokumen. Pastikan Anda memiliki izin.");
     }
   };
 
@@ -52,7 +75,35 @@ function DocumentDetail() {
   };
 
   const handleUploadRevision = () => {
-    alert("Fitur Upload Versi Baru akan memunculkan modal file di sini.");
+    setIsUploadOpen(true); // Membuka Modal
+  };
+
+  const submitRevision = async (e) => {
+    e.preventDefault();
+    if (!uploadFile()) return alert("Pilih file PDF baru terlebih dahulu!");
+
+    setUploadLoading(true);
+    const formData = new FormData();
+    formData.append("file", uploadFile());
+    formData.append("uploaderName", currentUser().name);
+
+    try {
+      await api.post(`/documents/${documentId}/revisions`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      alert("Revisi berhasil diunggah!");
+      
+      // Tutup modal & Bersihkan form
+      setIsUploadOpen(false);
+      setUploadFile(null);
+      
+      // PENTING: Refresh data di halaman agar Iframe PDF dan metadata langsung berubah ke versi terbaru!
+      fetchDocumentDetail(); 
+    } catch (err) {
+      alert("Gagal mengunggah revisi: " + (err.response?.data?.message || err.message));
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   return (
@@ -170,6 +221,42 @@ function DocumentDetail() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </Show>
+
+      {/* MODAL UPLOAD REVISION */}
+      <Show when={isUploadOpen()}>
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white rounded-xl shadow-lg w-[400px] p-6">
+            <h3 class="text-lg font-bold mb-4 text-gray-800">Upload New Version</h3>
+            
+            <form onSubmit={submitRevision} class="space-y-4">
+              <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center hover:bg-blue-50 transition cursor-pointer relative bg-blue-50/50">
+                <input 
+                  type="file" 
+                  onChange={(e) => setUploadFile(e.target.files[0])} 
+                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                  required 
+                />
+                <div class="text-blue-600 font-medium mb-1">Click to select new PDF file</div>
+                <div class="text-xs text-gray-400 mb-2">Max 10MB</div>
+                <Show when={uploadFile()}>
+                  <div class="text-sm text-green-700 font-bold bg-green-100 py-1 px-2 rounded inline-block truncate max-w-full">
+                    {uploadFile()?.name}
+                  </div>
+                </Show>
+              </div>
+
+              <div class="flex justify-end gap-2 pt-4 border-t mt-4">
+                <button type="button" onClick={() => {setIsUploadOpen(false); setUploadFile(null);}} class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium">
+                  Cancel
+                </button>
+                <button type="submit" disabled={uploadLoading()} class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium flex items-center gap-2">
+                  {uploadLoading() ? "Uploading..." : "Upload Revision"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </Show>

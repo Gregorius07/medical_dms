@@ -244,7 +244,7 @@ function Folder() {
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
-          <Show when={currentUser().is_admin === true || currentUser().role === 'admin'}>
+          <Show when={ currentUser().role === 'admin'}>
             <button  onClick={() => setIsFolderModalOpen(true)} class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />

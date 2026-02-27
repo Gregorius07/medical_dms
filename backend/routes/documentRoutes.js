@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const {verifyToken} = require('../middleware/authMiddleware');
-
+const {requirePermission }= require('../middleware/permissionMiddleware');
 // Konfigurasi Penyimpanan File
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -28,7 +28,7 @@ router.delete('/:id', verifyToken,DocumentController.delete);
 router.get('/getaccesibledocs',verifyToken, DocumentController.getAccessibleDocumentsId);
 router.get('/:id', 
     verifyToken, 
-    // requirePermission('preview', 'DOCUMENT'), 
+    requirePermission('preview', 'DOCUMENT'), 
     DocumentController.getDocumentDetail
 );
 

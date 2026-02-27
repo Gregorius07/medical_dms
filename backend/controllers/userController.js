@@ -36,9 +36,12 @@ const UserController = {
             await client.query('BEGIN');
 
             const newUser = await UserModel.create(req.body,client);
-            console.log("data user :", newUser);
+            // console.log("data user :", newUser);
             const folderName = `Draft - ${newUser.id_user}`;
-            const newFolder = await FolderModel.createFolder(folderName, 'system', null, client);
+            
+            // console.log(folderName);
+            const newFolder = await FolderModel.createFolder(folderName, null, req.userId, req.name);
+    
             await PermissionModel.createFolderPermission(newUser.id_user, newFolder.id_folder, 'system', client);
 
             await client.query('COMMIT');
@@ -46,7 +49,7 @@ const UserController = {
             res.status(201).json({ success: true, message: "User berhasil ditambahkan" });
         } catch (err) {
             await client.query('ROLLBACK');
-            res.status(500).json({ message: 'Gagal menambahkan User' });
+            res.status(500).json({ message: 'Gagal menambahkan User' , err});
         } finally{
             client.release();
         }

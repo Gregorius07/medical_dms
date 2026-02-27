@@ -46,9 +46,9 @@ class FolderModel {
             RETURNING id_folder, folder_name;
         `;
         // metadata_schema kita isi '{}' (kosong) sebagai default untuk folder draft
-        const metadataSchema = JSON.stringify({}); 
+        const metadataSchema = {}; 
         
-        const { rows } = await client.query(query, [folderName, metadataSchema, createdBy, parentFolder]);
+        const { rows } = await client.query(query, [folderName, metadataSchema, createdBy, parentFolder?? null]);
         return rows[0]; // Mengembalikan data folder yang baru dibuat (termasuk id_folder-nya)
     }
 

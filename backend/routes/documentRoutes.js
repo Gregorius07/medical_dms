@@ -26,5 +26,10 @@ router.get('/', verifyToken, DocumentController.findAll);
 router.post('/',verifyToken, upload.single('file'), DocumentController.upload);
 router.delete('/:id', verifyToken,DocumentController.delete);
 router.get('/getaccesibledocs',verifyToken, DocumentController.getAccessibleDocumentsId);
+router.get('/:id', 
+    verifyToken, 
+    // requirePermission('preview', 'DOCUMENT'), 
+    DocumentController.getDocumentDetail
+);
 
 module.exports = router;

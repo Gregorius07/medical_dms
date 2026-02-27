@@ -9,6 +9,7 @@ import {checkSession, isAuthLoading} from './store/authStore';
 import { onMount, Show } from "solid-js";
 import Draft from "./pages/Draft";
 import Folder from "./pages/Folder";
+import DocumentDetail from "./components/DocumentDetail";
 
 function App() {
   onMount(()=>{
@@ -27,7 +28,7 @@ function App() {
           <Route path="/users" component={User} />
           <Route path="/draft" component={Draft} />
           <Route path="/folders" component={Folder} />
-          
+          <Route path="/document/:id" component={DocumentDetail} />
         </Route>
 
       </Router>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "@solidjs/router";
 import api from "../api";
 import { currentUser } from "../store/authStore";
 
+
 function DocumentDetail() {
   const params = useParams();
   const navigate = useNavigate();
@@ -41,8 +42,8 @@ function DocumentDetail() {
 
   // --- HANDLERS ---
   const handleDownload = () => {
-    if (doc()?.physical_filename) {
-      window.open(`http://localhost:5000/uploads/${doc().physical_filename}`, "_blank");
+    if (doc()?.file_path) {
+      window.open(`http://localhost:5000/${doc()?.file_path}`, "_blank");
     }
   };
 
@@ -96,7 +97,7 @@ function DocumentDetail() {
                   Pastikan backend menyediakan endpoint untuk menyajikan file ini.
                 */}
                 <iframe 
-                  src={`http://localhost:5000/uploads/${doc()?.physical_filename}`} 
+                  src={`http://localhost:5000/${doc()?.file_path}`} 
                   class="w-full h-full border-0"
                   title="Document Preview"
                 ></iframe>

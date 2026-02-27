@@ -1,9 +1,11 @@
 import { createSignal, onMount, For, Show } from "solid-js";
 import api from "../api";
 import { currentUser } from "../store/authStore";
+import { useNavigate } from "@solidjs/router";
 
 function Draft() {
   // State khusus untuk Draft (Sudah diisolasi, tidak ada bentrok dengan Home)
+  const navigate = useNavigate();
   const [draftId, setDraftId] = createSignal(null);
   const [isUploadOpen, setIsUploadOpen] = createSignal(false);
   const [uploadFile, setUploadFile] = createSignal(null);
@@ -274,7 +276,7 @@ function Draft() {
               {/* 2. RENDER DOKUMEN DRAFT DI BAWAH FOLDER */}
               <For each={documents()}>
                 {(doc) => (
-                  <tr class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
+                  <tr onClick={() => navigate(`/document/${doc.id_document}`)} class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
                     <td class="py-3 px-4 flex items-center gap-3">
                       <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-purple-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v6h6v10H6z" />

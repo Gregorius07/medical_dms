@@ -1,4 +1,4 @@
-const db = require("../config/db");
+const pool = require("../config/db");
 
 const DocumentModel = {
   // 1. GET ALL (Join dengan Version terbaru untuk dapat info file)
@@ -22,10 +22,10 @@ const DocumentModel = {
 
     query += ` ORDER BY v.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
-    const data = await db.query(query, [...params, limit, offset]);
+    const data = await pool.query(query, [...params, limit, offset]);
 
     // Count total untuk pagination
-    const countRes = await db.query(
+    const countRes = await pool.query(
       `SELECT COUNT(*) FROM document WHERE is_deleted = false`,
     );
 
@@ -38,10 +38,10 @@ const DocumentModel = {
   // 2. CREATE DOCUMENT (Transaction)
   create: async (data) => {
     try {
-      await db.query("BEGIN");
+      await pool.query("BEGIN");
 
       // A. Insert ke Tabel Dokumen (Wadah)
-      const docRes = await db.query(
+      const docRes = await pool.query(
         `INSERT INTO document (file_name, id_folder) VALUES ($1, $2) RETURNING id_document`,
         [data.title, data.folderId || null],
       );
@@ -50,7 +50,7 @@ const DocumentModel = {
       const filePath = "uploads/" + data.storedFilename;
 
       // B. Insert ke Tabel Version (File Fisik)
-      await db.query(
+      await pool.query(
         `INSERT INTO document_version 
                 (version_number, file_name, file_format, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder,  created_at, file_path)
                 VALUES ($1, $2, $3, $4, $5, 'DRAFT', $6, true, $7, $8, $9, $10)`,
@@ -68,17 +68,17 @@ const DocumentModel = {
         ],
       );
 
-      await db.query("COMMIT");
+      await pool.query("COMMIT");
       return { id: docId, ...data };
     } catch (error) {
-      await db.query("ROLLBACK");
+      await pool.query("ROLLBACK");
       throw error;
     }
   },
 
   // 3. SOFT DELETE
   softDelete: async (id) => {
-    return await db.query(
+    return await pool.query(
       "UPDATE document SET is_deleted = true WHERE id_document = $1",
       [id],
     );
@@ -98,7 +98,7 @@ const DocumentModel = {
               AND dv.is_active = true
             ORDER BY dv.created_at DESC;
         `;
-    const { rows } = await db.query(query, [userId]);
+    const { rows } = await pool.query(query, [userId]);
     return rows;
   },
 
@@ -124,9 +124,33 @@ const DocumentModel = {
       params = [parentId];
     }
 
-    const { rows } = await db.query(query, params);
+    const { rows } = await pool.query(query, params);
     return rows;
   },
+
+  /**
+     * Mengambil detail lengkap dokumen berdasarkan ID-nya (Versi yang Aktif)
+     */
+  getDocumentById : async (idDocument) => {
+        const query = `
+            SELECT 
+                d.id_document, 
+                d.id_folder, 
+                dv.file_name, 
+                dv.file_name, 
+                dv.file_size,
+                dv.file_path,
+                dv.custom_metadata, 
+                dv.created_at, 
+                dv.created_by, 
+                dv.approval_status
+            FROM document d
+            JOIN document_version dv ON d.id_document = dv.id_document
+            WHERE d.id_document = $1 AND dv.is_active = TRUE;
+        `;
+        const { rows } = await pool.query(query, [idDocument]);
+        return rows[0]; // Akan undefined jika tidak ada
+    }
 };
 
 module.exports = DocumentModel;

@@ -3,6 +3,7 @@ const { getPagination } = require('../utils/pagination');
 const path = require('path');
 const fs = require('fs');
 const { getMe } = require('./authController');
+const PermissionModel = require ('../models/permissionModel');
 
 const DocumentController = {
     findAll: async (req, res) => {
@@ -75,7 +76,34 @@ const DocumentController = {
         } catch (error) {
             res.status(500).json({ message: "Gagal mengambil accesible document" });
         }
+    },
+
+    getDocumentDetail : async (req, res) => {
+    try {
+        const docId = req.params.id;
+        const userId = req.userId; // Dari verifyToken middleware
+
+        // 1. Ambil detail dokumen
+        const document = await DocumentModel.getDocumentById(docId);
+        if (!document) {
+            return res.status(404).json({ message: "Dokumen tidak ditemukan atau telah dihapus." });
+        }
+
+        // 2. Ambil paket permission khusus untuk user yang sedang login
+        const permissions = await PermissionModel.getAllPermissionsForDocument(userId, docId);
+        
+        
+        // 3. Kirim keduanya ke frontend
+        res.json({
+            document: document,
+            permissions: permissions
+        });
+
+    } catch (error) {
+        console.error("Error getDocumentDetail:", error);
+        res.status(500).json({ message: "Terjadi kesalahan saat memuat detail dokumen." });
     }
+}
 };
 
 module.exports = DocumentController;

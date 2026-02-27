@@ -72,8 +72,6 @@ const getMe = async (req, res) => {
       position: userData.position_name,
       department: userData.department_name,
     });
-    console.log("Data user", res);
-    
   } catch (error) {}
 };
 

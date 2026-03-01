@@ -2,7 +2,6 @@ const DocumentModel = require("../models/documentModel");
 const { getPagination } = require("../utils/pagination");
 const path = require("path");
 const fs = require("fs");
-const { getMe } = require("./authController");
 const PermissionModel = require("../models/permissionModel");
 
 const DocumentController = {

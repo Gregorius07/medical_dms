@@ -2,7 +2,6 @@ import { createSignal, onMount, For, Show } from "solid-js";
 import api from "../api";
 import { currentUser } from "../store/authStore";
 import { useNavigate } from "@solidjs/router";
-
 function Folder() {
   // ==========================================
   // STATE KHUSUS UNTUK HOME / FOLDER

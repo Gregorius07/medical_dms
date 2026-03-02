@@ -3,6 +3,7 @@ const { getPagination } = require("../utils/pagination");
 const path = require("path");
 const fs = require("fs");
 const PermissionModel = require("../models/permissionModel");
+const AuditModel = require("../models/auditModel")
 
 const DocumentController = {
   findAll: async (req, res) => {
@@ -100,10 +101,14 @@ const DocumentController = {
         docId,
       );
 
+      const logs = await AuditModel.getLogsByDocumentId(docId);
+      await AuditModel.log("PREVIEW", "DOCUMENT", userId, document.id_folder, docId);
+      
       // 3. Kirim keduanya ke frontend
       res.json({
         document: document,
         permissions: permissions,
+        logs: logs 
       });
     } catch (error) {
       console.error("Error getDocumentDetail:", error);
@@ -127,6 +132,7 @@ const DocumentController = {
 
       // res.download akan memaksa browser untuk mengunduh file
       res.download(filePath, document.file_name);
+      await AuditModel.log("DOWNLOAD", "DOCUMENT", req.userId, document.id_folder, docId);
     } catch (error) {
       console.error("Error download document:", error);
       res.status(500).json({ message: "Gagal mengunduh dokumen." });
@@ -154,7 +160,10 @@ const DocumentController = {
         file.format = path.extname(req.file.originalname).substring(1)
       );
 
+      const existingDoc = await DocumentModel.getDocumentById(docId);
+
       res.status(201).json({ message: "Revisi dokumen berhasil diunggah." });
+      await AuditModel.log("UPLOAD", "DOCUMENT", req.userId, existingDoc.id_folder, docId);
     } catch (error) {
       console.error("Error upload revision:", error);
       res.status(500).json({ message: "Gagal mengunggah revisi dokumen." });

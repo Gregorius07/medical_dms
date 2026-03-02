@@ -15,6 +15,7 @@ function DocumentDetail() {
   const [isUploadOpen, setIsUploadOpen] = createSignal(false);
   const [uploadFile, setUploadFile] = createSignal(null);
   const [uploadLoading, setUploadLoading] = createSignal(false);
+  const [logs, setLogs] = createSignal([]);
   
   // Nanti kita akan isi ini dari API berdasarkan tabel 'permission'
   const [permissions, setPermissions] = createSignal({
@@ -31,6 +32,7 @@ function DocumentDetail() {
       const res = await api.get(`/documents/${documentId}`);
       setDoc(res.data.document);
       setPermissions(res.data.permissions); 
+      setLogs(res.data.logs || []);
     } catch (err) {
       console.error("Gagal mengambil detail dokumen", err);
       // alert("Dokumen tidak ditemukan atau Anda tidak memiliki akses");
@@ -218,6 +220,56 @@ function DocumentDetail() {
                 <p class="text-sm font-medium text-gray-800">
                   {(doc()?.file_size / 1024).toFixed(2)} KB
                 </p>
+              </div>
+            </div>
+
+            {/* --- PEMBATAS --- */}
+            <hr class="border-gray-100 my-2" />
+
+            {/* RIWAYAT AKTIVITAS (AUDIT LOG TIMELINE) */}
+            <div class="flex flex-col flex-1 min-h-[250px]">
+              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+                <span>Document History</span>
+                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px]">{logs().length}</span>
+              </h3>
+              
+              <div class="relative border-l-2 border-gray-100 ml-3 pl-4 space-y-5 overflow-y-auto pr-2 pb-4">
+                <Show when={logs().length > 0} fallback={<div class="text-xs text-gray-400 italic">Belum ada riwayat aktivitas.</div>}>
+                  <For each={logs()}>
+                    {(log) => (
+                      <div class="relative">
+                        {/* Bulatan Timeline berdasarkan Action */}
+                        <div class={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
+                          log.action === 'UPLOAD' ? 'bg-blue-500' : 
+                          log.action === 'DOWNLOAD' ? 'bg-green-500' : 'bg-purple-400'
+                        }`}></div>
+                        
+                        <div class="flex flex-col">
+                          {/* Nama & Waktu */}
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-sm font-semibold text-gray-800">{log.actor_name || "Sistem"}</span>
+                            <span class="text-[10px] text-gray-400 font-medium">
+                              {new Date(log.timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          
+                          {/* Aksi & Detail */}
+                          <div class="flex items-center gap-2 mt-0.5">
+                            <span class={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                              log.action === 'UPLOAD' ? 'bg-blue-50 text-blue-600' : 
+                              log.action === 'DOWNLOAD' ? 'bg-green-50 text-green-600' : 'bg-purple-50 text-purple-600'
+                            }`}>
+                              {log.action}
+                            </span>
+                            <span class="text-xs text-gray-500 truncate" title={log.details}>
+                              {log.action === 'PREVIEW' ? 'Melihat dokumen' : log.details}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </For>
+                </Show>
               </div>
             </div>
 

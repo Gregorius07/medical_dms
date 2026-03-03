@@ -42,6 +42,7 @@ const DocumentController = {
         title: title,
         folderId: folderId ? parseInt(folderId) : null,
         fileFormat: path.extname(req.file.originalname).substring(1), // pdf, docx
+        storedFilename: req.file.filename,
         fileSize: req.file.size,
         uploader: uploaderName || "Unknown",
         metadata: {}, // Nanti diisi dari dynamic form

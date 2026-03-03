@@ -115,7 +115,7 @@ function Position() {
                 ) : (
                     data().map((item) => (
                         <tr class="border-b last:border-0 hover:bg-gray-50">
-                            <td class="px-6 py-4">#{item.id_position}</td>
+                            <td class="px-6 py-4">{item.id_position}</td>
                             <td class="px-6 py-4 font-medium">{item.position_name}</td>
                             <td class="px-6 py-4 text-right">
                                 <button onClick={() => openEdit(item)} class="text-blue-500 hover:text-blue-700 mr-3">Edit</button>

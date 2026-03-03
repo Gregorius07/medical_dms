@@ -2,6 +2,8 @@ import { createSignal, onMount, For, Show } from "solid-js";
 import api from "../api";
 import { currentUser } from "../store/authStore";
 import { useNavigate } from "@solidjs/router";
+import ManageAccessModal from "../components/ManageAccessModal";
+
 function Folder() {
   // ==========================================
   // STATE KHUSUS UNTUK HOME / FOLDER
@@ -21,6 +23,9 @@ function Folder() {
   const [newFolderName, setNewFolderName] = createSignal("");
   const [folderLoading, setFolderLoading] = createSignal(false);
 
+  // State untuk modal permission folder
+  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] = createSignal(false);
+  const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
   // ==========================================
   // FUNGSI API (Sesuai dengan kode asli Anda)
@@ -243,7 +248,7 @@ function Folder() {
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
-          <Show when={ currentUser().role === 'admin'}>
+          <Show when={ currentUser()?.role === 'admin'}>
             <button  onClick={() => setIsFolderModalOpen(true)} class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -289,6 +294,25 @@ function Folder() {
                       <td class="py-3 px-4 truncate">{folder.created_by}</td>
                       <td class="py-3 px-4 text-gray-400">—</td>
                       <td class="py-3 px-4 text-gray-400">—</td>
+                      {/* Kolom Status/Action Tambahan */}
+                      <td class="py-3 px-4 flex justify-end">
+                        {/* Tampilkan tombol HANYA jika user adalah Admin atau Pembuat Folder */}
+                        <Show when={currentUser()?.role === 'admin' || currentUser()?.name === folder.created_by}>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
+                              setSelectedFolderId(folder.id_folder);
+                              setIsFolderAccessModalOpen(true);
+                            }}
+                            class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                            title="Manage Access"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                          </button>
+                        </Show>
+                      </td>
                     </tr>
                   )}
                 </For>
@@ -444,6 +468,18 @@ function Folder() {
             </form>
           </div>
         </div>
+      </Show>
+
+      {/* MODAL MANAGE ACCESS UNTUK FOLDER */}
+      <Show when={isFolderAccessModalOpen()}>
+        <ManageAccessModal 
+          resourceId={selectedFolderId()} 
+          resourceType="FOLDER" 
+          onClose={() => {
+            setIsFolderAccessModalOpen(false);
+            setSelectedFolderId(null);
+          }} 
+        />
       </Show>
     </div>
   );

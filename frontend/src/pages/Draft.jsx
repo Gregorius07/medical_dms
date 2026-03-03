@@ -2,6 +2,7 @@ import { createSignal, onMount, For, Show } from "solid-js";
 import api from "../api";
 import { currentUser } from "../store/authStore";
 import { useNavigate } from "@solidjs/router";
+import ManageAccessModal from "../components/ManageAccessModal";
 
 function Draft() {
   // State khusus untuk Draft (Sudah diisolasi, tidak ada bentrok dengan Home)
@@ -19,6 +20,10 @@ function Draft() {
   const [isFolderModalOpen, setIsFolderModalOpen] = createSignal(false);
   const [newFolderName, setNewFolderName] = createSignal("");
   const [folderLoading, setFolderLoading] = createSignal(false);
+
+  // State untuk modal permission folder
+  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] = createSignal(false);
+  const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
   // ==========================================
   // FUNGSI API (Sesuai dengan kode asli Anda)
@@ -269,6 +274,22 @@ function Draft() {
                     <td class="py-3 px-4 truncate">{folder.created_by}</td>
                     <td class="py-3 px-4 text-gray-400">—</td>
                     <td class="py-3 px-4 text-gray-400">—</td>
+                    {/* Tampilkan tombol HANYA jika user adalah Admin atau Pembuat Folder */}
+                        <Show when={currentUser()?.role === 'admin' || currentUser()?.name === folder.created_by}>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
+                              setSelectedFolderId(folder.id_folder);
+                              setIsFolderAccessModalOpen(true);
+                            }}
+                            class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                            title="Manage Access"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                          </button>
+                        </Show>
                   </tr>
                 )}
               </For>
@@ -416,6 +437,18 @@ function Draft() {
             </form>
           </div>
         </div>
+      </Show>
+
+      {/* MODAL MANAGE ACCESS UNTUK FOLDER */}
+      <Show when={isFolderAccessModalOpen()}>
+        <ManageAccessModal 
+          resourceId={selectedFolderId()} 
+          resourceType="FOLDER" 
+          onClose={() => {
+            setIsFolderAccessModalOpen(false);
+            setSelectedFolderId(null);
+          }} 
+        />
       </Show>
 
     </div>

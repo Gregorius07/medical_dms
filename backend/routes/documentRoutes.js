@@ -24,8 +24,11 @@ const upload = multer({ storage: storage });
 router.get('/', verifyToken, DocumentController.findAll);
 // 'file' adalah nama field di FormData frontend
 router.post('/',verifyToken, upload.single('file'), DocumentController.upload);
-router.delete('/:id', verifyToken,DocumentController.delete);
 router.get('/getaccesibledocs',verifyToken, DocumentController.getAccessibleDocumentsId);
+// Route pencarian
+router.get('/search', verifyToken, DocumentController.searchDocuments);
+// ... route /:id dan lainnya di bawahnya ...
+router.delete('/:id', verifyToken,DocumentController.delete);
 router.get('/:id', 
     verifyToken, 
     requirePermission('preview', 'DOCUMENT'), 

@@ -129,10 +129,10 @@ const DocumentModel = {
   },
 
   /**
-     * Mengambil detail lengkap dokumen berdasarkan ID-nya (Versi yang Aktif)
-     */
-  getDocumentById : async (idDocument) => {
-        const query = `
+   * Mengambil detail lengkap dokumen berdasarkan ID-nya (Versi yang Aktif)
+   */
+  getDocumentById: async (idDocument) => {
+    const query = `
             SELECT 
                 d.id_document, 
                 d.id_folder, 
@@ -148,27 +148,37 @@ const DocumentModel = {
             JOIN document_version dv ON d.id_document = dv.id_document
             WHERE d.id_document = $1 AND dv.is_active = TRUE;
         `;
-        const { rows } = await pool.query(query, [idDocument]);
-        return rows[0]; // Akan undefined jika tidak ada
-    },
+    const { rows } = await pool.query(query, [idDocument]);
+    return rows[0]; // Akan undefined jika tidak ada
+  },
 
-    /**
-     * Menambahkan versi baru dari sebuah dokumen
-     */
-    addDocumentRevision: async(idDocument, fileName, physicalFilename, fileSize, createdBy, fileFormat) => {
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
+  /**
+   * Menambahkan versi baru dari sebuah dokumen
+   */
+  addDocumentRevision: async (
+    idDocument,
+    fileName,
+    physicalFilename,
+    fileSize,
+    createdBy,
+    fileFormat,
+  ) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-            // 1. Matikan (Deactivate) versi lama yang sedang aktif
-            await client.query(`
+      // 1. Matikan (Deactivate) versi lama yang sedang aktif
+      await client.query(
+        `
                 UPDATE document_version 
                 SET is_active = FALSE 
                 WHERE id_document = $1 AND is_active = TRUE
-            `, [idDocument]);
+            `,
+        [idDocument],
+      );
 
-            // 2. Insert versi baru (version_number otomatis nambah 1 dari versi tertinggi)
-            const insertQuery = `
+      // 2. Insert versi baru (version_number otomatis nambah 1 dari versi tertinggi)
+      const insertQuery = `
                 INSERT INTO document_version 
                 (id_document, version_number, file_name, file_path, file_size, file_format, created_by, is_active, approval_status, created_at, custom_metadata)
                 VALUES (
@@ -177,19 +187,64 @@ const DocumentModel = {
                     $2, $3, $4, $5, $6, TRUE, 'DRAFT', NOW(), $7
                 )
             `;
-            const path = 'uploads/'+physicalFilename;
-            await client.query(insertQuery, [idDocument, fileName, path, fileSize, fileFormat ,createdBy,{}]);
+      const path = "uploads/" + physicalFilename;
+      await client.query(insertQuery, [
+        idDocument,
+        fileName,
+        path,
+        fileSize,
+        fileFormat,
+        createdBy,
+        {},
+      ]);
 
-            await client.query('COMMIT');
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
     }
+  },
 
+  /**
+     * Melakukan pencarian berbasis Metadata (SQL ILIKE) dengan filter Hak Akses (ACL)
+     */
+  searchMetadata: async (idUser, keyword) => {
+        // Kita tambahkan % agar bisa mencari kata di tengah kalimat (Wildcard)
+        const searchPattern = `%${keyword}%`;
 
+        const query = `
+            SELECT DISTINCT 
+                d.id_document, 
+                d.id_folder, 
+                dv.file_name, 
+                dv.file_size, 
+                dv.created_at, 
+                dv.created_by, 
+                dv.approval_status
+            FROM document d
+            JOIN document_version dv ON d.id_document = dv.id_document AND dv.is_active = TRUE
+            -- Filter Pewarisan Hak Akses (ACL)
+            LEFT JOIN permission p_doc ON p_doc.id_document = d.id_document AND p_doc.id_user = $1
+            LEFT JOIN permission p_folder ON p_folder.id_folder = d.id_folder AND p_folder.id_user = $1
+            WHERE 
+                -- Syarat 1: User WAJIB punya hak preview
+                (p_doc.preview = TRUE OR p_folder.preview = TRUE)
+                AND 
+                -- Syarat 2: Pencocokan keyword
+                (
+                    dv.file_name ILIKE $2
+                    OR dv.created_by ILIKE $2
+                    OR dv.custom_metadata::text ILIKE $2
+                )
+            ORDER BY dv.created_at DESC
+            LIMIT 50; -- Batasi hasil pencarian agar performa tetap cepat
+        `;
+
+        const { rows } = await pool.query(query, [idUser, searchPattern]);
+        return rows;
+    }
 };
 
 module.exports = DocumentModel;

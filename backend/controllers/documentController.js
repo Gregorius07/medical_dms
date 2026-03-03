@@ -3,7 +3,7 @@ const { getPagination } = require("../utils/pagination");
 const path = require("path");
 const fs = require("fs");
 const PermissionModel = require("../models/permissionModel");
-const AuditModel = require("../models/auditModel")
+const AuditModel = require("../models/auditModel");
 
 const DocumentController = {
   findAll: async (req, res) => {
@@ -103,13 +103,19 @@ const DocumentController = {
       );
 
       const logs = await AuditModel.getLogsByDocumentId(docId);
-      await AuditModel.log("PREVIEW", "DOCUMENT", userId, document.id_folder, docId);
-      
+      await AuditModel.log(
+        "PREVIEW",
+        "DOCUMENT",
+        userId,
+        document.id_folder,
+        docId,
+      );
+
       // 3. Kirim keduanya ke frontend
       res.json({
         document: document,
         permissions: permissions,
-        logs: logs 
+        logs: logs,
       });
     } catch (error) {
       console.error("Error getDocumentDetail:", error);
@@ -133,7 +139,13 @@ const DocumentController = {
 
       // res.download akan memaksa browser untuk mengunduh file
       res.download(filePath, document.file_name);
-      await AuditModel.log("DOWNLOAD", "DOCUMENT", req.userId, document.id_folder, docId);
+      await AuditModel.log(
+        "DOWNLOAD",
+        "DOCUMENT",
+        req.userId,
+        document.id_folder,
+        docId,
+      );
     } catch (error) {
       console.error("Error download document:", error);
       res.status(500).json({ message: "Gagal mengunduh dokumen." });
@@ -158,16 +170,55 @@ const DocumentController = {
         file.filename,
         file.size,
         uploaderName,
-        file.format = path.extname(req.file.originalname).substring(1)
+        (file.format = path.extname(req.file.originalname).substring(1)),
       );
 
       const existingDoc = await DocumentModel.getDocumentById(docId);
 
       res.status(201).json({ message: "Revisi dokumen berhasil diunggah." });
-      await AuditModel.log("UPLOAD", "DOCUMENT", req.userId, existingDoc.id_folder, docId);
+      await AuditModel.log(
+        "UPLOAD",
+        "DOCUMENT",
+        req.userId,
+        existingDoc.id_folder,
+        docId,
+      );
     } catch (error) {
       console.error("Error upload revision:", error);
       res.status(500).json({ message: "Gagal mengunggah revisi dokumen." });
+    }
+  },
+
+  searchDocuments: async (req, res) => {
+    try {
+      const userId = req.userId;
+      const { q, type } = req.query; // q = keyword, type = 'metadata' atau 'fulltext'
+
+      if (!q|| q.trim() === "") {``
+        return res.json({ data: [] });
+      }
+
+      let results = [];
+
+      if (type === "fulltext") {
+        // Placeholder untuk fitur Elasticsearch Anda selanjutnya
+        // results = await ElasticSearchService.search(userId, q);
+        return res
+          .status(501)
+          .json({
+            message: "Full-Text Search sedang dalam tahap pengembangan.",
+          });
+      } else {
+        // Pencarian Metadata Default
+        results = await DocumentModel.searchMetadata(userId, q);
+      }
+
+      res.json({ data: results });
+    } catch (error) {
+      console.error("Error search documents:", error);
+      res
+        .status(500)
+        .json({ message: "Terjadi kesalahan saat melakukan pencarian." });
     }
   },
 };

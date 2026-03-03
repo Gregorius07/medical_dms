@@ -23,6 +23,11 @@ function Folder() {
   const [newFolderName, setNewFolderName] = createSignal("");
   const [folderLoading, setFolderLoading] = createSignal(false);
 
+  // State untuk Search
+  const [searchQuery, setSearchQuery] = createSignal("");
+  const [searchType, setSearchType] = createSignal("metadata"); // 'metadata' atau 'fulltext'
+  const [isSearching, setIsSearching] = createSignal(false);
+
   // State untuk modal permission folder
   const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
     createSignal(false);
@@ -189,6 +194,37 @@ function Folder() {
     }
   };
 
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchQuery().trim()) {
+      // Jika input kosong, kembalikan ke tampilan folder biasa
+      setIsSearching(false);
+      loadFolderContents(currentFolderId());
+      return;
+    }
+
+    setIsSearching(true);
+    setUploadLoading(true); // Meminjam state loading agar ada indikator
+    try {
+      const res = await api.get(`/documents/search?q=${searchQuery()}&type=${searchType()}`);
+      
+      // Kosongkan folder, tampilkan hanya dokumen hasil pencarian
+      setFolders([]); 
+      setDocuments(res.data.data);
+      setBreadcrumbs([{ id_folder: 'search', folder_name: `Hasil Pencarian: "${searchQuery()}"` }]);
+    } catch (err) {
+      alert(err.response?.data?.message || "Gagal melakukan pencarian");
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setIsSearching(false);
+    loadFolderContents(null); // Kembali ke Root Home
+  };
+
   // ==========================================
   // TAMPILAN (VIEW)
   // ==========================================
@@ -325,6 +361,47 @@ function Folder() {
               Upload Document
             </button>
           </div>
+        </div>
+
+        {/* --- SEARCH BAR AREA --- */}
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-6 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
+          
+          <form onSubmit={handleSearch} class="flex-1 flex w-full">
+            {/* Dropdown Tipe Pencarian */}
+            <select 
+              value={searchType()}
+              onChange={(e) => setSearchType(e.target.value)}
+              class="bg-white border border-gray-300 text-gray-700 text-sm rounded-l-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 border-r-0"
+            >
+              <option value="metadata">Metadata Search</option>
+              <option value="fulltext">Full-Text Search (Elastic)</option>
+            </select>
+
+            {/* Input Keyword */}
+            <div class="relative flex-1">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                </svg>
+              </div>
+              <input 
+                type="text" 
+                value={searchQuery()}
+                onInput={(e) => setSearchQuery(e.target.value)}
+                class="bg-white border border-gray-300 text-gray-900 text-sm rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none" 
+                placeholder="Cari nama dokumen, pengunggah, atau metadata..." 
+              />
+            </div>
+            
+            <button type="submit" class="hidden">Search</button>
+          </form>
+
+          {/* Tombol Clear Search (Muncul saat mode pencarian aktif) */}
+          <Show when={isSearching()}>
+            <button onClick={clearSearch} class="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition whitespace-nowrap">
+              Batal Pencarian
+            </button>
+          </Show>
         </div>
 
         {/* --- KONTEN AREA HOME (LIST VIEW) --- */}

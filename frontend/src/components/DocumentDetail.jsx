@@ -194,7 +194,7 @@ function DocumentDetail() {
                 Actions
               </h3>
               {/* TOMBOL MANAGE ACCESS (Contoh: Hanya muncul untuk Admin) */}
-              <Show when={currentUser().role === "admin"}>
+              <Show when={currentUser()?.role === "admin"}>
                 <button
                   onClick={() => setIsAccessModalOpen(true)}
                   class="w-full py-2.5 bg-gray-800 text-white hover:bg-gray-900 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition mb-2 shadow-md"

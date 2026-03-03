@@ -8,7 +8,7 @@ function ManageAccessModal(props) {
   const [loading, setLoading] = createSignal(true);
   
   // State untuk Form Tambah Akses
-  const [searchEmail, setSearchEmail] = createSignal("");
+  const [fullName, setfullName] = createSignal("");
   const [permissions, setPermissions] = createSignal({
     preview: true, // Wajib nyala by default agar bisa melihat
     download: false,
@@ -44,19 +44,19 @@ function ManageAccessModal(props) {
 
   const handleGrantAccess = async (e) => {
     e.preventDefault();
-    if (!searchEmail()) return alert("Masukkan email atau NIP pengguna!");
+    if (!fullName()) return alert("Masukkan nama pengguna!");
 
     setIsSubmitting(true);
     try {
       await api.post('/permissions/grant', {
         resourceId: props.resourceId,
         resourceType: props.resourceType,
-        userEmail: searchEmail(), // Di backend, cari user berdasarkan email/NIP ini
+        full_name: fullName(), // Di backend, cari user berdasarkan fullname ini
         permissions: permissions()
       });
       
       alert("Akses berhasil diberikan!");
-      setSearchEmail("");
+      setfullName("");
       // Reset form ke default
       setPermissions({ preview: true, download: false, upload: false, edit_metadata: false });
       
@@ -107,13 +107,13 @@ function ManageAccessModal(props) {
             <form onSubmit={handleGrantAccess} class="bg-blue-50/50 border border-blue-100 p-4 rounded-xl space-y-4">
               
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Email / NIP Pengguna</label>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Nama Lengkap Pengguna</label>
                 <input 
                   type="text" 
                   required
-                  value={searchEmail()}
-                  onInput={(e) => setSearchEmail(e.target.value)}
-                  placeholder="Contoh: dokter.budi@rs.com" 
+                  value={fullName()}
+                  onInput={(e) => setfullName(e.target.value)}
+                  placeholder="Contoh: Gregorius Denmas" 
                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>

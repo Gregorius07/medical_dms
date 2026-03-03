@@ -41,7 +41,7 @@ const login = async (req, res) => {
           user: {
             id: user.id_user,
             name: user.full_name,
-            role: user.is_admin ? "Administrator" : "User",
+            role: user.is_admin ? "admin" : "user",
             position: user.position_name,
             department: user.department_name,
           },

@@ -16,16 +16,16 @@ const requirePermission = (action, resourceType) => {
             // 2. KUMPULKAN ID MENJADI ARRAY 
             let resourceIds = [];
 
-            if (req.body.id_folder && Array.isArray(req.body.id_folder)) {
-                resourceIds = req.body.id_folder;
-            } else if (req.body.id_document && Array.isArray(req.body.id_document)) {
-                resourceIds = req.body.id_document;
+            if (req.id_folder && Array.isArray(req.id_folder)) {
+                resourceIds = req.id_folder;
+            } else if (req.id_document && Array.isArray(req.id_document)) {
+                resourceIds = req.id_document;
             } else if (req.params.id) {
                 resourceIds.push(req.params.id);
-            } else if (req.body.id_folder) {
-                resourceIds.push(req.body.id_folder);
-            } else if (req.body.id_document) {
-                resourceIds.push(req.body.id_document);
+            } else if (req.id_folder) {
+                resourceIds.push(req.id_folder);
+            } else if (req.id_document) {
+                resourceIds.push(req.id_document);
             } 
             // TAMBAHAN BARU: Tangkap parameter dari URL Query (?parentId=...)
             else if (req.query.parentId) { 

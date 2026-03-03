@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 
 class PermissionModel {
-    // 1. Fungsi untuk memberikan akses penuh (Draft) ke suatu folder
+    // Memberi all access ke user
     static async createFolderPermission(idUser, idFolder, createdBy, client) {
         const query = `
             INSERT INTO permission 
@@ -10,14 +10,11 @@ class PermissionModel {
             (TRUE, TRUE, TRUE, TRUE, 'FOLDER', NOW(), $1, $2, $3)
             RETURNING id_permission;
         `;
-        // Nilai $1=createdBy, $2=idUser, $3=idFolder
         const { rows } = await client.query(query, [createdBy, idUser, idFolder]);
         return rows[0];
     }
 
-    // 2. Fungsi untuk mencari tahu mana "Folder Draft" milik user ini
-    // Logika: Cari permission milik user ini, untuk resource FOLDER, 
-    // di mana foldernya tidak punya parent (NULL / root) dan namanya mengandung kata "Draft".
+    // Mencari tahu Draft milik user 
     static async getUserDraftFolder(idUser) {
         const query = `
             SELECT p.id_folder, f.folder_name 
@@ -28,9 +25,9 @@ class PermissionModel {
               AND f.parent_folder IS NULL
               AND f.folder_name LIKE 'Draft - %'
             LIMIT 1;
-        `;
+        `; //resource = FOLDER dan nama folder = Draft - ...
         const { rows } = await pool.query(query, [idUser]);
-        return rows[0]; // Akan mengembalikan { id_folder: X, folder_name: '...' }
+        return rows[0]; 
     }
 
     /**
@@ -131,7 +128,7 @@ class PermissionModel {
     static async getAllPermissionsForDocument(idUser, idDocument) {
         const query = `
             SELECT 
-                COALESCE(p_doc.preview, p_folder.preview, FALSE) as preview,
+                COALESCE(p_doc.preview, p_folder.preview, FALSE) as preview, --cek nilai null di parameter
                 COALESCE(p_doc.download, p_folder.download, FALSE) as download,
                 COALESCE(p_doc.upload, p_folder.upload, FALSE) as upload,
                 COALESCE(p_doc.edit_metadata, p_folder.edit_metadata, FALSE) as edit_metadata
@@ -140,12 +137,91 @@ class PermissionModel {
             LEFT JOIN permission p_doc ON p_doc.id_document = d.id_document AND p_doc.id_user = $1
             -- Cek izin dari folder tempat dokumen ini berada
             LEFT JOIN permission p_folder ON p_folder.id_folder = d.id_folder AND p_folder.id_user = $1
-            WHERE d.id_document = $2;
+            WHERE d.id_document = $2;   
         `;
         const { rows } = await pool.query(query, [idUser, idDocument]);
         
         // Jika dokumen tidak ditemukan, kembalikan false untuk semuanya
         return rows.length > 0 ? rows[0] : { preview: false, download: false, upload: false, edit_metadata: false };
+    }
+
+    /**
+     * Mengambil daftar user yang memiliki akses eksplisit ke suatu resource
+     */
+    static async getAccessList(resourceId, resourceType) {
+        const idColumn = resourceType === 'FOLDER' ? 'id_folder' : 'id_document';
+        
+        // Kita menggunakan JOIN untuk mengambil nama dari tabel "user"
+        const query = `
+            SELECT 
+                p.id_permission, 
+                p.id_user, 
+                u.username AS user_name, 
+                p.preview, 
+                p.download, 
+                p.upload, 
+                p.edit_metadata
+            FROM permission p
+            JOIN "user" u ON p.id_user = u.id_user
+            WHERE p.${idColumn} = $1 AND p.resource_type = $2;
+        `;
+        const { rows } = await pool.query(query, [resourceId, resourceType]);
+        return rows;
+    }
+
+    /**
+     * Memberikan atau memperbarui akses seorang user
+     */
+    static async grantAccess(full_name, resourceId, resourceType, permissions, creatorName) {
+        // 1. Cari ID User berdasarkan fullname
+        const userQuery = `SELECT id_user FROM "user" WHERE full_name = $1 LIMIT 1;`;
+        const userResult = await pool.query(userQuery, [full_name]);
+        
+        if (userResult.rows.length === 0) {
+            throw new Error("Pengguna dengan id tersebut tidak ditemukan di sistem.");
+        }
+        
+        const idUser = userResult.rows[0].id_user;
+        const idColumn = resourceType === 'FOLDER' ? 'id_folder' : 'id_document';
+
+        // 2. Cek apakah user ini sudah punya baris permission di resource ini
+        const checkQuery = `
+            SELECT id_permission FROM permission 
+            WHERE id_user = $1 AND ${idColumn} = $2 AND resource_type = $3 LIMIT 1;
+        `;
+        const checkResult = await pool.query(checkQuery, [idUser, resourceId, resourceType]);
+
+        if (checkResult.rows.length > 0) {
+            // JIKA SUDAH ADA: Lakukan UPDATE
+            const updateQuery = `
+                UPDATE permission 
+                SET preview = $1, download = $2, upload = $3, edit_metadata = $4
+                WHERE id_permission = $5
+            `;
+            await pool.query(updateQuery, [
+                permissions.preview, permissions.download, permissions.upload, permissions.edit_metadata, 
+                checkResult.rows[0].id_permission
+            ]);
+        } else {
+            // JIKA BELUM ADA: Lakukan INSERT
+            // Perhatikan penambahan kolom created_at dengan fungsi NOW() untuk mencegah error constraint
+            const insertQuery = `
+                INSERT INTO permission (id_user, ${idColumn}, resource_type, preview, download, upload, edit_metadata, created_at, created_by)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
+            `;
+            await pool.query(insertQuery, [
+                idUser, resourceId, resourceType, 
+                permissions.preview, permissions.download, permissions.upload, permissions.edit_metadata, creatorName
+            ]);
+        }
+    }
+
+    /**
+     * Mencabut (menghapus) akses secara permanen
+     */
+    static async revokeAccess(idPermission) {
+        const query = `DELETE FROM permission WHERE id_permission = $1;`;
+        await pool.query(query, [idPermission]);
     }
 }
 

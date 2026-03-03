@@ -12,7 +12,7 @@ function Draft() {
   const [uploadFile, setUploadFile] = createSignal(null);
   const [docTitle, setDocTitle] = createSignal("");
   const [uploadLoading, setUploadLoading] = createSignal(false);
-  
+
   const [currentFolderId, setCurrentFolderId] = createSignal(null);
   const [folders, setFolders] = createSignal([]);
   const [documents, setDocuments] = createSignal([]);
@@ -22,7 +22,8 @@ function Draft() {
   const [folderLoading, setFolderLoading] = createSignal(false);
 
   // State untuk modal permission folder
-  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] = createSignal(false);
+  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
+    createSignal(false);
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
   // ==========================================
@@ -31,12 +32,12 @@ function Draft() {
 
   const loadUserDraft = async () => {
     try {
-      const draftFolder = await api.post('/folders/getdraft', {
-        userId: currentUser().id
+      const draftFolder = await api.post("/folders/getdraft", {
+        userId: currentUser().id,
       });
       console.log("Draft ID:", draftFolder.data.id_folder);
       setDraftId(draftFolder.data.id_folder);
-      
+
       // Langsung muat isi draft setelah ID didapatkan
       loadFolderContents(draftFolder.data.id_folder);
     } catch (error) {
@@ -46,11 +47,11 @@ function Draft() {
 
   const loadFolderContents = async (folderId = draftId()) => {
     if (!folderId) return; // Mencegah error jika ID belum ada
-    
+
     try {
-      const url = folderId ? `/folders?parentId=${folderId}` : `/folders`; 
+      const url = folderId ? `/folders?parentId=${folderId}` : `/folders`;
       const res = await api.post(url, {
-        id_folder: folderId
+        id_folder: folderId,
       });
 
       setFolders(res.data.folders);
@@ -73,12 +74,12 @@ function Draft() {
   const loadBreadcrumbs = async (folderId) => {
     try {
       const res = await api.post(`/folders/${folderId}/breadcrumbs`, {
-        userId: currentUser().id
+        userId: currentUser().id,
       });
       setBreadcrumbs(res.data);
     } catch (err) {
       console.error("Gagal memuat breadcrumbs draft", err);
-    } 
+    }
   };
 
   // ==========================================
@@ -127,7 +128,7 @@ function Draft() {
     formData.append("title", docTitle());
     formData.append("uploaderId", currentUser().id);
     formData.append("uploaderName", currentUser().name);
-    
+
     if (targetFolderId) {
       formData.append("folderId", targetFolderId);
     }
@@ -137,11 +138,11 @@ function Draft() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       alert("Upload Berhasil!");
-      
+
       setIsUploadOpen(false);
       setUploadFile(null);
       setDocTitle("");
-      
+
       // Refresh Data Draft
       loadFolderContents(targetFolderId);
     } catch (err) {
@@ -170,26 +171,29 @@ function Draft() {
   // ==========================================
   const handleCreateFolder = async (e) => {
     e.preventDefault();
-    if (!newFolderName().trim()) return alert("Nama folder tidak boleh kosong!");
+    if (!newFolderName().trim())
+      return alert("Nama folder tidak boleh kosong!");
 
     setFolderLoading(true);
-    
+
     // Tentukan di mana folder ini akan dibuat (apakah di root draft atau di dalam sub-folder draft)
     const parentId = currentFolderId() || draftId();
 
     try {
-      await api.post('/folders/create', {
+      await api.post("/folders/create", {
         folder_name: newFolderName(),
-        parent_folder: parentId
+        parent_folder: parentId,
       });
-      
+
       setIsFolderModalOpen(false);
       setNewFolderName("");
-      
+
       // Refresh Data Draft agar folder baru langsung muncul di layar
       loadFolderContents(parentId);
     } catch (err) {
-      alert("Gagal membuat folder: " + (err.response?.data?.message || err.message));
+      alert(
+        "Gagal membuat folder: " + (err.response?.data?.message || err.message),
+      );
     } finally {
       setFolderLoading(false);
     }
@@ -200,34 +204,60 @@ function Draft() {
   // ==========================================
   return (
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      
       {/* HEADER MY DRAFT */}
       <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b pb-4">
         <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">
-          
           {/* TOMBOL BACK DRAFT (Tampil jika BUKAN di root draft) */}
           <Show when={currentFolderId() && currentFolderId() !== draftId()}>
-            <button 
-              onClick={handleBack} 
+            <button
+              onClick={handleBack}
               class="p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-full transition mr-2"
               title="Kembali ke folder sebelumnya"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
             </button>
           </Show>
 
-          <button onClick={() => navigateToFolder(draftId())} class="text-purple-600 hover:underline font-bold flex items-center gap-1">
-            📝 My Draft
+          <button
+            onClick={() => navigateToFolder(draftId())}
+            class="text-blue-600 hover:underline font-bold flex items-center gap-1"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill="currentColor"
+                d="M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m-4-4v-3.075l5.525-5.5q.225-.225.5-.325t.55-.1q.3 0 .575.113t.5.337l.925.925q.2.225.313.5t.112.55t-.1.563t-.325.512l-5.5 5.5zm6.575-5.6l.925-.975l-.925-.925l-.95.95z"
+              />
+            </svg>{" "}
+            My Draft
           </button>
-          
+
           <For each={breadcrumbs()}>
             {(crumb) => (
               // Sembunyikan crumb pertama jika itu adalah root draft agar tidak dobel nama
               <Show when={crumb.id_folder !== draftId()}>
                 <span class="text-gray-400">/</span>
-                <button onClick={() => navigateToFolder(crumb.id_folder)} class={`hover:underline ${currentFolderId() === crumb.id_folder ? "text-gray-800 font-bold" : "text-purple-600"}`}>
+                <button
+                  onClick={() => navigateToFolder(crumb.id_folder)}
+                  class={`hover:underline ${currentFolderId() === crumb.id_folder ? "text-gray-800 font-bold" : "text-blue-600"}`}
+                >
                   {crumb.folder_name}
                 </button>
               </Show>
@@ -236,11 +266,45 @@ function Draft() {
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-            <button onClick={() => setIsFolderModalOpen(true)} class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition">
-              + New Sub-Folder
-            </button>
-          <button onClick={() => setIsUploadOpen(true)} class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-            ↑ Upload to Draft
+          <button
+            onClick={() => setIsFolderModalOpen(true)}
+            class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition flex gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+              />
+            </svg>
+            New Sub-Folder
+          </button>
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+            Upload to Draft
           </button>
         </div>
       </div>
@@ -258,16 +322,23 @@ function Draft() {
               </tr>
             </thead>
             <tbody class="text-sm text-gray-700">
-              
               {/* 1. RENDER FOLDER DRAFT TERLEBIH DAHULU */}
               <For each={folders()}>
                 {(folder) => (
-                  <tr onClick={() => navigateToFolder(folder.id_folder)} class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
+                  <tr
+                    onClick={() => navigateToFolder(folder.id_folder)}
+                    class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group"
+                  >
                     <td class="py-3 px-4 flex items-center gap-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500 shrink-0 group-hover:text-purple-500 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5 text-gray-500 shrink-0 group-hover:text-blue-500 transition-colors"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
                         <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                       </svg>
-                      <span class="font-medium text-gray-800 group-hover:text-purple-600 transition-colors truncate">
+                      <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate">
                         {folder.folder_name}
                       </span>
                     </td>
@@ -275,21 +346,37 @@ function Draft() {
                     <td class="py-3 px-4 text-gray-400">—</td>
                     <td class="py-3 px-4 text-gray-400">—</td>
                     {/* Tampilkan tombol HANYA jika user adalah Admin atau Pembuat Folder */}
-                        <Show when={currentUser()?.role === 'admin' || currentUser()?.name === folder.created_by}>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
-                              setSelectedFolderId(folder.id_folder);
-                              setIsFolderAccessModalOpen(true);
-                            }}
-                            class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
-                            title="Manage Access"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                          </button>
-                        </Show>
+                    <Show
+                      when={
+                        currentUser()?.role === "admin" ||
+                        currentUser()?.name === folder.created_by
+                      }
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
+                          setSelectedFolderId(folder.id_folder);
+                          setIsFolderAccessModalOpen(true);
+                        }}
+                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                        title="Manage Access"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
                   </tr>
                 )}
               </For>
@@ -297,29 +384,42 @@ function Draft() {
               {/* 2. RENDER DOKUMEN DRAFT DI BAWAH FOLDER */}
               <For each={documents()}>
                 {(doc) => (
-                  <tr onClick={() => navigate(`/document/${doc.id_document}`)} class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
+                  <tr
+                    onClick={() => navigate(`/document/${doc.id_document}`)}
+                    class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group"
+                  >
                     <td class="py-3 px-4 flex items-center gap-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-purple-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5 text-blue-500 shrink-0"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v6h6v10H6z" />
                         <path d="M8 12h8v2H8zm0 4h5v2H8z" />
                       </svg>
-                      <span class="font-medium text-gray-800 group-hover:text-purple-600 transition-colors truncate">
+                      <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate">
                         {doc.title || doc.file_name}
                       </span>
                     </td>
                     <td class="py-3 px-4 truncate">{doc.created_by}</td>
                     <td class="py-3 px-4 text-gray-500">
-                      {new Date(doc.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                      {new Date(doc.created_at).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </td>
                     <td class="py-3 px-4">
-                      <span class={`px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700`}>
+                      <span
+                        class={`px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700`}
+                      >
                         {doc.approval_status}
                       </span>
                     </td>
                   </tr>
                 )}
               </For>
-
             </tbody>
           </table>
         </div>
@@ -337,17 +437,21 @@ function Draft() {
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div class="bg-white rounded-xl shadow-lg w-[500px] p-6">
             <h3 class="text-lg font-bold mb-4">Upload to My Draft</h3>
-            
+
             <form onSubmit={handleUpload} class="space-y-4">
               <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition cursor-pointer relative">
-                <input 
-                  type="file" 
-                  onChange={handleFileChange} 
-                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                  required 
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  required
                 />
-                <div class="text-blue-600 font-medium mb-1">Click to select file</div>
-                <div class="text-xs text-gray-400 mb-2">PDF, DOCX, XLS (Max 10MB)</div>
+                <div class="text-blue-600 font-medium mb-1">
+                  Click to select file
+                </div>
+                <div class="text-xs text-gray-400 mb-2">
+                  PDF, DOCX, XLS (Max 10MB)
+                </div>
                 <Show when={uploadFile()}>
                   <div class="text-sm text-green-600 font-bold bg-green-50 py-1 px-2 rounded inline-block">
                     {uploadFile()?.name}
@@ -356,21 +460,31 @@ function Draft() {
               </div>
 
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Document Title</label>
-                <input 
-                  type="text" 
-                  required 
-                  class="w-full border rounded-lg px-3 py-2 text-sm" 
-                  value={docTitle()} 
-                  onInput={(e) => setDocTitle(e.target.value)} 
+                <label class="block text-xs font-medium text-gray-700 mb-1">
+                  Document Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  class="w-full border rounded-lg px-3 py-2 text-sm"
+                  value={docTitle()}
+                  onInput={(e) => setDocTitle(e.target.value)}
                 />
               </div>
 
               <div class="flex justify-end gap-2 pt-4 border-t">
-                <button type="button" onClick={() => setIsUploadOpen(false)} class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm">
+                <button
+                  type="button"
+                  onClick={() => setIsUploadOpen(false)}
+                  class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={uploadLoading()} class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                <button
+                  type="submit"
+                  disabled={uploadLoading()}
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                >
                   {uploadLoading() ? "Uploading..." : "Upload"}
                 </button>
               </div>
@@ -386,52 +500,90 @@ function Draft() {
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           {/* Animasi sederhana menggunakan transform */}
           <div class="bg-white rounded-xl shadow-2xl w-[400px] overflow-hidden">
-            
             {/* Header Modal */}
-            <div class="bg-purple-50 px-6 py-4 border-b border-purple-100 flex items-center gap-3">
-              <div class="bg-purple-200 text-purple-700 p-2 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            <div class="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center gap-3">
+              <div class="bg-blue-200 text-blue-700 p-2 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                  />
                 </svg>
               </div>
-              <h3 class="text-lg font-bold text-gray-800">Create New Sub-Folder</h3>
+              <h3 class="text-lg font-bold text-gray-800">
+                Create New Sub-Folder
+              </h3>
             </div>
-            
+
             {/* Form Input */}
             <form onSubmit={handleCreateFolder} class="p-6 space-y-4">
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Folder Name</label>
-                <input 
-                  type="text" 
-                  required 
+                <label class="block text-xs font-medium text-gray-700 mb-1">
+                  Folder Name
+                </label>
+                <input
+                  type="text"
+                  required
                   autofocus
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition" 
-                  value={newFolderName()} 
-                  onInput={(e) => setNewFolderName(e.target.value)} 
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  value={newFolderName()}
+                  onInput={(e) => setNewFolderName(e.target.value)}
                   placeholder="Contoh: Laporan Mingguan"
                 />
               </div>
 
               {/* Tombol Aksi */}
               <div class="flex justify-end gap-2 pt-4 mt-2">
-                <button 
-                  type="button" 
-                  onClick={() => { setIsFolderModalOpen(false); setNewFolderName(""); }} 
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFolderModalOpen(false);
+                    setNewFolderName("");
+                  }}
                   class="px-4 py-2 text-gray-600 hover:bg-gray-100 font-medium rounded-lg text-sm transition"
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={folderLoading()} 
-                  class="px-5 py-2 bg-purple-600 text-white font-medium rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 flex items-center gap-2"
+                <button
+                  type="submit"
+                  disabled={folderLoading()}
+                  class="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
                 >
                   {folderLoading() ? (
                     <>
-                      <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      <svg
+                        class="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          class="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          stroke-width="4"
+                        ></circle>
+                        <path
+                          class="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
                       Creating...
                     </>
-                  ) : "Create Folder"}
+                  ) : (
+                    "Create Folder"
+                  )}
                 </button>
               </div>
             </form>
@@ -441,16 +593,15 @@ function Draft() {
 
       {/* MODAL MANAGE ACCESS UNTUK FOLDER */}
       <Show when={isFolderAccessModalOpen()}>
-        <ManageAccessModal 
-          resourceId={selectedFolderId()} 
-          resourceType="FOLDER" 
+        <ManageAccessModal
+          resourceId={selectedFolderId()}
+          resourceType="FOLDER"
           onClose={() => {
             setIsFolderAccessModalOpen(false);
             setSelectedFolderId(null);
-          }} 
+          }}
         />
       </Show>
-
     </div>
   );
 }

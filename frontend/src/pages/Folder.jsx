@@ -27,6 +27,7 @@ function Folder() {
   const [searchQuery, setSearchQuery] = createSignal("");
   const [searchType, setSearchType] = createSignal("metadata"); // 'metadata' atau 'fulltext'
   const [isSearching, setIsSearching] = createSignal(false);
+  let searchTimeout; // Variabel penampung timer debounce
 
   // State untuk modal permission folder
   const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
@@ -34,7 +35,7 @@ function Folder() {
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
   // ==========================================
-  // FUNGSI API (Sesuai dengan kode asli Anda)
+  // FUNGSI API 
   // ==========================================
   const fetchStats = async () => {
     try {
@@ -195,28 +196,47 @@ function Folder() {
   };
 
   const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery().trim()) {
-      // Jika input kosong, kembalikan ke tampilan folder biasa
-      setIsSearching(false);
-      loadFolderContents(currentFolderId());
-      return;
-    }
+    e.preventDefault(); // Mencegah form me-reload halaman
+      clearTimeout(searchTimeout); // Batalkan timer jika ada
+      if(searchQuery().trim()) {
+          executeSearch(searchQuery());
+      }
+  };
 
+  const executeSearch = async (keyword) => {
     setIsSearching(true);
-    setUploadLoading(true); // Meminjam state loading agar ada indikator
+    setUploadLoading(true); // Indikator loading UI
+    
     try {
-      const res = await api.get(`/documents/search?q=${searchQuery()}&type=${searchType()}`);
+      const res = await api.get(`/documents/search?q=${keyword}&type=${searchType()}`);
       
-      // Kosongkan folder, tampilkan hanya dokumen hasil pencarian
       setFolders([]); 
       setDocuments(res.data.data);
-      setBreadcrumbs([{ id_folder: 'search', folder_name: `Hasil Pencarian: "${searchQuery()}"` }]);
+      setBreadcrumbs([{ id_folder: 'search', folder_name: `Hasil Pencarian: "${keyword}"` }]);
     } catch (err) {
       alert(err.response?.data?.message || "Gagal melakukan pencarian");
     } finally {
       setUploadLoading(false);
     }
+  };
+
+  const handleInputSearch = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    // Hapus timer sebelumnya agar tidak mengeksekusi huruf yang belum selesai
+    clearTimeout(searchTimeout);
+
+    // Jika input dihapus habis, kembalikan ke layar normal seketika
+    if (!value.trim()) {
+      clearSearch();
+      return;
+    }
+
+    // Setel timer baru (misal: 500ms atau 0.5 detik)
+    searchTimeout = setTimeout(() => {
+      executeSearch(value); // Eksekusi pencarian sesungguhnya
+    }, 500);
   };
 
   const clearSearch = () => {
@@ -387,7 +407,7 @@ function Folder() {
               <input 
                 type="text" 
                 value={searchQuery()}
-                onInput={(e) => setSearchQuery(e.target.value)}
+                onInput={handleInputSearch}
                 class="bg-white border border-gray-300 text-gray-900 text-sm rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none" 
                 placeholder="Cari nama dokumen, pengunggah, atau metadata..." 
               />

@@ -7,6 +7,7 @@ import ManageAccessModal from "../components/ManageAccessModal";
 function Draft() {
   // State khusus untuk Draft (Sudah diisolasi, tidak ada bentrok dengan Home)
   const navigate = useNavigate();
+  const [stats, setStats] = createSignal({});
   const [draftId, setDraftId] = createSignal(null);
   const [isUploadOpen, setIsUploadOpen] = createSignal(false);
   const [uploadFile, setUploadFile] = createSignal(null);
@@ -22,13 +23,21 @@ function Draft() {
   const [folderLoading, setFolderLoading] = createSignal(false);
 
   // State untuk modal permission folder
-  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
-    createSignal(false);
+  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] = createSignal(false);
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
   // ==========================================
   // FUNGSI API (Sesuai dengan kode asli Anda)
   // ==========================================
+
+  const fetchStats = async () => {
+    try {
+      const res = await api.get("/documents/stats");
+      setStats(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const loadUserDraft = async () => {
     try {
@@ -87,6 +96,7 @@ function Draft() {
   // ==========================================
 
   onMount(() => {
+    fetchStats();
     loadUserDraft();
   });
 
@@ -204,6 +214,31 @@ function Draft() {
   // ==========================================
   return (
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      {/* STATS CARDS */}
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-gray-400">
+          <p class="text-gray-500 text-sm mb-2 font-medium">My Drafts</p>
+          <h3 class="text-3xl font-bold text-gray-800">{stats().totalDrafts || 0}</h3>
+        </div>
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-400">
+          <p class="text-gray-500 text-sm mb-2 font-medium">Under Review</p>
+          <h3 class="text-3xl font-bold text-gray-800">{stats().underReview || 0}</h3>
+        </div>
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-400">
+          <p class="text-gray-500 text-sm mb-2 font-medium">New (Last 7 Days)</p>
+          <h3 class="text-3xl font-bold text-gray-800">{stats().newDocuments || 0}</h3>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-indigo-500">
+          <p class="text-gray-500 text-sm mb-2 font-medium">Action Required (Approve)</p>
+          <h3 class="text-3xl font-bold text-indigo-600">{stats().pendingApprovals || 0}</h3>
+        </div>
+
+      </div>
+
       {/* HEADER MY DRAFT */}
       <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b pb-4">
         <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">

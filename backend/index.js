@@ -6,7 +6,6 @@ const cookieParser = require('cookie-parser');
 // Import Routes
 const positionRoutes = require('./routes/positionRoutes');
 const authRoutes = require('./routes/authRoutes');         
-const dashboardRoutes = require('./routes/dashboardRoutes');
 const departmentRoutes = require('./routes/departmentRoutes'); 
 const userRoutes = require('./routes/userRoutes');
 const documentRoutes = require('./routes/documentRoutes');
@@ -32,7 +31,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Register Routes (semua di dalam ..routes akan dapet /api di depannya)
 app.use('/api', authRoutes);                  // Akses: POST /api/login
-app.use('/api/dashboard', dashboardRoutes);   // Akses: GET /api/dashboard/stats
 app.use('/api/positions', positionRoutes);    // Akses: GET /api/positions
 app.use('/api/departments', departmentRoutes);
 app.use('/api/users',userRoutes);

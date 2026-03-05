@@ -35,7 +35,7 @@ CREATE TABLE folder (
     parent_folder   INT REFERENCES folder(id_folder)
 );
 
-CREATE TYPE approval_status AS ENUM ('DRAFT','UNDER REVIEW','APPROVED');
+CREATE TYPE approval_status AS ENUM ('DRAFT','UNDER REVIEW','APPROVED', 'REJECTED');
 
 CREATE TABLE document (
     id_document     SERIAL PRIMARY KEY,

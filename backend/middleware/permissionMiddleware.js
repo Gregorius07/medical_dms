@@ -34,7 +34,7 @@ const requirePermission = (action, resourceType) => {
 
             // 3. LOGIKA BYPASS UNTUK HALAMAN ROOT (DEPAN)
             if (resourceIds.length === 0) {
-                // Jika tidak ada ID sama sekali, berarti user sedang meminta Root Dashboard
+                // Jika tidak ada ID sama sekali, berarti user sedang meminta Root
                 // Loloskan saja, karena Controller 'getAccessibleFolders' sudah memfilter izinnya dengan aman.
                 return next(); 
             }

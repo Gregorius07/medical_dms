@@ -1,6 +1,71 @@
 const pool = require("../config/db");
 
 const DocumentModel = {
+  getStats: async (userId, fullname) => {
+    // Asumsi: Kolom penyimpan kepemilikan dokumen di tabel 'document' bernama 'created_by' (menyimpan ID user).
+    // Jika di database Anda kolomnya bernama 'id_user', silakan ganti 'd.created_by' menjadi 'd.id_user'.
+
+    const [draftDocsRes, underReviewRes, recentDocsRes, pendingApprovalsRes] =
+      await Promise.all([
+        // 1. Total seluruh dokumen di draft milik user (Status = 'DRAFT')
+        pool.query(
+          `
+                SELECT COUNT(DISTINCT d.id_document) as count
+                FROM document d
+                JOIN document_version dv ON d.id_document = dv.id_document
+                WHERE dv.created_by = $1 
+                  AND dv.approval_status = 'DRAFT' 
+                  AND dv.is_active = TRUE
+            `,
+          [fullname],
+        ),
+
+        // 2. Total dokumen milik user berstatus "UNDER REVIEW" (Status = 'PENDING')
+        pool.query(
+          `
+                SELECT COUNT(DISTINCT d.id_document) as count
+                FROM document d
+                JOIN document_version dv ON d.id_document = dv.id_document
+                WHERE dv.created_by = $1 
+                  AND dv.approval_status = 'UNDER REVIEW' 
+                  AND dv.is_active = TRUE
+            `,
+          [fullname],
+        ),
+
+        // 3. Total dokumen milik user yang baru diupload dalam 7 hari terakhir
+        pool.query(
+          `
+                SELECT COUNT(DISTINCT d.id_document) as count
+                FROM document d
+                JOIN document_version dv ON d.id_document = dv.id_document
+                WHERE dv.created_by = $1 
+                  AND dv.created_at >= NOW() - INTERVAL '7 days' 
+                  AND dv.is_active = TRUE
+            `,
+          [fullname],
+        ),
+
+        // 4. Total Approval yang menunggu antrean persetujuan DARI USER INI
+        pool.query(
+          `
+                SELECT COUNT(id_approval) as count
+                FROM approval_request 
+                WHERE id_approver = $1 
+                  AND status = 'PENDING'
+            `,
+          [userId],
+        ),
+      ]);
+
+    return {
+      totalDrafts: parseInt(draftDocsRes.rows[0].count),
+      underReview: parseInt(underReviewRes.rows[0].count),
+      newDocuments: parseInt(recentDocsRes.rows[0].count),
+      pendingApprovals: parseInt(pendingApprovalsRes.rows[0].count),
+    };
+  },
+
   // 1. GET ALL (Join dengan Version terbaru untuk dapat info file)
   getAll: async (search, limit, offset) => {
     let query = `
@@ -208,13 +273,13 @@ const DocumentModel = {
   },
 
   /**
-     * Melakukan pencarian berbasis Metadata (SQL ILIKE) dengan filter Hak Akses (ACL)
-     */
+   * Melakukan pencarian berbasis Metadata (SQL ILIKE) dengan filter Hak Akses (ACL)
+   */
   searchMetadata: async (idUser, keyword) => {
-        // Kita tambahkan % agar bisa mencari kata di tengah kalimat (Wildcard)
-        const searchPattern = `%${keyword}%`;
+    // Kita tambahkan % agar bisa mencari kata di tengah kalimat (Wildcard)
+    const searchPattern = `%${keyword}%`;
 
-        const query = `
+    const query = `
             SELECT DISTINCT 
                 d.id_document, 
                 d.id_folder, 
@@ -242,9 +307,9 @@ const DocumentModel = {
             LIMIT 50; -- Batasi hasil pencarian agar performa tetap cepat
         `;
 
-        const { rows } = await pool.query(query, [idUser, searchPattern]);
-        return rows;
-    }
+    const { rows } = await pool.query(query, [idUser, searchPattern]);
+    return rows;
+  },
 };
 
 module.exports = DocumentModel;

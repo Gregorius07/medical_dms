@@ -27,7 +27,7 @@ function Login() {
         // localStorage.setItem("token", response.data.token);
         setIsAuthLoading(false);
         setCurrentUser(response.data.user);
-        navigate("/dashboard");
+        navigate("/folders");
       }
     } catch (err) {
       const msg = err.response?.data?.message || "Gagal terhubung ke server";

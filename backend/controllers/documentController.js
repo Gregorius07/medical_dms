@@ -7,6 +7,16 @@ const AuditModel = require("../models/auditModel");
 const ApprovalModel = require("../models/approvalModel");
 
 const DocumentController = {
+  getStats: async (req, res) => {
+    try {
+      const stats = await DocumentModel.getStats(req.userId, req.name);
+      res.json(stats);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Gagal mengambil data stats" });
+    }
+  },
+
   findAll: async (req, res) => {
     const { page, size, search } = req.query;
     const { limit, offset } = getPagination(page, size);
@@ -119,7 +129,7 @@ const DocumentController = {
         document: document,
         permissions: permissions,
         logs: logs,
-        activeApproval: activeApproval
+        activeApproval: activeApproval,
       });
     } catch (error) {
       console.error("Error getDocumentDetail:", error);
@@ -198,7 +208,8 @@ const DocumentController = {
       const userId = req.userId;
       const { q, type } = req.query; // q = keyword, type = 'metadata' atau 'fulltext'
 
-      if (!q|| q.trim() === "") {``
+      if (!q || q.trim() === "") {
+        ``;
         return res.json({ data: [] });
       }
 
@@ -207,11 +218,9 @@ const DocumentController = {
       if (type === "fulltext") {
         // Placeholder untuk fitur Elasticsearch Anda selanjutnya
         // results = await ElasticSearchService.search(userId, q);
-        return res
-          .status(501)
-          .json({
-            message: "Full-Text Search sedang dalam tahap pengembangan.",
-          });
+        return res.status(501).json({
+          message: "Full-Text Search sedang dalam tahap pengembangan.",
+        });
       } else {
         // Pencarian Metadata Default
         results = await DocumentModel.searchMetadata(userId, q);

@@ -10,7 +10,7 @@ const getFolderContents = async (req, res) => {
         let folders = [];
         let documents = [];
 
-        // KONDISI 1: User di halaman depan (Dashboard Root)
+        // KONDISI 1: User di halaman depan (Root)
         if (!parentId) {
             // Ambil semua folder dan dokumen yang dizinkan dari tabel permission
             folders = await FolderModel.getAccessibleFolders(userId);

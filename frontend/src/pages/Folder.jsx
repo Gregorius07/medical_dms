@@ -39,7 +39,7 @@ function Folder() {
   // ==========================================
   const fetchStats = async () => {
     try {
-      const res = await api.get("/dashboard/stats");
+      const res = await api.get("/documents/stats");
       setStats(res.data);
     } catch (err) {
       console.error(err);
@@ -250,27 +250,7 @@ function Folder() {
   // ==========================================
   return (
     <div class="space-y-6">
-      {/* STATS CARDS */}
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-gray-500 text-sm mb-2">Total Documents</p>
-          <h3 class="text-3xl font-bold text-gray-800">
-            {stats().totalDocuments || 0}
-          </h3>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-gray-500 text-sm mb-2">Pending Approval</p>
-          <h3 class="text-3xl font-bold text-gray-800">
-            {stats().pendingApproval || 0}
-          </h3>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p class="text-gray-500 text-sm mb-2">New Documents</p>
-          <h3 class="text-3xl font-bold text-gray-800">
-            {stats().newDocuments || 0}
-          </h3>
-        </div>
-      </div>
+      
 
       {/* SECTION EXPLORER: HOME */}
       <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

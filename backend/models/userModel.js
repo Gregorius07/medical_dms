@@ -14,7 +14,7 @@ const UserModel = {
     return result.rows[0];
   },
 
-  // (Opsional) Untuk keperluan dashboard nanti jika butuh count user
+  // (Opsional) Untuk keperluan admin nanti jika butuh count user
   countAll: async () => {
     const result = await db.query('SELECT COUNT(*) FROM "user"');
     return parseInt(result.rows[0].count);

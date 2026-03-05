@@ -34,9 +34,6 @@ function MainLayout(props) {
         </div>
         
         <nav class="flex-1 px-4 space-y-2 text-sm">
-            <A href="/dashboard" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/dashboard')}`}>
-                Dashboard
-            </A>
             <A href="/draft" class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass('/draft')}`}>
                 Draft
             </A>
@@ -61,7 +58,7 @@ function MainLayout(props) {
         {/* HEADER */}
         <header class="bg-white p-6 flex justify-between items-center shadow-sm">
             <h1 class="text-2xl font-bold text-gray-800 capitalize">
-                {location.pathname.replace('/', '') || 'Dashboard'}
+                {location.pathname.replace('/', '') || 'Folder'}
             </h1>
             <div class="text-right flex items-center gap-4">
                 <div class="text-right">

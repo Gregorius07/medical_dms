@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const PermissionModel = require("../models/permissionModel");
 const AuditModel = require("../models/auditModel");
+const ApprovalModel = require("../models/approvalModel");
 
 const DocumentController = {
   findAll: async (req, res) => {
@@ -111,11 +112,14 @@ const DocumentController = {
         docId,
       );
 
+      const activeApproval = await ApprovalModel.getActiveApprovalInfo(docId);
+
       // 3. Kirim keduanya ke frontend
       res.json({
         document: document,
         permissions: permissions,
         logs: logs,
+        activeApproval: activeApproval
       });
     } catch (error) {
       console.error("Error getDocumentDetail:", error);

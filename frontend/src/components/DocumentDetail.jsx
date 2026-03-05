@@ -18,6 +18,12 @@ function DocumentDetail() {
   const [logs, setLogs] = createSignal([]);
   const [isAccessModalOpen, setIsAccessModalOpen] = createSignal(false);
 
+  //signal approval
+  const [activeApproval, setActiveApproval] = createSignal(null);
+  const [approverFullName, setApproverFullName] = createSignal("");
+  const [approvalNotes, setApprovalNotes] = createSignal("");
+  const [isProcessing, setIsProcessing] = createSignal(false);
+
   // Nanti kita akan isi ini dari API berdasarkan tabel 'permission'
   const [permissions, setPermissions] = createSignal({
     preview: false,
@@ -28,12 +34,15 @@ function DocumentDetail() {
 
   const fetchDocumentDetail = async () => {
     try {
+      console.log('variabel documentId:',documentId);
+      
       setLoading(true);
       // Endpoint ini harusnya mengembalikan detail dokumen + permission user tersebut
       const res = await api.get(`/documents/${documentId}`);
       setDoc(res.data.document);
       setPermissions(res.data.permissions);
       setLogs(res.data.logs || []);
+      setActiveApproval(res.data.activeApproval); // Tangkap data approval
     } catch (err) {
       console.error("Gagal mengambil detail dokumen", err);
       // alert("Dokumen tidak ditemukan atau Anda tidak memiliki akses");
@@ -286,6 +295,102 @@ function DocumentDetail() {
               </Show>
             </div>
 
+            {/* ======================================= */}
+            {/* PANEL WORKFLOW APPROVAL */}
+            {/* ======================================= */}
+            <div class=" rounded-xl  flex flex-col gap-3">
+              <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Approval Workflow</h3>
+
+              {/* KONDISI 1: DOKUMEN MASIH DRAFT/REJECTED -> BISA MENGAJUKAN APPROVAL */}
+              <Show when={(doc()?.approval_status === 'DRAFT' || doc()?.approval_status === 'REJECTED') && permissions().upload}>
+                <div class="space-y-2">
+                  <p class="text-xs text-gray-600">Ajukan dokumen ini untuk direview oleh atasan/rekan.</p>
+                  <input 
+                    type="text" 
+                    placeholder="Approver name..." 
+                    value={approverFullName()}
+                    onInput={(e) => setApproverFullName(e.target.value)}
+                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  />
+                  <button 
+                    onClick={async () => {
+                      if(!approverFullName()) return alert('Isi email approver!');
+                      setIsProcessing(true);
+                      try {
+                        await api.post(`/documents/${documentId}/request-approval`, { approverFullName: approverFullName() });
+                        fetchDocumentDetail(); // Refresh halaman
+                      } catch(err) { alert(err.response?.data?.message); }
+                      setIsProcessing(false);
+                    }}
+                    disabled={isProcessing()}
+                    class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium transition"
+                  >
+                    Ajukan Approval
+                  </button>
+                </div>
+              </Show>
+
+              {/* KONDISI 2: DOKUMEN PENDING -> MENUNGGU APPROVAL (Untuk Peminta) */}
+              <Show when={doc()?.approval_status === 'UNDER REVIEW' && currentUser()?.id !== activeApproval()?.id_approver}>
+                <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-3">
+                  <span class="text-yellow-600 mt-0.5">⏳</span>
+                  <div>
+                    <p class="text-sm font-bold text-yellow-800">Menunggu Review</p>
+                    <p class="text-xs text-yellow-700 mt-1">Berada di meja: <b>{activeApproval()?.approver_name}</b></p>
+                  </div>
+                </div>
+              </Show>
+
+              {/* KONDISI 3: DOKUMEN PENDING -> PANEL AKSI UNTUK SANG APPROVER */}
+              <Show when={doc()?.approval_status === 'UNDER REVIEW' && currentUser()?.id === activeApproval()?.id_approver}>
+                <div class="space-y-3">
+                  <div class="bg-blue-50 border border-blue-200 p-2 rounded text-xs text-blue-800">
+                    Seseorang meminta Anda untuk mereview dokumen ini.
+                  </div>
+                  <textarea 
+                    placeholder="Catatan review (Opsional)..." 
+                    value={approvalNotes()}
+                    onInput={(e) => setApprovalNotes(e.target.value)}
+                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 h-20 resize-none"
+                  ></textarea>
+                  
+                  <div class="flex gap-2">
+                    <button 
+                      onClick={async () => {
+                        setIsProcessing(true);
+                        try {
+                          await api.post(`/documents/${documentId}/respond-approval`, { status: 'REJECTED', notes: approvalNotes() });
+                          fetchDocumentDetail();
+                        } catch(err) { alert('Gagal merespons'); }
+                        setIsProcessing(false);
+                      }}
+                      class="flex-1 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-medium rounded text-sm transition"
+                    >
+                      Tolak
+                    </button>
+                    
+                    <button 
+                      onClick={async () => {
+                        setIsProcessing(true);
+                        try {
+                          await api.post(`/documents/${documentId}/respond-approval`, { status: 'APPROVED', notes: approvalNotes() });
+                          fetchDocumentDetail();
+                        } catch(err) { alert('Gagal merespons'); }
+                        setIsProcessing(false);
+                      }}
+                      class="flex-1 py-2 bg-green-600 text-white hover:bg-green-700 font-medium rounded text-sm transition"
+                    >
+                      Setujui
+                    </button>
+                  </div>
+                </div>
+              </Show>
+            </div>
+
+            {/* --- PEMBATAS --- */}
+            <hr class="border-gray-100 my-2" />
+
+
             {/* METADATA INFO */}
             <div class="flex flex-col gap-4">
               <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -338,6 +443,8 @@ function DocumentDetail() {
             {/* --- PEMBATAS --- */}
             <hr class="border-gray-100 my-2" />
 
+            
+
             {/* RIWAYAT AKTIVITAS (AUDIT LOG TIMELINE) */}
             <div class="flex flex-col flex-1 min-h-[250px]">
               <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center justify-between">
@@ -347,7 +454,7 @@ function DocumentDetail() {
                 </span>
               </h3>
 
-              <div class="relative border-l-2 border-gray-100 ml-3 pl-4 space-y-5 overflow-y-auto pr-2 pb-4">
+              <div class="relative border-l-2 border-gray-100 ml-3 pl-4 space-y-5 overflow-y-auto pr-2 pb-4 max-h-[280px]">
                 <Show
                   when={logs().length > 0}
                   fallback={
@@ -418,7 +525,10 @@ function DocumentDetail() {
                 </Show>
               </div>
             </div>
+            
           </div>
+
+          
         </div>
       </Show>
 

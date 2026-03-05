@@ -74,7 +74,7 @@ CREATE TABLE permission (
     id_document         INT REFERENCES document(id_document)
 );
 
-CREATE TYPE audit_action AS ENUM ('PREVIEW','UPLOAD','DOWNLOAD');
+CREATE TYPE audit_action AS ENUM ('PREVIEW','UPLOAD','DOWNLOAD', 'UPDATE', 'DELETE');
 
 CREATE TABLE audit_log (
     id_log              SERIAL PRIMARY KEY,

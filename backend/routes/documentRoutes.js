@@ -6,6 +6,8 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const {verifyToken} = require('../middleware/authMiddleware');
 const {requirePermission }= require('../middleware/permissionMiddleware');
+const ApprovalController = require('../controllers/approvalController');
+
 // Konfigurasi Penyimpanan File
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -36,4 +38,6 @@ router.get('/:id',
 );
 router.get('/:id/download', verifyToken, requirePermission('download', 'DOCUMENT'), DocumentController.downloadDocument);
 router.post('/:id/revisions', verifyToken, requirePermission('upload', 'DOCUMENT'), upload.single('file'), DocumentController.uploadRevision);
+router.post('/:id/request-approval',verifyToken, ApprovalController.requestApproval);
+router.post('/:id/respond-approval',verifyToken, ApprovalController.respondApproval);
 module.exports = router;

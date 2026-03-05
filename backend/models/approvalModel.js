@@ -5,14 +5,14 @@ class ApprovalModel {
     /**
      * Mengajukan permintaan approval baru
      */
-    static async createRequest(idDocument, idRequester, approverEmail) {
+    static async createRequest(idDocument, idRequester, approverFullname) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
 
-            // 1. Cari ID Approver berdasarkan email
-            const userQuery = `SELECT id_user FROM "user" WHERE email = $1 LIMIT 1;`;
-            const userResult = await client.query(userQuery, [approverEmail]);
+            // 1. Cari ID Approver berdasarkan fullname
+            const userQuery = `SELECT id_user FROM "user" WHERE full_name = $1 LIMIT 1;`;
+            const userResult = await client.query(userQuery, [approverFullname]);
             if (userResult.rows.length === 0) throw new Error("Approver tidak ditemukan.");
             const idApprover = userResult.rows[0].id_user;
 
@@ -27,7 +27,7 @@ class ApprovalModel {
             // 3. Ubah status dokumen menjadi PENDING
             await client.query(`
                 UPDATE document_version 
-                SET approval_status = 'PENDING' 
+                SET approval_status = 'UNDER REVIEW' 
                 WHERE id_document = $1 AND is_active = TRUE;
             `, [idDocument]);
 
@@ -87,7 +87,7 @@ class ApprovalModel {
      */
     static async getActiveApprovalInfo(idDocument) {
         const query = `
-            SELECT a.status, a.id_approver, u.name as approver_name 
+            SELECT a.status, a.id_approver, u.full_name as approver_name 
             FROM approval_request a
             JOIN "user" u ON a.id_approver = u.id_user
             WHERE a.id_document = $1 AND a.status = 'PENDING'

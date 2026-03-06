@@ -9,7 +9,6 @@ function Folder() {
   // STATE KHUSUS UNTUK HOME / FOLDER
   // ==========================================
   const navigate = useNavigate();
-  const [stats, setStats] = createSignal({});
   const [isUploadOpen, setIsUploadOpen] = createSignal(false);
   const [uploadFile, setUploadFile] = createSignal(null);
   const [docTitle, setDocTitle] = createSignal("");
@@ -33,18 +32,6 @@ function Folder() {
   const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
     createSignal(false);
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
-
-  // ==========================================
-  // FUNGSI API 
-  // ==========================================
-  const fetchStats = async () => {
-    try {
-      const res = await api.get("/documents/stats");
-      setStats(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const loadFolderContents = async (folderId = null) => {
     try {
@@ -86,7 +73,6 @@ function Folder() {
   // LIFECYCLE & NAVIGASI
   // ==========================================
   onMount(() => {
-    fetchStats();
     loadFolderContents();
   });
 
@@ -138,7 +124,6 @@ function Folder() {
       alert("Upload Berhasil!");
 
       // Refresh Data
-      fetchStats();
       setIsUploadOpen(false);
       setUploadFile(null);
       setDocTitle("");
@@ -154,7 +139,7 @@ function Folder() {
     if (!confirm("Hapus dokumen ini?")) return;
     try {
       await api.delete(`/documents/${id}`);
-      fetchStats();
+
       loadFolderContents(currentFolderId());
     } catch (err) {
       alert("Gagal hapus");

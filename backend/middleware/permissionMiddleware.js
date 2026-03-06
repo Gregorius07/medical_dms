@@ -4,16 +4,16 @@ const pool = require ('../config/db');
 const requirePermission = (action, resourceType) => {
     return async (req, res, next) => {
         try {
-            const userId = req.userId; 
-            console.log("PERMISSION MIDDLEWARE, USER ID:", userId);
+            // console.log("PERMISSION MIDDLEWARE, USER ID:", userId);
             
-            // 1. CEK ADMIN
+            // cek apakah admin?
+            const userId = req.userId; 
             const adminQuery = await pool.query(`SELECT is_admin FROM "user" WHERE id_user = $1`, [userId]);
             if (adminQuery.rows[0]?.is_admin) {
                 return next(); 
             }
 
-            // 2. KUMPULKAN ID MENJADI ARRAY 
+            // kumpulin id resource ke array
             let resourceIds = [];
 
             if (req.id_folder && Array.isArray(req.id_folder)) {
@@ -27,21 +27,21 @@ const requirePermission = (action, resourceType) => {
             } else if (req.id_document) {
                 resourceIds.push(req.id_document);
             } 
-            // TAMBAHAN BARU: Tangkap parameter dari URL Query (?parentId=...)
+            // tangkap param parentid=?
             else if (req.query.parentId) { 
                 resourceIds.push(req.query.parentId);
             }
 
-            // 3. LOGIKA BYPASS UNTUK HALAMAN ROOT (DEPAN)
+            // kalau root
             if (resourceIds.length === 0) {
-                // Jika tidak ada ID sama sekali, berarti user sedang meminta Root
-                // Loloskan saja, karena Controller 'getAccessibleFolders' sudah memfilter izinnya dengan aman.
+                // jika tidak ada ID sama sekali, berarti user sedang meminta Root
+                // lolos, karena Controller 'getAccessibleFolders' sudah memfilter izinnya.
                 return next(); 
             }
             
             // console.log(resourceIds);
             
-            // 4. CEK AKSES KE DATABASE
+            // cek permission ke database
             const hasAccess = await PermissionModel.checkMultipleAccess(userId, resourceIds, resourceType, action);
             // console.log(hasAccess);
             

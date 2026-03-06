@@ -2,8 +2,8 @@ const jwt = require('jsonwebtoken');
 
 const verifyToken = (req,res,next) => {
     //ngambil token dari cookies di browser
+    
     const token = req.cookies.token;
-
     //cek token
     if (!token) {
         return res.status(401).json({message: "Anda belum login!"})

@@ -32,11 +32,7 @@ router.get('/getaccesibledocs',verifyToken, DocumentController.getAccessibleDocu
 router.get('/search', verifyToken, DocumentController.searchDocuments);
 // ... route /:id dan lainnya di bawahnya ...
 router.delete('/:id', verifyToken,DocumentController.delete);
-router.get('/:id', 
-    verifyToken, 
-    requirePermission('preview', 'DOCUMENT'), 
-    DocumentController.getDocumentDetail
-);
+router.get('/:id', verifyToken, requirePermission('preview', 'DOCUMENT'), DocumentController.getDocumentDetail);
 router.get('/:id/download', verifyToken, requirePermission('download', 'DOCUMENT'), DocumentController.downloadDocument);
 router.post('/:id/revisions', verifyToken, requirePermission('upload', 'DOCUMENT'), upload.single('file'), DocumentController.uploadRevision);
 router.post('/:id/request-approval',verifyToken, ApprovalController.requestApproval);

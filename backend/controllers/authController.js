@@ -76,7 +76,7 @@ const getMe = async (req, res) => {
 };
 
 const logout = (req, res) => {
-    res.clearCookie('token'); // Hancurkan cookie saat logout
+    res.clearCookie('token'); // hapus cookie saat logout
     console.log("token berhasil dihapus");
     res.json({ message: "Logout berhasil" });
 };

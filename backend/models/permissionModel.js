@@ -99,7 +99,7 @@ class PermissionModel {
             `;
       params = [idUser, uniqueIds];
     } else if (resourceType === "DOCUMENT") {
-      // Untuk Dokumen: Cek permission di level dokumen ATAU di level folder induknya secara massal
+      // Untuk Dokumen: Cek permission di level dokumen atau di level folder induknya
       query = `
                 SELECT COUNT(DISTINCT d.id_document) as granted_count
                 FROM document d

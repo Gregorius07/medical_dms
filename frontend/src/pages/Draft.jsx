@@ -23,8 +23,14 @@ function Draft() {
   const [folderLoading, setFolderLoading] = createSignal(false);
 
   // State untuk modal permission folder
-  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] = createSignal(false);
+  const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
+    createSignal(false);
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
+
+  // State untuk modal permission document
+  const [isDocumentAccessModalOpen, setIsDocumentAccessModalOpen] =
+    createSignal(false);
+  const [selectedDocumentId, setSelectedDocumentId] = createSignal(null);
 
   // ==========================================
   // FUNGSI API (Sesuai dengan kode asli Anda)
@@ -189,6 +195,10 @@ function Draft() {
     // Tentukan di mana folder ini akan dibuat (apakah di root draft atau di dalam sub-folder draft)
     const parentId = currentFolderId() || draftId();
 
+    if (!parentId) {
+      alert("Draft folder belum siap");
+      return;
+    }
     try {
       await api.post("/folders/create", {
         folder_name: newFolderName(),
@@ -216,27 +226,37 @@ function Draft() {
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       {/* STATS CARDS */}
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-gray-400">
           <p class="text-gray-500 text-sm mb-2 font-medium">My Drafts</p>
-          <h3 class="text-3xl font-bold text-gray-800">{stats().totalDrafts || 0}</h3>
+          <h3 class="text-3xl font-bold text-gray-800">
+            {stats().totalDrafts || 0}
+          </h3>
         </div>
-        
+
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-400">
           <p class="text-gray-500 text-sm mb-2 font-medium">Under Review</p>
-          <h3 class="text-3xl font-bold text-gray-800">{stats().underReview || 0}</h3>
+          <h3 class="text-3xl font-bold text-gray-800">
+            {stats().underReview || 0}
+          </h3>
         </div>
-        
+
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-400">
-          <p class="text-gray-500 text-sm mb-2 font-medium">New (Last 7 Days)</p>
-          <h3 class="text-3xl font-bold text-gray-800">{stats().newDocuments || 0}</h3>
+          <p class="text-gray-500 text-sm mb-2 font-medium">
+            New (Last 7 Days)
+          </p>
+          <h3 class="text-3xl font-bold text-gray-800">
+            {stats().newDocuments || 0}
+          </h3>
         </div>
 
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-indigo-500">
-          <p class="text-gray-500 text-sm mb-2 font-medium">Action Required (Approve)</p>
-          <h3 class="text-3xl font-bold text-indigo-600">{stats().pendingApprovals || 0}</h3>
+          <p class="text-gray-500 text-sm mb-2 font-medium">
+            Action Required (Approve)
+          </p>
+          <h3 class="text-3xl font-bold text-indigo-600">
+            {stats().pendingApprovals || 0}
+          </h3>
         </div>
-
       </div>
 
       {/* HEADER MY DRAFT */}
@@ -452,6 +472,38 @@ function Draft() {
                         {doc.approval_status}
                       </span>
                     </td>
+                    {/* Tampilkan tombol HANYA jika user adalah Admin atau Pembuat Folder */}
+                    <Show
+                      when={
+                        currentUser()?.role === "admin" ||
+                        currentUser()?.name === doc.created_by
+                      }
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
+                          setSelectedDocumentId(doc.id_document);
+                          setIsDocumentAccessModalOpen(true);
+                        }}
+                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                        title="Manage Access"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
                   </tr>
                 )}
               </For>
@@ -634,6 +686,17 @@ function Draft() {
           onClose={() => {
             setIsFolderAccessModalOpen(false);
             setSelectedFolderId(null);
+          }}
+        />
+      </Show>
+      {/* MODAL MANAGE ACCESS UNTUK DOCUMENT */}
+      <Show when={isDocumentAccessModalOpen()}>
+        <ManageAccessModal
+          resourceId={selectedDocumentId()}
+          resourceType="DOCUMENT"
+          onClose={() => {
+            setIsDocumentAccessModalOpen(false);
+            setSelectedDocumentId(null);
           }}
         />
       </Show>

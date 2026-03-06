@@ -203,7 +203,7 @@ function DocumentDetail() {
                 Actions
               </h3>
               {/* TOMBOL MANAGE ACCESS (Contoh: Hanya muncul untuk Admin) */}
-              <Show when={currentUser()?.role === "admin"}>
+              <Show when={currentUser()?.role === "admin" || currentUser()?.name === doc().created_by }>
                 <button
                   onClick={() => setIsAccessModalOpen(true)}
                   class="w-full py-2.5 bg-gray-800 text-white hover:bg-gray-900 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition mb-2 shadow-md"
@@ -336,7 +336,7 @@ function DocumentDetail() {
                   <span class="text-yellow-600 mt-0.5">⏳</span>
                   <div>
                     <p class="text-sm font-bold text-yellow-800">Menunggu Review</p>
-                    <p class="text-xs text-yellow-700 mt-1">Berada di meja: <b>{activeApproval()?.approver_name}</b></p>
+                    <p class="text-xs text-yellow-700 mt-1">Menunggu approval dari: <b>{activeApproval()?.approver_name}</b></p>
                   </div>
                 </div>
               </Show>

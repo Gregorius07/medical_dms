@@ -96,12 +96,6 @@ function ManageAccessModal(props) {
         <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
           <div>
             <h3 class="text-lg font-bold text-gray-800">Manage Access</h3>
-            <p class="text-xs text-gray-500 mt-0.5">
-              {props.resourceType === "FOLDER"
-                ? "Mengelola akses Folder ID:"
-                : "Mengelola akses Dokumen ID:"}{" "}
-              {props.resourceId}
-            </p>
           </div>
           <button
             onClick={props.onClose}
@@ -150,7 +144,7 @@ function ManageAccessModal(props) {
 
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-2">
-                  Pilih Hak Akses (Granular)
+                  Pilih Hak Akses
                 </label>
                 <div class="grid grid-cols-2 gap-3">
                   {/* Checkbox Preview */}

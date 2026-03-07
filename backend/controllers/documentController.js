@@ -87,7 +87,7 @@ const DocumentController = {
 
   getAccessibleDocumentsId: async (req, res) => {
     try {
-      const result = await DocumentModel.getAccessibleDocuments(req.userId);
+      const result = await DocumentModel.getAccessibleDocuments(req.userId, req.name);
       res.json(result.map((item) => item.id_document));
     } catch (error) {
       res.status(500).json({ message: "Gagal mengambil accesible document" });

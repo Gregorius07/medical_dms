@@ -75,7 +75,7 @@ class FolderModel {
         }
     }
 
-    // 1. Ambil SEMUA folder yang user punya hak akses (termasuk Draft)
+    // 1. Ambil SEMUA folder yang user punya hak akses KECUALI Draft miliknya sendiri
     static async getAccessibleFolders(userId) {
         const query = `
             SELECT f.id_folder, f.folder_name, f.parent_folder, 
@@ -85,8 +85,10 @@ class FolderModel {
             WHERE p.id_user = $1 
               AND p.resource_type = 'FOLDER' 
               AND p.preview = TRUE
+              -- PERUBAHAN DI SINI: Kecualikan folder Draft buatan user ini sendiri
+              AND NOT (f.folder_name LIKE 'Draft - $1')
             ORDER BY 
-                -- Trik agar folder Draft selalu di urutan paling atas
+                -- Trik agar folder Draft (milik orang lain yang dibagikan) tetap di atas
                 CASE WHEN f.folder_name LIKE 'Draft - %' THEN 0 ELSE 1 END, 
                 f.folder_name ASC;
         `;
@@ -97,8 +99,7 @@ class FolderModel {
     /**
      * Membuat folder baru dan otomatis memberikan permission penuh kepada pembuatnya
      */
-    static async createFolder(folderName, parentId, userId, name) {
-        const client = await pool.connect();
+    static async createFolder(folderName, parentId, userId, name, client) {
         try {
             await client.query('BEGIN'); // Mulai Transaksi
 

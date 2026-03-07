@@ -49,13 +49,14 @@ const UserController = {
             await client.query('BEGIN');
 
             const newUser = await UserModel.create(req.body,client);
-            // console.log("data user :", newUser);
+            console.log("Variabel newUser :", newUser);
             const folderName = `Draft - ${newUser.id_user}`;
             
             // console.log(folderName);
-            const newFolder = await FolderModel.createFolder(folderName, null, req.userId, req.name);
-    
-            await PermissionModel.createFolderPermission(newUser.id_user, newFolder.id_folder, 'system', client);
+            const newFolder = await FolderModel.createFolder(folderName, null,newUser.id_user, req.name, client);
+            console.log("New Folder", newFolder);
+            
+            // await PermissionModel.createFolderPermission(newUser.id_user, newFolder.id_folder, 'system', client);
 
             await client.query('COMMIT');
 

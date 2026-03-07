@@ -561,6 +561,33 @@ function DocumentDetail() {
                 </span>
               </div>
 
+              {/* TAMPILAN NOTES JIKA STATUS APPROVED ATAU REJECTED */}
+              <Show
+                when={
+                  (doc()?.approval_status === "APPROVED" ||
+                    doc()?.approval_status === "REJECTED") &&
+                  activeApproval()?.notes
+                }
+              >
+                <div
+                  class={`p-3 rounded-lg border mt-1 ${
+                    doc()?.approval_status === "APPROVED"
+                      ? "bg-green-50 border-green-100"
+                      : "bg-red-50 border-red-100"
+                  }`}
+                >
+                  <p class="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1">
+                    Catatan Reviewer
+                  </p>
+                  <p class="text-xs text-gray-800 italic">
+                    "{activeApproval()?.notes}"
+                  </p>
+                  <p class="text-[10px] text-gray-500 mt-2 text-right">
+                    - {activeApproval()?.approver_name}
+                  </p>
+                </div>
+              </Show>
+
               <div>
                 <p class="text-xs text-gray-500 mb-1">Uploader</p>
                 <p class="text-sm font-medium text-gray-800">

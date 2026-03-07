@@ -92,13 +92,14 @@ class ApprovalModel {
                 a.id_approver, 
                 u_approver.full_name as approver_name,
                 a.id_requester,
-                u_requester.full_name as requester_name
+                u_requester.full_name as requester_name,
+                a.notes
             FROM approval_request a
             -- Join pertama untuk mengambil data Approver
             JOIN "user" u_approver ON a.id_approver = u_approver.id_user
             -- Join kedua untuk mengambil data Requester
             JOIN "user" u_requester ON a.id_requester = u_requester.id_user
-            WHERE a.id_document = $1 AND a.status = 'PENDING'
+            WHERE a.id_document = $1
             ORDER BY a.created_at DESC LIMIT 1;
         `;
         const { rows } = await pool.query(query, [idDocument]);

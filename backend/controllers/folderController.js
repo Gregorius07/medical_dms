@@ -1,12 +1,13 @@
 const FolderModel = require('../models/folderModel');
 const DocumentModel = require ('../models/documentModel');
 const PermissionModel = require('../models/permissionModel');
+const pool = require('../config/db');
 
 const getFolderContents = async (req, res) => {
     try {
         const parentId = req.query.parentId || null; 
         const userId = req.userId; // Dari middleware verifyToken
-
+        const name = req.name;
         let folders = [];
         let documents = [];
 
@@ -14,10 +15,10 @@ const getFolderContents = async (req, res) => {
         if (!parentId) {
             // Ambil semua folder dan dokumen yang dizinkan dari tabel permission
             folders = await FolderModel.getAccessibleFolders(userId);
-            console.log('Isi variabel folders:',folders);
+            // console.log('Isi variabel folders:',folders);
             
-            documents = await DocumentModel.getAccessibleDocuments(userId);
-            console.log('Isi variabel documents:',documents);
+            documents = await DocumentModel.getAccessibleDocuments(userId, name);
+            // console.log('Isi variabel documents:',documents);
             
         } 
         // KONDISI 2: User sedang menelusuri isi di dalam sebuah folder
@@ -56,7 +57,9 @@ const getFolderBreadcrumbs = async (req, res) => {
 
 const getDraftFolderByUserId = async (req,res) =>{
     try {
-        const result = await FolderModel.getDraftFolderByUserId(Number(req.userId));
+        const result = await FolderModel.getDraftFolderByUserId(req.userId);
+        console.log("result di controller", result);
+        
         res.json(result);
     } catch (error) {
         res.status(500).json({ message: "Gagal mengambil draft" });
@@ -74,6 +77,7 @@ const getAccessibleFoldersId = async (req,res) =>{
 
 const createFolder = async (req, res) => {
     try {
+        const client = await pool.connect();
         const { folder_name, parent_folder } = req.body;
         const userId = req.userId; // Dari token JWT
         const name = req.name;
@@ -81,7 +85,7 @@ const createFolder = async (req, res) => {
             return res.status(400).json({ message: "Nama folder tidak boleh kosong" });
         }
 
-        const newFolderId = await FolderModel.createFolder(folder_name, parent_folder || null, userId, name);
+        const newFolderId = await FolderModel.createFolder(folder_name, parent_folder || null, userId, name, client);
 
         res.status(201).json({ 
             message: "Folder berhasil dibuat", 

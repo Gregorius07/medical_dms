@@ -149,8 +149,8 @@ const DocumentModel = {
     );
   },
 
-  // 2. Ambil SEMUA dokumen yang user punya hak akses SECARA LANGSUNG
-  getAccessibleDocuments: async (userId) => {
+  // 2. Ambil SEMUA dokumen yang user punya hak akses SECARA LANGSUNG KECUALI DRAFT miliknya sendiri
+  getAccessibleDocuments: async (userId , name) => {
     const query = `
             SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status,
                    p.preview, p.upload, p.download, p.edit_metadata
@@ -161,9 +161,12 @@ const DocumentModel = {
               AND p.resource_type = 'DOCUMENT' 
               AND p.preview = TRUE 
               AND dv.is_active = true
+              -- PERUBAHAN DI SINI: Kecualikan dokumen berstatus DRAFT buatan user ini sendiri
+              -- Asumsi d.created_by menyimpan ID user sesuai dengan query Dashboard sebelumnya
+              AND NOT (dv.approval_status = 'DRAFT' AND dv.created_by = $2 AND dv.is_active = TRUE)
             ORDER BY dv.created_at DESC;
         `;
-    const { rows } = await pool.query(query, [userId]);
+    const { rows } = await pool.query(query, [userId, name]);
     return rows;
   },
 

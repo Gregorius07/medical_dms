@@ -50,7 +50,11 @@ function Draft() {
       const draftFolder = await api.post("/folders/getdraft", {
         userId: currentUser().id,
       });
-      console.log("Draft ID:", draftFolder.data.id_folder);
+      console.log("CurrentUser().id", currentUser().id);
+      
+      console.log("isi variabel Draft Folder",draftFolder);
+      
+      // console.log("Draft ID:", draftFolder.data.id_folder);
       setDraftId(draftFolder.data.id_folder);
 
       // Langsung muat isi draft setelah ID didapatkan

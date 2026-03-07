@@ -23,7 +23,7 @@ function User() {
   // State Form Input
   const [formData, setFormData] = createSignal({
     fullName: "",
-    username: "", // Email
+    username: "", 
     password: "",
     idPosition: "",
     idDepartment: "",
@@ -173,7 +173,7 @@ function User() {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Email / Username</label>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Username</label>
                         <input type="text" required class="w-full border rounded-lg px-3 py-2 text-sm"
                             value={formData().username} onInput={(e) => updateForm('username', e.target.value)} />
                     </div>

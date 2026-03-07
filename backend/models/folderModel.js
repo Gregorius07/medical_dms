@@ -75,24 +75,36 @@ class FolderModel {
         }
     }
 
-    // 1. Ambil SEMUA folder yang user punya hak akses KECUALI Draft miliknya sendiri
+    // 1. Ambil SEMUA folder yang user punya hak akses KECUALI Draft miliknya sendiri BESERTA seluruh isinya
     static async getAccessibleFolders(userId) {
         const query = `
-            SELECT f.id_folder, f.folder_name, f.parent_folder, 
+            WITH RECURSIVE user_draft_tree AS (
+                -- 1. BASE CASE: Cari folder Root 'Draft' milik user ini
+                SELECT id_folder 
+                FROM folder 
+                WHERE folder_name LIKE 'Draft - ' || $2
+                
+                UNION ALL
+                
+                -- 2. RECURSIVE STEP: Cari seluruh sub-folder (anak cucu) yang berada di dalam folder Draft tadi
+                SELECT f.id_folder 
+                FROM folder f
+                INNER JOIN user_draft_tree dt ON f.parent_folder = dt.id_folder
+            )
+            SELECT f.id_folder, f.folder_name, f.parent_folder, f.created_by,
                    p.preview, p.upload, p.download, p.edit_metadata
             FROM folder f
             JOIN permission p ON f.id_folder = p.id_folder
             WHERE p.id_user = $1 
               AND p.resource_type = 'FOLDER' 
               AND p.preview = TRUE
-              -- PERUBAHAN DI SINI: Kecualikan folder Draft buatan user ini sendiri
-              AND NOT (f.folder_name LIKE 'Draft - $1')
+              -- 3. FILTER UTAMA: Singkirkan semua folder yang ID-nya masuk ke dalam daftar "user_draft_tree"
+              AND f.id_folder NOT IN (SELECT id_folder FROM user_draft_tree)
             ORDER BY 
-                -- Trik agar folder Draft (milik orang lain yang dibagikan) tetap di atas
                 CASE WHEN f.folder_name LIKE 'Draft - %' THEN 0 ELSE 1 END, 
                 f.folder_name ASC;
         `;
-        const { rows } = await pool.query(query, [userId]);
+        const { rows } = await pool.query(query, [userId, userId+""]);
         return rows;
     }
 

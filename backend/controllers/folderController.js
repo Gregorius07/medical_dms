@@ -14,8 +14,10 @@ const getFolderContents = async (req, res) => {
         // KONDISI 1: User di halaman depan (Root)
         if (!parentId) {
             // Ambil semua folder dan dokumen yang dizinkan dari tabel permission
+            console.log(userId);
+            
             folders = await FolderModel.getAccessibleFolders(userId);
-            // console.log('Isi variabel folders:',folders);
+            console.log('Isi variabel folders:',folders);
             
             documents = await DocumentModel.getAccessibleDocuments(userId, name);
             // console.log('Isi variabel documents:',documents);

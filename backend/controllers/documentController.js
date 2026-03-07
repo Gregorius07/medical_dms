@@ -58,8 +58,9 @@ const DocumentController = {
         uploader: uploaderName || "Unknown",
         metadata: {}, // Nanti diisi dari dynamic form
       };
-
-      await DocumentModel.create(docData);
+      
+      const result = await DocumentModel.create(docData);
+      await PermissionModel.grantAccess(uploaderName, result.id, "DOCUMENT", {preview: true, download: true, edit_metadata:true, upload: true},"System");
       res
         .status(201)
         .json({ success: true, message: "Dokumen berhasil diupload" });

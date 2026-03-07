@@ -1,17 +1,14 @@
 const db = require("../config/db");
 
 const UserModel = {
-  // Mencari user berdasarkan username (email)
-  findByUsername: async (username) => {
+  findByFullOrUsername: async (q) =>{
     const query = `
-            SELECT u.*, p.position_name, d.department_name
-            FROM "user" u
-            LEFT JOIN position p ON u.id_position = p.id_position
-            LEFT JOIN department d ON u.id_department = d.id_department
-            WHERE u.username = $1
+            SELECT id_user, username, full_name  
+            FROM "user" 
+            WHERE username ILIKE $1 OR full_name ILIKE $1 
+            LIMIT 5;
         `;
-    const result = await db.query(query, [username]);
-    return result.rows[0];
+    return (await db.query(query, [`%${q}%`])).rows;
   },
 
   // (Opsional) Untuk keperluan admin nanti jika butuh count user

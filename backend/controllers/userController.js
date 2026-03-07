@@ -5,6 +5,19 @@ const FolderModel = require('../models/folderModel');
 const pool = require('../config/db');
 
 const UserController = {
+
+    searchUser: async(req,res) =>{
+        try {
+            const keyword = req.query.q;
+            console.log("keyword",keyword);
+            
+            const result = await UserModel.findByFullOrUsername(keyword);
+            res.json(result);    
+        } catch (error) {
+            res.json({message: "Gagal mencari user: ", error})
+        }
+    },
+
     findAll: async (req, res) => {
         const { page, size, search } = req.query;
         const { limit, offset } = getPagination(page, size);

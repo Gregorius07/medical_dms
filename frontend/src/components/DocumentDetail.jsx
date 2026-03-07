@@ -24,6 +24,21 @@ function DocumentDetail() {
   const [approvalNotes, setApprovalNotes] = createSignal("");
   const [isProcessing, setIsProcessing] = createSignal(false);
 
+  // State untuk filter riwayat (Audit Log)
+  const [logFilter, setLogFilter] = createSignal("ALL");
+
+  // --- STATE UNTUK AUTOCOMPLETE USER ---
+  const [userSuggestions, setUserSuggestions] = createSignal([]);
+  const [showSuggestions, setShowSuggestions] = createSignal(false);
+  const [isSearchingUsers, setIsSearchingUsers] = createSignal(false);
+  let userSearchTimeout;
+
+  // Fungsi reaktif untuk memfilter logs
+  const filteredLogs = () => {
+    if (logFilter() === "ALL") return logs();
+    return logs().filter((log) => log.action === logFilter());
+  };
+
   // Nanti kita akan isi ini dari API berdasarkan tabel 'permission'
   const [permissions, setPermissions] = createSignal({
     preview: false,
@@ -34,8 +49,8 @@ function DocumentDetail() {
 
   const fetchDocumentDetail = async () => {
     try {
-      console.log('variabel documentId:',documentId);
-      
+      console.log("variabel documentId:", documentId);
+
       setLoading(true);
       // Endpoint ini harusnya mengembalikan detail dokumen + permission user tersebut
       const res = await api.get(`/documents/${documentId}`);
@@ -121,6 +136,45 @@ function DocumentDetail() {
     }
   };
 
+  // Handler saat user mengetik nama approver
+  const handleApproverInput = (e) => {
+    const value = e.target.value;
+    setApproverFullName(value);
+    setShowSuggestions(true);
+
+    // Hapus timer sebelumnya
+    clearTimeout(userSearchTimeout);
+
+    if (!value.trim()) {
+      setUserSuggestions([]);
+      setIsSearchingUsers(false);
+      return;
+    }
+
+    setIsSearchingUsers(true);
+    
+    // Debounce: Tunggu 300ms setelah berhenti mengetik
+    userSearchTimeout = setTimeout(async () => {
+      try {
+        // ASUMSI: Anda perlu membuat endpoint GET /api/users/search?q=... di backend
+        const res = await api.get(`/users/search?q=${value}`);
+        // Asumsi backend mengembalikan array of user objects: [{ name: '...', email: '...', ... }]
+        setUserSuggestions(res.data.data || res.data || []);
+      } catch (err) {
+        console.error("Gagal mencari user", err);
+      } finally {
+        setIsSearchingUsers(false);
+      }
+    }, 400);
+  };
+
+  // Handler saat user memilih nama dari dropdown
+  const selectApprover = (user) => {
+    setApproverFullName(user.full_name); // Isi input dengan nama lengkap
+    // Opsional: Jika backend Anda butuh email atau ID, Anda bisa menyimpannya di state terpisah di sini
+    setShowSuggestions(false);
+  };
+
   return (
     <div class="min-h-screen bg-gray-50 p-4 md:p-6 flex flex-col">
       {/* HEADER: Tombol Back & Judul */}
@@ -203,14 +257,19 @@ function DocumentDetail() {
                 Actions
               </h3>
               {/* TOMBOL MANAGE ACCESS (Contoh: Hanya muncul untuk Admin) */}
-              <Show when={currentUser()?.role === "admin" || currentUser()?.name === doc().created_by }>
+              <Show
+                when={
+                  currentUser()?.role === "admin" ||
+                  currentUser()?.name === doc().created_by
+                }
+              >
                 <button
                   onClick={() => setIsAccessModalOpen(true)}
-                  class="w-full py-2.5 bg-gray-800 text-white hover:bg-gray-900 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition mb-2 shadow-md"
+                  class="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition mb-2"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5 text-gray-300"
+                    class="h-5 w-5 text-blue-700"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -251,7 +310,7 @@ function DocumentDetail() {
               <Show when={permissions().edit_metadata}>
                 <button
                   onClick={handleEditMetadata}
-                  class="w-full py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition"
+                  class="w-full py-2.5  bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -274,7 +333,7 @@ function DocumentDetail() {
               <Show when={permissions().upload}>
                 <button
                   onClick={handleUploadRevision}
-                  class="w-full py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition"
+                  class="w-full py-2.5  bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -299,83 +358,172 @@ function DocumentDetail() {
             {/* PANEL WORKFLOW APPROVAL */}
             {/* ======================================= */}
             <div class=" rounded-xl  flex flex-col gap-3">
-              <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Approval Workflow</h3>
+              <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Approval Workflow
+              </h3>
 
               {/* KONDISI 1: DOKUMEN MASIH DRAFT/REJECTED -> BISA MENGAJUKAN APPROVAL */}
-              <Show when={(doc()?.approval_status === 'DRAFT' || doc()?.approval_status === 'REJECTED') && permissions().upload}>
-                <div class="space-y-2">
-                  <p class="text-xs text-gray-600">Ajukan dokumen ini untuk direview oleh atasan/rekan.</p>
-                  <input 
-                    type="text" 
-                    placeholder="Approver name..." 
-                    value={approverFullName()}
-                    onInput={(e) => setApproverFullName(e.target.value)}
-                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"
-                  />
-                  <button 
+              <Show
+                when={
+                  (doc()?.approval_status === "DRAFT" ||
+                    doc()?.approval_status === "REJECTED") &&
+                  permissions().upload
+                }
+              >
+                <div class="space-y-3">
+                  <p class="text-xs text-gray-600">
+                    Ajukan dokumen ini untuk direview oleh atasan/rekan.
+                  </p>
+                  
+                  {/* WRAPPER RELATIVE UNTUK AUTOCOMPLETE */}
+                  <div class="relative w-full">
+                    <input
+                      type="text"
+                      placeholder="Ketik nama approver..."
+                      value={approverFullName()}
+                      onInput={handleApproverInput}
+                      onFocus={() => { if (approverFullName()) setShowSuggestions(true); }}
+                      class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                    />
+
+                    {/* DROPDOWN SUGGESTIONS */}
+                    <Show when={showSuggestions() && (userSuggestions().length > 0 || isSearchingUsers() || approverFullName().trim() !== '')}>
+                      <div class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-xl max-h-48 overflow-y-auto flex flex-col">
+                        
+                        <Show when={isSearchingUsers()}>
+                          <div class="p-3 text-xs text-gray-500 text-center flex justify-center items-center gap-2">
+                            <svg class="animate-spin h-3 w-3 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Mencari...
+                          </div>
+                        </Show>
+
+                        <Show when={!isSearchingUsers() && userSuggestions().length > 0}>
+                          <For each={userSuggestions()}>
+                            {(user) => (
+                              <div
+                                onClick={() => selectApprover(user)}
+                                class="px-3 py-2 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
+                              >
+                                <div class="text-sm font-medium text-gray-800">{user.username}</div>
+                                <div class="text-[10px] text-gray-500">{user.full_name}</div>
+                              </div>
+                            )}
+                          </For>
+                        </Show>
+
+                        <Show when={!isSearchingUsers() && userSuggestions().length === 0 && approverFullName().trim() !== ''}>
+                          <div class="p-3 text-xs text-gray-500 text-center italic">
+                            Pengguna tidak ditemukan.
+                          </div>
+                        </Show>
+
+                      </div>
+                    </Show>
+                  </div>
+
+                  <button
                     onClick={async () => {
-                      if(!approverFullName()) return alert('Isi email approver!');
+                      if (!approverFullName())
+                        return alert("Isi nama approver!");
                       setIsProcessing(true);
                       try {
-                        await api.post(`/documents/${documentId}/request-approval`, { approverFullName: approverFullName() });
+                        await api.post(
+                          `/documents/${documentId}/request-approval`,
+                          { approverFullName: approverFullName() },
+                        );
+                        // Bersihkan form setelah sukses
+                        setApproverFullName("");
+                        setShowSuggestions(false);
                         fetchDocumentDetail(); // Refresh halaman
-                      } catch(err) { alert(err.response?.data?.message); }
-                      setIsProcessing(false);
+                      } catch (err) {
+                        alert(err.response?.data?.message || "Gagal mengajukan approval.");
+                      } finally {
+                        setIsProcessing(false);
+                      }
                     }}
                     disabled={isProcessing()}
-                    class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium transition"
+                    class="w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                   >
-                    Ajukan Approval
+                    {isProcessing() ? 'Memproses...' : 'Ajukan Approval'}
                   </button>
                 </div>
               </Show>
 
               {/* KONDISI 2: DOKUMEN PENDING -> MENUNGGU APPROVAL (Untuk Peminta) */}
-              <Show when={doc()?.approval_status === 'UNDER REVIEW' && currentUser()?.id !== activeApproval()?.id_approver}>
+              <Show
+                when={
+                  doc()?.approval_status === "UNDER REVIEW" &&
+                  currentUser()?.id !== activeApproval()?.id_approver
+                }
+              >
                 <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-3">
-                  <span class="text-yellow-600 mt-0.5">⏳</span>
+                  <span class="text-yellow-600 mt-0.5"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M8.513 20.288q-1.638-.713-2.863-1.938t-1.937-2.863T3 12q0-1.95.75-3.65t2.1-2.925q.3-.275.713-.263t.687.288l5.45 5.45q.275.275.275.7t-.275.7t-.7.275t-.7-.275L6.6 7.6q-.75.9-1.175 2.013T5 12q0 2.9 2.05 4.95T12 19t4.95-2.05T19 12q0-2.675-1.713-4.612T13 5.1V6q0 .425-.288.713T12 7t-.712-.288T11 6V4q0-.425.288-.712T12 3q1.85 0 3.488.713T18.35 5.65t1.938 2.863T21 12t-.712 3.488t-1.938 2.862t-2.863 1.938T12 21t-3.488-.712m-2.225-7.575Q6 12.425 6 12t.288-.712T7 11t.713.288T8 12t-.288.713T7 13t-.712-.288m5 5Q11 17.426 11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18t-.712-.288m5-5Q16 12.425 16 12t.288-.712T17 11t.713.288T18 12t-.288.713T17 13t-.712-.288"/></svg></span>
                   <div>
-                    <p class="text-sm font-bold text-yellow-800">Menunggu Review</p>
-                    <p class="text-xs text-yellow-700 mt-1">Menunggu approval dari: <b>{activeApproval()?.approver_name}</b></p>
+                    <p class="text-sm font-bold text-yellow-800">
+                      Menunggu Review
+                    </p>
+                    <p class="text-xs text-yellow-700 mt-1">
+                      Pengaju approval:{" "}
+                      <b>{activeApproval()?.requester_name}</b>
+                    </p>
+                    <p class="text-xs text-yellow-700 mt-1">
+                      Menunggu approval dari:{" "}
+                      <b>{activeApproval()?.approver_name}</b>
+                    </p>
                   </div>
                 </div>
               </Show>
 
               {/* KONDISI 3: DOKUMEN PENDING -> PANEL AKSI UNTUK SANG APPROVER */}
-              <Show when={doc()?.approval_status === 'UNDER REVIEW' && currentUser()?.id === activeApproval()?.id_approver}>
+              <Show
+                when={
+                  doc()?.approval_status === "UNDER REVIEW" &&
+                  currentUser()?.id === activeApproval()?.id_approver
+                }
+              >
                 <div class="space-y-3">
                   <div class="bg-blue-50 border border-blue-200 p-2 rounded text-xs text-blue-800">
-                    Seseorang meminta Anda untuk mereview dokumen ini.
+                    <b>{activeApproval()?.requester_name}</b> meminta Anda untuk mereview dokumen ini.
                   </div>
-                  <textarea 
-                    placeholder="Catatan review (Opsional)..." 
+                  <textarea
+                    placeholder="Catatan review (Opsional)..."
                     value={approvalNotes()}
                     onInput={(e) => setApprovalNotes(e.target.value)}
                     class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 h-20 resize-none"
                   ></textarea>
-                  
+
                   <div class="flex gap-2">
-                    <button 
+                    <button
                       onClick={async () => {
                         setIsProcessing(true);
                         try {
-                          await api.post(`/documents/${documentId}/respond-approval`, { status: 'REJECTED', notes: approvalNotes() });
+                          await api.post(
+                            `/documents/${documentId}/respond-approval`,
+                            { status: "REJECTED", notes: approvalNotes() },
+                          );
                           fetchDocumentDetail();
-                        } catch(err) { alert('Gagal merespons'); }
+                        } catch (err) {
+                          alert("Gagal merespons");
+                        }
                         setIsProcessing(false);
                       }}
                       class="flex-1 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-medium rounded text-sm transition"
                     >
                       Tolak
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={async () => {
                         setIsProcessing(true);
                         try {
-                          await api.post(`/documents/${documentId}/respond-approval`, { status: 'APPROVED', notes: approvalNotes() });
+                          await api.post(
+                            `/documents/${documentId}/respond-approval`,
+                            { status: "APPROVED", notes: approvalNotes() },
+                          );
                           fetchDocumentDetail();
-                        } catch(err) { alert('Gagal merespons'); }
+                        } catch (err) {
+                          alert("Gagal merespons");
+                        }
                         setIsProcessing(false);
                       }}
                       class="flex-1 py-2 bg-green-600 text-white hover:bg-green-700 font-medium rounded text-sm transition"
@@ -389,7 +537,6 @@ function DocumentDetail() {
 
             {/* --- PEMBATAS --- */}
             <hr class="border-gray-100 my-2" />
-
 
             {/* METADATA INFO */}
             <div class="flex flex-col gap-4">
@@ -406,8 +553,8 @@ function DocumentDetail() {
                       : doc()?.approval_status === "DRAFT"
                         ? "bg-gray-100 text-gray-600"
                         : doc()?.approval_status === "UNDER REVIEW"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-red-100 text-red-700"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
                   }`}
                 >
                   {doc()?.approval_status || "UNKNOWN"}
@@ -445,27 +592,42 @@ function DocumentDetail() {
             {/* --- PEMBATAS --- */}
             <hr class="border-gray-100 my-2" />
 
-            
-
             {/* RIWAYAT AKTIVITAS (AUDIT LOG TIMELINE) */}
             <div class="flex flex-col flex-1 min-h-[250px]">
-              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center justify-between">
-                <span>Document History</span>
-                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px]">
-                  {logs().length}
-                </span>
-              </h3>
+              {/* Header dengan Dropdown Filter */}
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <span>Document History</span>
+                  <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px]">
+                    {filteredLogs().length}
+                  </span>
+                </h3>
+
+                {/* Dropdown Filter Action */}
+                <select
+                  value={logFilter()}
+                  onInput={(e) => setLogFilter(e.target.value)}
+                  class="text-[10px] bg-white border border-gray-200 text-gray-600 rounded px-2 py-1 outline-none cursor-pointer focus:border-blue-400 hover:bg-gray-50 transition"
+                >
+                  <option value="ALL">Semua Aktivitas</option>
+                  <option value="PREVIEW">Preview</option>
+                  <option value="DOWNLOAD">Download</option>
+                  <option value="UPLOAD">Upload Revisi</option>
+                </select>
+              </div>
 
               <div class="relative border-l-2 border-gray-100 ml-3 pl-4 space-y-5 overflow-y-auto pr-2 pb-4 max-h-[280px]">
                 <Show
-                  when={logs().length > 0}
+                  when={filteredLogs().length > 0}
                   fallback={
                     <div class="text-xs text-gray-400 italic">
-                      Belum ada riwayat aktivitas.
+                      {logs().length > 0
+                        ? `Tidak ada riwayat aktivitas untuk filter "${logFilter()}".`
+                        : "Belum ada riwayat aktivitas sama sekali."}
                     </div>
                   }
                 >
-                  <For each={logs()}>
+                  <For each={filteredLogs()}>
                     {(log) => (
                       <div class="relative">
                         {/* Bulatan Timeline berdasarkan Action */}
@@ -485,7 +647,7 @@ function DocumentDetail() {
                             <span class="text-sm font-semibold text-gray-800">
                               {log.actor_name || "Sistem"}
                             </span>
-                            <span class="text-[10px] text-gray-400 font-medium">
+                            <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap">
                               {new Date(log.timestamp).toLocaleDateString(
                                 "id-ID",
                                 { day: "numeric", month: "short" },
@@ -527,10 +689,7 @@ function DocumentDetail() {
                 </Show>
               </div>
             </div>
-            
           </div>
-
-          
         </div>
       </Show>
 
@@ -586,13 +745,13 @@ function DocumentDetail() {
       </Show>
 
       {/* MODAL MANAGE ACCESS */}
-     <Show when={isAccessModalOpen()}>
-       <ManageAccessModal 
-         resourceId={documentId} 
-         resourceType="DOCUMENT" 
-         onClose={() => setIsAccessModalOpen(false)} 
-       />
-     </Show>
+      <Show when={isAccessModalOpen()}>
+        <ManageAccessModal
+          resourceId={documentId}
+          resourceType="DOCUMENT"
+          onClose={() => setIsAccessModalOpen(false)}
+        />
+      </Show>
     </div>
   );
 }

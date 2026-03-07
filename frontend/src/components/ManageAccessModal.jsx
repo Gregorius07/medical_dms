@@ -17,6 +17,12 @@ function ManageAccessModal(props) {
   });
   const [isSubmitting, setIsSubmitting] = createSignal(false);
 
+  // --- STATE UNTUK AUTOCOMPLETE USER ---
+  const [userSuggestions, setUserSuggestions] = createSignal([]);
+  const [showSuggestions, setShowSuggestions] = createSignal(false);
+  const [isSearchingUsers, setIsSearchingUsers] = createSignal(false);
+  let userSearchTimeout;
+
   // Mengambil daftar user yang saat ini punya akses
   const fetchAccessList = async () => {
     try {
@@ -41,6 +47,42 @@ function ManageAccessModal(props) {
 
   const handleTogglePermission = (field) => {
     setPermissions((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  // --- HANDLERS UNTUK AUTOCOMPLETE ---
+  const handleUserInput = (e) => {
+    const value = e.target.value;
+    setfullName(value);
+    setShowSuggestions(true);
+
+    clearTimeout(userSearchTimeout);
+
+    if (!value.trim()) {
+      setUserSuggestions([]);
+      setIsSearchingUsers(false);
+      return;
+    }
+
+    setIsSearchingUsers(true);
+
+    userSearchTimeout = setTimeout(async () => {
+      try {
+        const res = await api.get(`/users/search?q=${value}`);
+        // Sesuaikan dengan format respons backend Anda (res.data.rows atau res.data.data)
+        // Cek apakah res.data sudah berupa array langsung, jika tidak cari di .rows atau .data
+        const responseData = res.data;
+        setUserSuggestions(Array.isArray(responseData) ? responseData : (responseData?.rows || responseData?.data || []));
+      } catch (err) {
+        console.error("Gagal mencari user", err);
+      } finally {
+        setIsSearchingUsers(false);
+      }
+    }, 400); // 400ms debounce
+  };
+
+  const selectUser = (user) => {
+    setfullName(user.full_name); // Sesuaikan dengan struktur data user dari backend
+    setShowSuggestions(false);
   };
 
   const handleGrantAccess = async (e) => {
@@ -132,14 +174,53 @@ function ManageAccessModal(props) {
                 <label class="block text-xs font-medium text-gray-700 mb-1">
                   Nama Lengkap Pengguna
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={fullName()}
-                  onInput={(e) => setfullName(e.target.value)}
-                  placeholder="Contoh: Gregorius Denmas"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+                
+                {/* WRAPPER RELATIVE UNTUK AUTOCOMPLETE */}
+                <div class="relative w-full">
+                  <input
+                    type="text"
+                    required
+                    value={fullName()}
+                    onInput={handleUserInput}
+                    onFocus={() => { if (fullName()) setShowSuggestions(true); }}
+                    placeholder="Contoh: Gregorius Denmas"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+
+                  {/* DROPDOWN SUGGESTIONS */}
+                  <Show when={showSuggestions() && (userSuggestions().length > 0 || isSearchingUsers() || fullName().trim() !== '')}>
+                    <div class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-xl max-h-48 overflow-y-auto flex flex-col">
+                      
+                      <Show when={isSearchingUsers()}>
+                        <div class="p-3 text-xs text-gray-500 text-center flex justify-center items-center gap-2">
+                          <svg class="animate-spin h-3 w-3 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                          Mencari...
+                        </div>
+                      </Show>
+
+                      <Show when={!isSearchingUsers() && userSuggestions().length > 0}>
+                        <For each={userSuggestions()}>
+                          {(user) => (
+                            <div
+                              onClick={() => selectUser(user)}
+                              class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
+                            >
+                              <div class="text-sm font-medium text-gray-800">{user.username}</div>
+                              <div class="text-[10px] text-gray-500">{user.full_name}</div>
+                            </div>
+                          )}
+                        </For>
+                      </Show>
+
+                      <Show when={!isSearchingUsers() && userSuggestions().length === 0 && fullName().trim() !== ''}>
+                        <div class="p-3 text-xs text-gray-500 text-center italic">
+                          Pengguna tidak ditemukan.
+                        </div>
+                      </Show>
+
+                    </div>
+                  </Show>
+                </div>
               </div>
 
               <div>
@@ -194,7 +275,7 @@ function ManageAccessModal(props) {
                 <button
                   type="submit"
                   disabled={isSubmitting()}
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center gap-2"
                 >
                   {isSubmitting() ? "Memproses..." : "Beri Akses"}
                 </button>
@@ -242,7 +323,7 @@ function ManageAccessModal(props) {
                                 {item.user_name}
                               </p>
                               <p class="text-xs text-gray-500">
-                                {item.email || "User ID: " + item.id_user}
+                                {"User ID: " + item.id_user}
                               </p>
                             </div>
                           </div>

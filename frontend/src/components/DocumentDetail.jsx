@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "@solidjs/router";
 import api from "../api";
 import { currentUser } from "../store/authStore";
 import ManageAccessModal from "./ManageAccessModal";
+import Swal from "sweetalert2";
 
 function DocumentDetail() {
   const params = useParams();
@@ -93,12 +94,20 @@ function DocumentDetail() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      alert("Gagal mengunduh dokumen. Pastikan Anda memiliki izin.");
+      Swal.fire({
+        icon: "error",
+        title: "Akses Ditolak",
+        text: "Gagal mengunduh dokumen. Pastikan Anda memiliki izin.",
+      });
     }
   };
 
   const handleEditMetadata = () => {
-    alert("Fitur Edit Metadata akan memunculkan form di sini.");
+    Swal.fire({
+      icon: "info",
+      title: "Segera Hadir",
+      text: "Fitur Edit Metadata akan memunculkan form di sini.",
+    });
   };
 
   const handleUploadRevision = () => {
@@ -107,7 +116,13 @@ function DocumentDetail() {
 
   const submitRevision = async (e) => {
     e.preventDefault();
-    if (!uploadFile()) return alert("Pilih file PDF baru terlebih dahulu!");
+    if (!uploadFile()) {
+      return Swal.fire({
+        icon: "warning",
+        title: "Peringatan",
+        text: "Pilih file PDF baru terlebih dahulu!",
+      });
+    }
 
     setUploadLoading(true);
     const formData = new FormData();
@@ -118,7 +133,13 @@ function DocumentDetail() {
       await api.post(`/documents/${documentId}/revisions`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Revisi berhasil diunggah!");
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Revisi berhasil diunggah!",
+        timer: 2000,
+        showConfirmButton: false
+      });
 
       // Tutup modal & Bersihkan form
       setIsUploadOpen(false);
@@ -127,10 +148,11 @@ function DocumentDetail() {
       // PENTING: Refresh data di halaman agar Iframe PDF dan metadata langsung berubah ke versi terbaru!
       fetchDocumentDetail();
     } catch (err) {
-      alert(
-        "Gagal mengunggah revisi: " +
-          (err.response?.data?.message || err.message),
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Mengunggah",
+        text: err.response?.data?.message || err.message,
+      });
     } finally {
       setUploadLoading(false);
     }
@@ -424,19 +446,36 @@ function DocumentDetail() {
                   <button
                     onClick={async () => {
                       if (!approverFullName())
-                        return alert("Isi nama approver!");
+                        Swal.fire({
+                          icon: "warning",
+                          title: "Peringatan",
+                          text: "Isi nama approver terlebih dahulu!",
+                        });
                       setIsProcessing(true);
                       try {
                         await api.post(
                           `/documents/${documentId}/request-approval`,
                           { approverFullName: approverFullName() },
                         );
+
+                        Swal.fire({
+                          icon: "success",
+                          title: "Berhasil",
+                          text: "Dokumen berhasil diajukan untuk direview!",
+                          timer: 2000,
+                          showConfirmButton: false
+                        });
+
                         // Bersihkan form setelah sukses
                         setApproverFullName("");
                         setShowSuggestions(false);
                         fetchDocumentDetail(); // Refresh halaman
                       } catch (err) {
-                        alert(err.response?.data?.message || "Gagal mengajukan approval.");
+                        Swal.fire({
+                          icon: "error",
+                          title: "Gagal Mengajukan",
+                          text: err.response?.data?.message || "Gagal mengajukan approval.",
+                        });
                       } finally {
                         setIsProcessing(false);
                       }
@@ -501,9 +540,20 @@ function DocumentDetail() {
                             `/documents/${documentId}/respond-approval`,
                             { status: "REJECTED", notes: approvalNotes() },
                           );
+                          Swal.fire({
+                            icon: "success",
+                            title: "Dokumen Ditolak",
+                            text: "Anda telah menolak pengajuan dokumen ini.",
+                            timer: 2000,
+                            showConfirmButton: false
+                          });
                           fetchDocumentDetail();
                         } catch (err) {
-                          alert("Gagal merespons");
+                          Swal.fire({
+                            icon: "error",
+                            title: "Terjadi Kesalahan",
+                            text: "Gagal memproses penolakan dokumen.",
+                          });
                         }
                         setIsProcessing(false);
                       }}
@@ -520,9 +570,20 @@ function DocumentDetail() {
                             `/documents/${documentId}/respond-approval`,
                             { status: "APPROVED", notes: approvalNotes() },
                           );
+                          Swal.fire({
+                            icon: "success",
+                            title: "Dokumen Disetujui",
+                            text: "Anda telah menyetujui pengajuan dokumen ini.",
+                            timer: 2000,
+                            showConfirmButton: false
+                          });
                           fetchDocumentDetail();
                         } catch (err) {
-                          alert("Gagal merespons");
+                          Swal.fire({
+                            icon: "error",
+                            title: "Terjadi Kesalahan",
+                            text: "Gagal memproses persetujuan dokumen.",
+                          });
                         }
                         setIsProcessing(false);
                       }}

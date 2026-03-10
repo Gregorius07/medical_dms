@@ -1,5 +1,6 @@
 import { createSignal, onMount, For, Show } from "solid-js";
 import api from "../api";
+import Swal from "sweetalert2";
 
 function ManageAccessModal(props) {
   // props: resourceId, resourceType ('FOLDER' atau 'DOCUMENT'), onClose (fungsi untuk menutup modal)
@@ -71,7 +72,11 @@ function ManageAccessModal(props) {
         // Sesuaikan dengan format respons backend Anda (res.data.rows atau res.data.data)
         // Cek apakah res.data sudah berupa array langsung, jika tidak cari di .rows atau .data
         const responseData = res.data;
-        setUserSuggestions(Array.isArray(responseData) ? responseData : (responseData?.rows || responseData?.data || []));
+        setUserSuggestions(
+          Array.isArray(responseData)
+            ? responseData
+            : responseData?.rows || responseData?.data || [],
+        );
       } catch (err) {
         console.error("Gagal mencari user", err);
       } finally {
@@ -87,7 +92,13 @@ function ManageAccessModal(props) {
 
   const handleGrantAccess = async (e) => {
     e.preventDefault();
-    if (!fullName()) return alert("Masukkan nama pengguna!");
+    if (!fullName()) {
+      Swal.fire({
+        title: "Gagal memberikan akses",
+        text: "User tidak ditemukan!",
+        icon: "error",
+      });
+    }
 
     setIsSubmitting(true);
     try {
@@ -98,7 +109,11 @@ function ManageAccessModal(props) {
         permissions: permissions(),
       });
 
-      alert("Akses berhasil diberikan!");
+      Swal.fire({
+        title: "Berhasil",
+        text: "Akses berhasil diberikan",
+        icon: "success",
+      });
       setfullName("");
       // Reset form ke default
       setPermissions({
@@ -111,10 +126,11 @@ function ManageAccessModal(props) {
       // Refresh daftar
       fetchAccessList();
     } catch (err) {
-      alert(
-        "Gagal memberikan akses: " +
-          (err.response?.data?.message || err.message),
-      );
+      Swal.fire({
+        title: "Gagal",
+        text: err.response?.data?.message || err.message,
+        icon: "success",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +143,11 @@ function ManageAccessModal(props) {
       await api.delete(`/permissions/revoke/${idPermission}`);
       fetchAccessList(); // Refresh daftar
     } catch (err) {
-      alert("Gagal mencabut akses");
+      Swal.fire({
+        title: "Gagal",
+        text: "Gagal mencabut akses" + err.response?.data?.message || err.message,
+        icon: "success",
+      });
     }
   };
 
@@ -174,7 +194,7 @@ function ManageAccessModal(props) {
                 <label class="block text-xs font-medium text-gray-700 mb-1">
                   Nama Lengkap Pengguna
                 </label>
-                
+
                 {/* WRAPPER RELATIVE UNTUK AUTOCOMPLETE */}
                 <div class="relative w-full">
                   <input
@@ -182,42 +202,82 @@ function ManageAccessModal(props) {
                     required
                     value={fullName()}
                     onInput={handleUserInput}
-                    onFocus={() => { if (fullName()) setShowSuggestions(true); }}
+                    onFocus={() => {
+                      if (fullName()) setShowSuggestions(true);
+                    }}
                     placeholder="Contoh: Gregorius Denmas"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
                   />
 
                   {/* DROPDOWN SUGGESTIONS */}
-                  <Show when={showSuggestions() && (userSuggestions().length > 0 || isSearchingUsers() || fullName().trim() !== '')}>
+                  <Show
+                    when={
+                      showSuggestions() &&
+                      (userSuggestions().length > 0 ||
+                        isSearchingUsers() ||
+                        fullName().trim() !== "")
+                    }
+                  >
                     <div class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-xl max-h-48 overflow-y-auto flex flex-col">
-                      
                       <Show when={isSearchingUsers()}>
                         <div class="p-3 text-xs text-gray-500 text-center flex justify-center items-center gap-2">
-                          <svg class="animate-spin h-3 w-3 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                          <svg
+                            class="animate-spin h-3 w-3 text-gray-400"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              class="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              stroke-width="4"
+                            ></circle>
+                            <path
+                              class="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
                           Mencari...
                         </div>
                       </Show>
 
-                      <Show when={!isSearchingUsers() && userSuggestions().length > 0}>
+                      <Show
+                        when={
+                          !isSearchingUsers() && userSuggestions().length > 0
+                        }
+                      >
                         <For each={userSuggestions()}>
                           {(user) => (
                             <div
                               onClick={() => selectUser(user)}
                               class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
                             >
-                              <div class="text-sm font-medium text-gray-800">{user.username}</div>
-                              <div class="text-[10px] text-gray-500">{user.full_name}</div>
+                              <div class="text-sm font-medium text-gray-800">
+                                {user.username}
+                              </div>
+                              <div class="text-[10px] text-gray-500">
+                                {user.full_name}
+                              </div>
                             </div>
                           )}
                         </For>
                       </Show>
 
-                      <Show when={!isSearchingUsers() && userSuggestions().length === 0 && fullName().trim() !== ''}>
+                      <Show
+                        when={
+                          !isSearchingUsers() &&
+                          userSuggestions().length === 0 &&
+                          fullName().trim() !== ""
+                        }
+                      >
                         <div class="p-3 text-xs text-gray-500 text-center italic">
                           Pengguna tidak ditemukan.
                         </div>
                       </Show>
-
                     </div>
                   </Show>
                 </div>

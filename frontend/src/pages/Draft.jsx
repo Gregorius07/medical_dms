@@ -3,6 +3,7 @@ import api from "../api";
 import { currentUser } from "../store/authStore";
 import { useNavigate } from "@solidjs/router";
 import ManageAccessModal from "../components/ManageAccessModal";
+import Swal from "sweetalert2";
 
 function Draft() {
   // State khusus untuk Draft (Sudah diisolasi, tidak ada bentrok dengan Home)
@@ -50,9 +51,9 @@ function Draft() {
       const draftFolder = await api.post("/folders/getdraft", {
         userId: currentUser().id,
       });
-      console.log("CurrentUser().id", currentUser().id);
+      // console.log("CurrentUser().id", currentUser().id);
       
-      console.log("isi variabel Draft Folder",draftFolder);
+      // console.log("isi variabel Draft Folder",draftFolder);
       
       // console.log("Draft ID:", draftFolder.data.id_folder);
       setDraftId(draftFolder.data.id_folder);
@@ -157,7 +158,13 @@ function Draft() {
       await api.post("/documents", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Upload Berhasil!");
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Upload Berhasil!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
       setIsUploadOpen(false);
       setUploadFile(null);
@@ -166,19 +173,46 @@ function Draft() {
       // Refresh Data Draft
       loadFolderContents(targetFolderId);
     } catch (err) {
-      alert("Upload Gagal: " + (err.response?.data?.message || err.message));
+      Swal.fire({
+        icon: "error",
+        title: "Upload Gagal",
+        text: err.response?.data?.message || err.message,
+      });
     } finally {
       setUploadLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Hapus dokumen ini?")) return;
+    const result = await Swal.fire({
+      title: "Hapus dokumen?",
+      text: "Anda tidak akan bisa mengembalikan dokumen ini!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal"
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       await api.delete(`/documents/${id}`);
+      Swal.fire({
+        icon: "success",
+        title: "Terhapus!",
+        text: "Dokumen berhasil dihapus.",
+        timer: 1500,
+        showConfirmButton: false
+      });
       loadFolderContents(currentFolderId() || draftId());
     } catch (err) {
-      alert("Gagal hapus");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Gagal menghapus dokumen.",
+      });
     }
   };
 
@@ -192,15 +226,22 @@ function Draft() {
   const handleCreateFolder = async (e) => {
     e.preventDefault();
     if (!newFolderName().trim())
-      return alert("Nama folder tidak boleh kosong!");
-
+      return Swal.fire({
+        icon: "warning",
+        title: "Peringatan",
+        text: "Nama folder tidak boleh kosong!",
+      });
     setFolderLoading(true);
 
     // Tentukan di mana folder ini akan dibuat (apakah di root draft atau di dalam sub-folder draft)
     const parentId = currentFolderId() || draftId();
 
     if (!parentId) {
-      alert("Draft folder belum siap");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Draft folder belum siap",
+      });
       return;
     }
     try {
@@ -209,15 +250,24 @@ function Draft() {
         parent_folder: parentId,
       });
 
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Folder berhasil dibuat.",
+        timer: 1500,
+        showConfirmButton: false
+      });
       setIsFolderModalOpen(false);
       setNewFolderName("");
 
       // Refresh Data Draft agar folder baru langsung muncul di layar
       loadFolderContents(parentId);
     } catch (err) {
-      alert(
-        "Gagal membuat folder: " + (err.response?.data?.message || err.message),
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Membuat Folder",
+        text: err.response?.data?.message || err.message,
+      });
     } finally {
       setFolderLoading(false);
     }

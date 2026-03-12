@@ -40,24 +40,63 @@ function Position() {
         } else {
             await api.post("/positions", { name: formName() });
         }
+
+        // Tambahan notifikasi sukses
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Data posisi berhasil disimpan.",
+          timer: 1500,
+          showConfirmButton: false
+        });
+
         setIsModalOpen(false);
         setFormName("");
         setEditId(null);
         fetchData(); // Refresh table
     } catch (err) {
-        alert("Gagal menyimpan data");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: "Gagal menyimpan data.",
+        });
     } finally {
         setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if(!confirm("Yakin ingin menghapus?")) return;
+    const result = await Swal.fire({
+      title: "Yakin ingin menghapus?",
+      text: "Data posisi ini tidak dapat dikembalikan!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal"
+    });
+
+    if(!result.isConfirmed) return;
+
     try {
         await api.delete(`/positions/${id}`);
+        Swal.fire({
+          icon: "success",
+          title: "Terhapus!",
+          text: "Data posisi berhasil dihapus.",
+          timer: 1500,
+          showConfirmButton: false
+        });
+        
         fetchData();
     } catch (err) {
-        alert("Gagal menghapus. Data mungkin sedang digunakan.");
+        // Mengganti alert error
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Menghapus",
+          text: "Gagal menghapus. Data mungkin sedang digunakan.",
+        });
     }
   };
 

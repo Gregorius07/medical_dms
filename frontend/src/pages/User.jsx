@@ -1,6 +1,6 @@
 import { createSignal, createEffect, onMount } from "solid-js";
 import api from "../api";
-
+import Swal from "sweetalert2";
 function User() {
   // State Data Utama
   const [data, setData] = createSignal([]);
@@ -90,21 +90,62 @@ function User() {
         } else {
             await api.post("/users", formData());
         }
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Data user berhasil disimpan.",
+          timer: 1500,
+          showConfirmButton: false
+        });
         setIsModalOpen(false);
         fetchData();
     } catch (err) {
-        alert("Gagal menyimpan data user");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Menyimpan",
+          text: err.response?.data?.message || "Gagal menyimpan data user.",
+        });
     } finally {
         setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if(!confirm("Hapus user ini?")) return;
+    // Mengganti confirm() bawaan dengan Swal
+    const result = await Swal.fire({
+      title: "Hapus User?",
+      text: "Data user ini akan dihapus secara permanen!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal"
+    });
+
+    if(!result.isConfirmed) return;
+
     try {
         await api.delete(`/users/${id}`);
+        
+        // Notifikasi sukses hapus
+        Swal.fire({
+          icon: "success",
+          title: "Terhapus!",
+          text: "User berhasil dihapus.",
+          timer: 1500,
+          showConfirmButton: false
+        });
+
         fetchData();
-    } catch (err) { alert("Gagal menghapus"); }
+    } catch (err) {
+        // Mengganti alert error
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Menghapus",
+          text: err.response?.data?.message || "Gagal menghapus user.",
+        });
+    }
   };
 
   return (

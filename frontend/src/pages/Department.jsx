@@ -1,5 +1,6 @@
 import { createSignal, onMount, createEffect } from "solid-js";
 import api from "../api";
+import Swal from "sweetalert2";
 
 function Department() {
   const [data, setData] = createSignal([]);
@@ -40,24 +41,63 @@ function Department() {
         } else {
             await api.post("/departments", { name: formName() });
         }
+
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Data departemen berhasil disimpan.",
+          timer: 1500,
+          showConfirmButton: false
+        });
+
         setIsModalOpen(false);
         setFormName("");
         setEditId(null);
         fetchData(); // Refresh table
     } catch (err) {
-        alert("Gagal menyimpan data");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Menyimpan",
+          text: "Gagal menyimpan data departemen.",
+        });
     } finally {
         setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if(!confirm("Yakin ingin menghapus?")) return;
+    const result = await Swal.fire({
+      title: "Hapus Departemen?",
+      text: "Data departemen ini tidak dapat dikembalikan!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal"
+    });
+
+    if(!result.isConfirmed) return;
+
     try {
         await api.delete(`/departments/${id}`);
+        
+        // Notifikasi sukses hapus
+        Swal.fire({
+          icon: "success",
+          title: "Terhapus!",
+          text: "Departemen berhasil dihapus.",
+          timer: 1500,
+          showConfirmButton: false
+        });
+
         fetchData();
     } catch (err) {
-        alert("Gagal menghapus. Data mungkin sedang digunakan.");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Menghapus",
+          text: "Gagal menghapus. Data mungkin sedang digunakan.",
+        });
     }
   };
 

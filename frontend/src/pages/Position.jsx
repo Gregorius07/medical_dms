@@ -1,5 +1,6 @@
 import { createSignal, onMount, createEffect } from "solid-js";
 import api from "../api";
+import Swal from "sweetalert2";
 
 function Position() {
   const [data, setData] = createSignal([]);

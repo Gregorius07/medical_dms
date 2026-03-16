@@ -16,6 +16,7 @@ const DocumentModel = {
                 WHERE dv.created_by = $1 
                   AND dv.approval_status = 'DRAFT' 
                   AND dv.is_active = TRUE
+                  AND d.is_deleted = false
             `,
           [fullname],
         ),
@@ -29,6 +30,7 @@ const DocumentModel = {
                 WHERE dv.created_by = $1 
                   AND dv.approval_status = 'UNDER REVIEW' 
                   AND dv.is_active = TRUE
+                  AND d.is_deleted = false
             `,
           [fullname],
         ),
@@ -42,6 +44,7 @@ const DocumentModel = {
                 WHERE dv.created_by = $1 
                   AND dv.created_at >= NOW() - INTERVAL '7 days' 
                   AND dv.is_active = TRUE
+                  AND d.is_deleted = false
             `,
           [fullname],
         ),
@@ -150,7 +153,7 @@ const DocumentModel = {
   },
 
   // 2. Ambil SEMUA dokumen yang user punya hak akses SECARA LANGSUNG KECUALI DRAFT miliknya sendiri
-  getAccessibleDocuments: async (userId , name) => {
+  getAccessibleDocuments: async (userId, name) => {
     const query = `
             SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status,
                    p.preview, p.upload, p.download, p.edit_metadata
@@ -161,6 +164,7 @@ const DocumentModel = {
               AND p.resource_type = 'DOCUMENT' 
               AND p.preview = TRUE 
               AND dv.is_active = true
+              AND d.is_deleted = false
               -- PERUBAHAN DI SINI: Kecualikan dokumen berstatus DRAFT buatan user ini sendiri
               -- Asumsi d.created_by menyimpan ID user sesuai dengan query Dashboard sebelumnya
               AND NOT (dv.approval_status = 'DRAFT' AND dv.created_by = $2 AND dv.is_active = TRUE)
@@ -176,7 +180,7 @@ const DocumentModel = {
                 SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status
                 FROM document d
                 JOIN document_version dv ON d.id_document = dv.id_document
-                WHERE d.id_folder IS NULL AND dv.is_active = true
+                WHERE d.id_folder IS NULL AND dv.is_active = true AND d.is_deleted = false
                 ORDER BY dv.created_at DESC
             `;
     let params = [];
@@ -186,7 +190,7 @@ const DocumentModel = {
                     SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status
                     FROM document d
                     JOIN document_version dv ON d.id_document = dv.id_document
-                    WHERE d.id_folder = $1 AND dv.is_active = true
+                    WHERE d.id_folder = $1 AND dv.is_active = true AND d.is_deleted = false
                     ORDER BY dv.created_at DESC
                 `;
       params = [parentId];
@@ -338,29 +342,82 @@ const DocumentModel = {
     return rows;
   },
 
+  deleteDocument: async (req, res) => {
+    try {
+      const docId = req.params.id;
+      const userId = req.userId; // Dari middleware auth
+      const userRole = req.role; // Dari middleware auth
+      const name = req.name; // Dari middleware auth
+
+      // 1. Ambil info dokumen untuk pengecekan hak akses
+      const doc = await DocumentModel.getDocumentById(docId);
+      if (!doc)
+        return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+
+      // 2. VALIDASI ATURAN BISNIS (Double-Layer Security)
+      if (userRole !== "admin") {
+        if (doc.created_by !== name) {
+          return res.status(403).json({
+            message: "Akses ditolak: Anda bukan pemilik dokumen ini.",
+          });
+        }
+        if (
+          doc.approval_status !== "DRAFT" &&
+          doc.approval_status !== "REJECTED"
+        ) {
+          return res.status(403).json({
+            message:
+              "Aksi ilegal: Dokumen administrasi yang sedang direview atau sudah disetujui tidak boleh dihapus.",
+          });
+        }
+      }
+
+      // 3. Eksekusi Soft Delete
+      await DocumentModel.softDelete(docId);
+
+      // 4. Catat ke Audit Log! (Sangat penting)
+      AuditModel.log(
+        "DELETE",
+        "DOCUMENT",
+        userId,
+        doc.id_folder,
+        docId,
+        "Memindahkan dokumen ke tempat sampah (Soft Delete)",
+      );
+
+      res
+        .status(200)
+        .json({ message: "Dokumen berhasil dipindahkan ke tempat sampah." });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res
+        .status(500)
+        .json({ message: "Terjadi kesalahan sistem saat menghapus dokumen." });
+    }
+  },
   /**
    * Khusus Admin: Mengambil daftar semua dokumen di dalam sebuah FOLDER
    * tanpa terikat oleh aturan permission.
    */
-  getDocumentsInFolderForAdmin: async (folderId) => {
-    const query = `
-        SELECT 
-            d.id_document, 
-            dv.file_name, 
-            dv.file_size, 
-            dv.created_at, 
-            dv.created_by, 
-            dv.approval_status
-        FROM document d
-        JOIN document_version dv ON d.id_document = dv.id_document
-        WHERE d.id_folder = $1 
-          AND dv.is_active = true
-          AND d.is_deleted = false
-        ORDER BY dv.created_at DESC
-    `;
-    const { rows } = await pool.query(query, [folderId]);
-    return rows;
-  },
+  // getDocumentsInFolderForAdmin: async (folderId) => {
+  //   const query = `
+  //       SELECT
+  //           d.id_document,
+  //           dv.file_name,
+  //           dv.file_size,
+  //           dv.created_at,
+  //           dv.created_by,
+  //           dv.approval_status
+  //       FROM document d
+  //       JOIN document_version dv ON d.id_document = dv.id_document
+  //       WHERE d.id_folder = $1
+  //         AND dv.is_active = true
+  //         AND d.is_deleted = false
+  //       ORDER BY dv.created_at DESC
+  //   `;
+  //   const { rows } = await pool.query(query, [folderId]);
+  //   return rows;
+  // },
 };
 
 module.exports = DocumentModel;

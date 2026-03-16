@@ -109,10 +109,25 @@ const createFolder = async (req, res) => {
   }
 };
 
+const deleteFolder = async (req, res) => {
+    try {
+        await FolderModel.deleteFolder(req.params.id);
+        res.status(200).json({ message: "Folder berhasil dihapus secara permanen." });
+    } catch (error) {
+        // Jika error berasal dari validasi kita (folder tidak kosong)
+        if (error.message.includes("tidak kosong")) {
+            return res.status(400).json({ message: error.message });
+        }
+        res.status(500).json({ message: "Gagal menghapus folder." });
+    }
+};
+// Jangan lupa export dan daftarkan di folderRoutes.js (router.delete('/:id', ...))
+
 module.exports = {
   getFolderContents,
   getFolderBreadcrumbs,
   getDraftFolderByUserId,
   getAccessibleFoldersId,
   createFolder,
+  deleteFolder,
 };

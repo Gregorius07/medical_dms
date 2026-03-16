@@ -170,6 +170,41 @@ class FolderModel {
             client.release();
         }
     }
+
+    /**
+     * Menghapus folder (HANYA JIKA KOSONG)
+     */
+    static async deleteFolder(folderId) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Cek apakah ada sub-folder di dalamnya
+            const checkSub = await client.query('SELECT COUNT(*) FROM folder WHERE parent_folder = $1', [folderId]);
+            if (parseInt(checkSub.rows[0].count) > 0) {
+                throw new Error("Folder tidak kosong! Terdapat sub-folder di dalamnya.");
+            }
+
+            // 2. Cek apakah ada dokumen di dalamnya (yang belum di soft-delete)
+            const checkDoc = await client.query('SELECT COUNT(*) FROM document WHERE id_folder = $1 AND is_deleted = false', [folderId]);
+            if (parseInt(checkDoc.rows[0].count) > 0) {
+                throw new Error("Folder tidak kosong! Terdapat dokumen aktif di dalamnya.");
+            }
+
+            // 3. Jika kosong, hapus semua permission yang melekat pada folder ini
+            await client.query('DELETE FROM permission WHERE id_folder = $1 AND resource_type = $2', [folderId, 'FOLDER']);
+            
+            // 4. Baru hapus foldernya
+            await client.query('DELETE FROM folder WHERE id_folder = $1', [folderId]);
+
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error; // Lempar error ke controller
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = FolderModel;

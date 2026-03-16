@@ -105,6 +105,66 @@ class ApprovalModel {
         const { rows } = await pool.query(query, [idDocument]);
         return rows.length > 0 ? rows[0] : null;
     }
+
+    // 1. INBOX: Dokumen yang menunggu persetujuan SAYA (Saya sebagai Approver)
+    static async getInbox(userId) {
+        const query = `
+            SELECT 
+                a.id_approval, a.status, a.created_at as request_date, a.notes,
+                d.id_document, 
+                dv.file_name, dv.file_size,
+                u_req.full_name AS requester_name
+            FROM approval_request a
+            JOIN document d ON a.id_document = d.id_document
+            JOIN document_version dv ON d.id_document = dv.id_document AND dv.is_active = TRUE
+            JOIN "user" u_req ON a.id_requester = u_req.id_user
+            WHERE a.id_approver = $1 AND a.status = 'PENDING'
+            ORDER BY a.created_at DESC;
+        `;
+        const { rows } = await pool.query(query, [userId]);
+        return rows;
+    }
+
+    // 2. OUTBOX: Dokumen yang SAYA ajukan dan sedang menunggu jawaban (Saya sebagai Requester)
+    static async getOutbox(userId) {
+        const query = `
+            SELECT 
+                a.id_approval, a.status, a.created_at as request_date, a.notes,
+                d.id_document, 
+                dv.file_name, dv.file_size,
+                u_app.full_name AS approver_name
+            FROM approval_request a
+            JOIN document d ON a.id_document = d.id_document
+            JOIN document_version dv ON d.id_document = dv.id_document AND dv.is_active = TRUE
+            JOIN "user" u_app ON a.id_approver = u_app.id_user
+            WHERE a.id_requester = $1 AND a.status = 'PENDING'
+            ORDER BY a.created_at DESC;
+        `;
+        const { rows } = await pool.query(query, [userId]);
+        return rows;
+    }
+
+    // 3. HISTORY: Riwayat persetujuan yang sudah SELESAI (Baik yang saya ajukan maupun yang saya setujui/tolak)
+    static async getHistory(userId) {
+        const query = `
+            SELECT 
+                a.id_approval, a.status, a.created_at as request_date, a.notes,
+                d.id_document, 
+                dv.file_name, dv.file_size,
+                u_req.full_name AS requester_name,
+                u_app.full_name AS approver_name
+            FROM approval_request a
+            JOIN document d ON a.id_document = d.id_document
+            JOIN document_version dv ON d.id_document = dv.id_document AND dv.is_active = TRUE
+            JOIN "user" u_req ON a.id_requester = u_req.id_user
+            JOIN "user" u_app ON a.id_approver = u_app.id_user
+            WHERE (a.id_approver = $1 OR a.id_requester = $1)
+              AND a.status IN ('APPROVED', 'REJECTED')
+            ORDER BY a.created_at DESC;
+        `;
+        const { rows } = await pool.query(query, [userId]);
+        return rows;
+    }
 }
 
 module.exports = ApprovalModel;

@@ -4,6 +4,7 @@ import Position from "./pages/Position";
 import Department from "./pages/Department";
 import MainLayout from "./components/MainLayout";
 import User from "./pages/User";
+import Approval from "./pages/Approval";
 import { checkSession, isAuthLoading } from "./store/authStore";
 import { onMount, Show } from "solid-js";
 import Draft from "./pages/Draft";
@@ -23,7 +24,7 @@ function App() {
           <Route path="/positions" component={Position} />
           <Route path="/departments" component={Department} />
           <Route path="/users" component={User} />
-
+          <Route path="/approvals" component={Approval} />
           <Route path="/draft" component={Draft} />
           <Route path="/folders" component={Folder} />
           <Route path="/document/:id" component={DocumentDetail} />

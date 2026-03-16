@@ -11,7 +11,7 @@ const userRoutes = require('./routes/userRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const folderRoutes = require ('./routes/folderRoutes');
 const permissionRoutes = require('./routes/permissionRoutes');
-
+const approvalRoutes = require('./routes/approvalRoutes');
 const app = express();
 const PORT = 5000; //port server
 const path = require('path');
@@ -37,6 +37,7 @@ app.use('/api/users',userRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/folders', folderRoutes);
 app.use('/api/permissions', permissionRoutes);
+app.use('/api/approvals', approvalRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {

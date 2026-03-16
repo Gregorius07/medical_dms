@@ -36,20 +36,25 @@ function MainLayout(props) {
         </div>
 
         <nav class="flex-1 px-4 space-y-2 text-sm">
-          <Show when={currentUser()?.role !="admin"}>
-
-          <A
-            href="/draft"
-            class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass("/draft")}`}
+          <Show when={currentUser()?.role != "admin"}>
+            <A
+              href="/draft"
+              class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass("/draft")}`}
             >
-            Draft
-          </A>
-            </Show>
+              Draft
+            </A>
+          </Show>
           <A
             href="/folders"
             class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass("/folders")}`}
           >
             Folder
+          </A>
+          <A
+            href="/approvals"
+            class={`flex items-center gap-3 px-4 py-3 rounded-lg ${activeClass("/approvals")}`}
+          >
+            Approval
           </A>
           <Show when={currentUser()?.role === "admin"}>
             <div class="pt-4 text-xs font-semibold text-gray-400 uppercase px-4">

@@ -12,6 +12,7 @@
     "@kobalte/core": "^0.13.11",
     "@solidjs/router": "^0.15.4",
     "axios": "^1.13.2",
+    "pdfjs-dist": "^5.5.207",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.9.10",
     "sweetalert2": "^11.26.21"

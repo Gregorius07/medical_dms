@@ -1,9 +1,15 @@
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, onMount, Show, createEffect } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import api from "../api";
 import { currentUser } from "../store/authStore";
 import ManageAccessModal from "./ManageAccessModal";
 import Swal from "sweetalert2";
+// Di atas komponen
+import * as pdfjsLib from "pdfjs-dist"; 
+// Trik Vite: Tambahkan ?url di akhir agar Vite mengambilkan URL statis dari file worker
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url"; 
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 function DocumentDetail() {
   const params = useParams();
@@ -33,6 +39,78 @@ function DocumentDetail() {
   const [showSuggestions, setShowSuggestions] = createSignal(false);
   const [isSearchingUsers, setIsSearchingUsers] = createSignal(false);
   let userSearchTimeout;
+
+  // --- STATE UNTUK CUSTOM PDF VIEWER ---
+  const [pdfRef, setPdfRef] = createSignal(null);
+  const [pageNum, setPageNum] = createSignal(1);
+  const [totalPages, setTotalPages] = createSignal(0);
+  const [scale, setScale] = createSignal(1.2); // Default zoom
+  let canvasRef; // Referensi untuk elemen <canvas>
+
+  // Fungsi untuk menggambar halaman PDF ke Canvas
+  const renderPage = (num, pdfDocument) => {
+    if (!pdfDocument || !canvasRef) return;
+
+    pdfDocument.getPage(num).then((page) => {
+      const viewport = page.getViewport({ scale: scale() });
+      const canvas = canvasRef;
+      const ctx = canvas.getContext("2d");
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: ctx,
+        viewport: viewport,
+      };
+      page.render(renderContext);
+    });
+  };
+
+  // Efek reaktif: Load PDF dari backend ketika doc() dan permission preview sudah tersedia
+  createEffect(() => {
+    const currentDoc = doc();
+    if (currentDoc?.file_path && permissions().preview) {
+      // PENTING: File harus bisa diakses secara publik atau via auth header yang diizinkan CORS
+      const url = `http://localhost:5000/${currentDoc.file_path}`;
+
+      // Load PDF kustom kustom
+      pdfjsLib
+        .getDocument(url)
+        .promise.then((pdf) => {
+          setPdfRef(pdf);
+          setTotalPages(pdf.numPages);
+          setPageNum(1); // Reset ke halaman 1
+          renderPage(1, pdf);
+        })
+        .catch((err) => {
+          console.error("Gagal memuat PDF untuk preview:", err);
+        });
+    }
+  });
+
+  // Handler Navigasi PDF
+  const prevPage = () => {
+    if (pageNum() <= 1) return;
+    setPageNum(pageNum() - 1);
+    renderPage(pageNum() - 1, pdfRef());
+  };
+
+  const nextPage = () => {
+    if (pageNum() >= totalPages()) return;
+    setPageNum(pageNum() + 1);
+    renderPage(pageNum() + 1, pdfRef());
+  };
+
+  const zoomIn = () => {
+    setScale((s) => s + 0.2);
+    renderPage(pageNum(), pdfRef());
+  };
+
+  const zoomOut = () => {
+    setScale((s) => Math.max(0.6, s - 0.2));
+    renderPage(pageNum(), pdfRef());
+  };
 
   // Fungsi reaktif untuk memfilter logs
   const filteredLogs = () => {
@@ -138,7 +216,7 @@ function DocumentDetail() {
         title: "Berhasil!",
         text: "Revisi berhasil diunggah!",
         timer: 2000,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
 
       // Tutup modal & Bersihkan form
@@ -174,7 +252,7 @@ function DocumentDetail() {
     }
 
     setIsSearchingUsers(true);
-    
+
     // Debounce: Tunggu 300ms setelah berhenti mengetik
     userSearchTimeout = setTimeout(async () => {
       try {
@@ -237,9 +315,7 @@ function DocumentDetail() {
         }
       >
         <div class="flex flex-col lg:flex-row gap-6 flex-1 h-[calc(100vh-120px)]">
-          {/* ======================================= */}
           {/* SISI KIRI: PREVIEW AREA (70% Lebar) */}
-          {/* ======================================= */}
           <div class="flex-[3] bg-gray-800 rounded-xl shadow-inner overflow-hidden border border-gray-300 flex flex-col">
             <div class="bg-gray-900 px-4 py-2 flex justify-between items-center text-gray-300 text-sm">
               <span>Preview Panel</span>
@@ -248,7 +324,7 @@ function DocumentDetail() {
               </span>
             </div>
 
-            <div class="flex-1 w-full h-full relative">
+            <div class="flex-1 w-full h-full relative flex flex-col items-center overflow-auto p-4">
               <Show
                 when={permissions().preview}
                 fallback={
@@ -257,18 +333,70 @@ function DocumentDetail() {
                   </div>
                 }
               >
-                {/* Jika file adalah PDF, kita bisa pakai iframe. 
-                  Pastikan backend menyediakan endpoint untuk menyajikan file ini.
-                */}
-                <iframe
-                  src={`http://localhost:5000/${doc()?.file_path}`}
-                  class="w-full h-full border-0"
-                  title="Document Preview"
-                ></iframe>
+                {/* TOOLBAR NAVIGASI PDF ELEGAN */}
+                <div class="flex items-center gap-2 mb-6 bg-gray-900/80 backdrop-blur-md px-3 py-2 rounded-xl border border-gray-700 shadow-2xl sticky top-4 z-10 transition-all">
+                  
+                  {/* Zoom Controls */}
+                  <div class="flex items-center gap-1">
+                    <button onClick={zoomOut} class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition" title="Zoom Out">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M5 8a1 1 0 011-1h4a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                    <span class="text-xs font-medium text-gray-300 w-10 text-center select-none">
+                      {Math.round(scale() * 100)}%
+                    </span>
+                    <button onClick={zoomIn} class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition" title="Zoom In">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M8 5a1 1 0 011 1v1h1a1 1 0 110 2H9v1a1 1 0 11-2 0V9H6a1 1 0 110-2h1V6a1 1 0 011-1z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Garis Pemisah */}
+                  <div class="w-px h-5 bg-gray-700 mx-1"></div>
+
+                  {/* Page Navigation */}
+                  <div class="flex items-center gap-1">
+                    <button 
+                      onClick={prevPage} 
+                      disabled={pageNum() <= 1} 
+                      class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition" 
+                      title="Previous Page"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                    
+                    <div class="flex items-center px-2 text-sm text-gray-400 select-none">
+                      <span class="font-bold text-white min-w-[1rem] text-center">{pageNum()}</span>
+                      <span class="mx-1.5 opacity-50">/</span>
+                      <span>{totalPages()}</span>
+                    </div>
+
+                    <button 
+                      onClick={nextPage} 
+                      disabled={pageNum() >= totalPages()} 
+                      class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition" 
+                      title="Next Page"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* AREA KANVAS RENDER PDF */}
+                <div class="border border-gray-600 shadow-2xl mb-10 bg-white">
+                  <canvas ref={canvasRef}></canvas>
+                </div>
               </Show>
             </div>
           </div>
-
           {/* ======================================= */}
           {/* SISI KANAN: METADATA & ACTIONS (30% Lebar) */}
           {/* ======================================= */}
@@ -396,7 +524,7 @@ function DocumentDetail() {
                   <p class="text-xs text-gray-600">
                     Ajukan dokumen ini untuk direview oleh atasan/rekan.
                   </p>
-                  
+
                   {/* WRAPPER RELATIVE UNTUK AUTOCOMPLETE */}
                   <div class="relative w-full">
                     <input
@@ -404,41 +532,81 @@ function DocumentDetail() {
                       placeholder="Ketik nama approver..."
                       value={approverFullName()}
                       onInput={handleApproverInput}
-                      onFocus={() => { if (approverFullName()) setShowSuggestions(true); }}
+                      onFocus={() => {
+                        if (approverFullName()) setShowSuggestions(true);
+                      }}
                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                     />
 
                     {/* DROPDOWN SUGGESTIONS */}
-                    <Show when={showSuggestions() && (userSuggestions().length > 0 || isSearchingUsers() || approverFullName().trim() !== '')}>
+                    <Show
+                      when={
+                        showSuggestions() &&
+                        (userSuggestions().length > 0 ||
+                          isSearchingUsers() ||
+                          approverFullName().trim() !== "")
+                      }
+                    >
                       <div class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-xl max-h-48 overflow-y-auto flex flex-col">
-                        
                         <Show when={isSearchingUsers()}>
                           <div class="p-3 text-xs text-gray-500 text-center flex justify-center items-center gap-2">
-                            <svg class="animate-spin h-3 w-3 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <svg
+                              class="animate-spin h-3 w-3 text-gray-400"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                              ></circle>
+                              <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
                             Mencari...
                           </div>
                         </Show>
 
-                        <Show when={!isSearchingUsers() && userSuggestions().length > 0}>
+                        <Show
+                          when={
+                            !isSearchingUsers() && userSuggestions().length > 0
+                          }
+                        >
                           <For each={userSuggestions()}>
                             {(user) => (
                               <div
                                 onClick={() => selectApprover(user)}
                                 class="px-3 py-2 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
                               >
-                                <div class="text-sm font-medium text-gray-800">{user.username}</div>
-                                <div class="text-[10px] text-gray-500">{user.full_name}</div>
+                                <div class="text-sm font-medium text-gray-800">
+                                  {user.username}
+                                </div>
+                                <div class="text-[10px] text-gray-500">
+                                  {user.full_name}
+                                </div>
                               </div>
                             )}
                           </For>
                         </Show>
 
-                        <Show when={!isSearchingUsers() && userSuggestions().length === 0 && approverFullName().trim() !== ''}>
+                        <Show
+                          when={
+                            !isSearchingUsers() &&
+                            userSuggestions().length === 0 &&
+                            approverFullName().trim() !== ""
+                          }
+                        >
                           <div class="p-3 text-xs text-gray-500 text-center italic">
                             Pengguna tidak ditemukan.
                           </div>
                         </Show>
-
                       </div>
                     </Show>
                   </div>
@@ -463,7 +631,7 @@ function DocumentDetail() {
                           title: "Berhasil",
                           text: "Dokumen berhasil diajukan untuk direview!",
                           timer: 2000,
-                          showConfirmButton: false
+                          showConfirmButton: false,
                         });
 
                         // Bersihkan form setelah sukses
@@ -474,7 +642,9 @@ function DocumentDetail() {
                         Swal.fire({
                           icon: "error",
                           title: "Gagal Mengajukan",
-                          text: err.response?.data?.message || "Gagal mengajukan approval.",
+                          text:
+                            err.response?.data?.message ||
+                            "Gagal mengajukan approval.",
                         });
                       } finally {
                         setIsProcessing(false);
@@ -483,7 +653,7 @@ function DocumentDetail() {
                     disabled={isProcessing()}
                     class="w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                   >
-                    {isProcessing() ? 'Memproses...' : 'Ajukan Approval'}
+                    {isProcessing() ? "Memproses..." : "Ajukan Approval"}
                   </button>
                 </div>
               </Show>
@@ -496,7 +666,19 @@ function DocumentDetail() {
                 }
               >
                 <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-3">
-                  <span class="text-yellow-600 mt-0.5"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M8.513 20.288q-1.638-.713-2.863-1.938t-1.937-2.863T3 12q0-1.95.75-3.65t2.1-2.925q.3-.275.713-.263t.687.288l5.45 5.45q.275.275.275.7t-.275.7t-.7.275t-.7-.275L6.6 7.6q-.75.9-1.175 2.013T5 12q0 2.9 2.05 4.95T12 19t4.95-2.05T19 12q0-2.675-1.713-4.612T13 5.1V6q0 .425-.288.713T12 7t-.712-.288T11 6V4q0-.425.288-.712T12 3q1.85 0 3.488.713T18.35 5.65t1.938 2.863T21 12t-.712 3.488t-1.938 2.862t-2.863 1.938T12 21t-3.488-.712m-2.225-7.575Q6 12.425 6 12t.288-.712T7 11t.713.288T8 12t-.288.713T7 13t-.712-.288m5 5Q11 17.426 11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18t-.712-.288m5-5Q16 12.425 16 12t.288-.712T17 11t.713.288T18 12t-.288.713T17 13t-.712-.288"/></svg></span>
+                  <span class="text-yellow-600 mt-0.5">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M8.513 20.288q-1.638-.713-2.863-1.938t-1.937-2.863T3 12q0-1.95.75-3.65t2.1-2.925q.3-.275.713-.263t.687.288l5.45 5.45q.275.275.275.7t-.275.7t-.7.275t-.7-.275L6.6 7.6q-.75.9-1.175 2.013T5 12q0 2.9 2.05 4.95T12 19t4.95-2.05T19 12q0-2.675-1.713-4.612T13 5.1V6q0 .425-.288.713T12 7t-.712-.288T11 6V4q0-.425.288-.712T12 3q1.85 0 3.488.713T18.35 5.65t1.938 2.863T21 12t-.712 3.488t-1.938 2.862t-2.863 1.938T12 21t-3.488-.712m-2.225-7.575Q6 12.425 6 12t.288-.712T7 11t.713.288T8 12t-.288.713T7 13t-.712-.288m5 5Q11 17.426 11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18t-.712-.288m5-5Q16 12.425 16 12t.288-.712T17 11t.713.288T18 12t-.288.713T17 13t-.712-.288"
+                      />
+                    </svg>
+                  </span>
                   <div>
                     <p class="text-sm font-bold text-yellow-800">
                       Menunggu Review
@@ -522,7 +704,8 @@ function DocumentDetail() {
               >
                 <div class="space-y-3">
                   <div class="bg-blue-50 border border-blue-200 p-2 rounded text-xs text-blue-800">
-                    <b>{activeApproval()?.requester_name}</b> meminta Anda untuk mereview dokumen ini.
+                    <b>{activeApproval()?.requester_name}</b> meminta Anda untuk
+                    mereview dokumen ini.
                   </div>
                   <textarea
                     placeholder="Catatan review (Opsional)..."
@@ -545,7 +728,7 @@ function DocumentDetail() {
                             title: "Dokumen Ditolak",
                             text: "Anda telah menolak pengajuan dokumen ini.",
                             timer: 2000,
-                            showConfirmButton: false
+                            showConfirmButton: false,
                           });
                           fetchDocumentDetail();
                         } catch (err) {
@@ -575,7 +758,7 @@ function DocumentDetail() {
                             title: "Dokumen Disetujui",
                             text: "Anda telah menyetujui pengajuan dokumen ini.",
                             timer: 2000,
-                            showConfirmButton: false
+                            showConfirmButton: false,
                           });
                           fetchDocumentDetail();
                         } catch (err) {

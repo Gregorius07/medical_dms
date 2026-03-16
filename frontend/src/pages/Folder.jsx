@@ -148,14 +148,74 @@ function Folder() {
     }
   };
 
+  const handleDeleteFolder = async (folderId) => {
+    const result = await Swal.fire({
+      title: "Hapus Folder?",
+      text: "Folder HANYA bisa dihapus jika kosong (tidak ada sub-folder atau dokumen aktif di dalamnya).",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus Folder!",
+      cancelButtonText: "Batal"
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      // Pastikan endpoint backend ini sudah sesuai dengan route Anda
+      await api.delete(`/folders/${folderId}`);
+      
+      Swal.fire({
+        icon: "success",
+        title: "Terhapus!",
+        text: "Folder berhasil dihapus secara permanen.",
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      // Refresh tampilan folder
+      loadFolderContents(currentFolderId() || draftId());
+    } catch (err) {
+      // Jika backend melempar error "Folder tidak kosong", pesan itu akan muncul di sini
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Menghapus",
+        text: err.response?.data?.message || "Terjadi kesalahan saat menghapus folder.",
+      });
+    }
+  };
+
   const handleDelete = async (id) => {
-    if (!confirm("Hapus dokumen ini?")) return;
+    const result = await Swal.fire({
+      title: "Hapus dokumen?",
+      text: "Anda tidak akan bisa mengembalikan dokumen ini!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal"
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       await api.delete(`/documents/${id}`);
-
-      loadFolderContents(currentFolderId());
+      Swal.fire({
+        icon: "success",
+        title: "Terhapus!",
+        text: "Dokumen berhasil dihapus.",
+        timer: 1500,
+        showConfirmButton: false
+      });
+      loadFolderContents(currentFolderId() || draftId());
     } catch (err) {
-      alert("Gagal hapus");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Gagal menghapus dokumen.",
+      });
     }
   };
 
@@ -490,6 +550,37 @@ function Folder() {
                             </svg>
                           </button>
                         </Show>
+                        {/* TOMBOL DELETE FOLDER */}
+                    <Show
+                      when={
+                        currentUser()?.role === "admin" ||
+                        currentUser()?.name === folder.created_by
+                      }
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // SANGAT PENTING: Agar klik tombol tidak memicu masuk ke dalam folder
+                          handleDeleteFolder(folder.id_folder);
+                        }}
+                        class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition ml-1"
+                        title="Hapus Folder"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
                       </td>
                     </tr>
                   )}

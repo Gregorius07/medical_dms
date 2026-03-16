@@ -39,6 +39,36 @@ class FolderModel {
         return rows;
     }
 
+    /**
+     * Khusus Admin: Mengambil SEMUA folder root (yang tidak memiliki parent) 
+     * tanpa terikat oleh filter permission.
+     */
+    static async getAllRootFoldersForAdmin() {
+        const query = `
+            SELECT 
+                id_folder, 
+                folder_name, 
+                parent_folder, 
+                created_by,
+                metadata_schema
+            FROM folder 
+            WHERE parent_folder IS NULL 
+            ORDER BY 
+                -- Trik opsional: Tetap mengelompokkan folder Draft di urutan atas (jika admin ingin melihatnya), 
+                -- lalu sisanya diurutkan berdasarkan abjad.
+                CASE WHEN folder_name LIKE 'Draft - %' THEN 0 ELSE 1 END, 
+                folder_name ASC;
+        `;
+        
+        try {
+            const { rows } = await pool.query(query);
+            return rows;
+        } catch (error) {
+            console.error("Gagal mengambil root folders untuk admin:", error);
+            throw error;
+        }
+    }
+
     static async createFolder(folderName, createdBy, parentFolder = null, client) {
         const query = `
             INSERT INTO folder (folder_name, metadata_schema, created_by, parent_folder)

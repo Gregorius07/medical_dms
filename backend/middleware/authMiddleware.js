@@ -14,6 +14,7 @@ const verifyToken = (req,res,next) => {
         const decoded = jwt.verify(token, 'secret');
         req.userId = decoded.id;
         req.name = decoded.name;
+        req.role = decoded.role;
         next();
     }catch(error){
         res.status(403).json({

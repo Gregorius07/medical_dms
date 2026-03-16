@@ -14,7 +14,8 @@ const login = async (req, res) => {
         const token = jwt.sign(
           {
             id: user.id_user, //payload
-            name: user.full_name
+            name: user.full_name,
+            role: user.is_admin? "admin" : "user"
           },
           "secret", //secret key
           {

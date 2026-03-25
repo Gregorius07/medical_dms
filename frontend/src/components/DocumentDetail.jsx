@@ -277,33 +277,50 @@ function DocumentDetail() {
 
   return (
     <div class="min-h-screen bg-gray-50 p-4 md:p-6 flex flex-col">
-      {/* HEADER: Tombol Back & Judul */}
-      <div class="flex items-center gap-4 mb-4">
-        <button
-          onClick={() => navigate(-1)}
-          class="p-2 bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 rounded-full transition shadow-sm"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      {/* HEADER: Tombol Back, Judul & Status */}
+      <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+        
+        {/* Kiri: Tombol Back & Judul */}
+        <div class="flex items-start gap-4 flex-1 min-w-0">
+          <button
+            onClick={() => navigate(-1)}
+            class="p-2.5 mt-0.5 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-full transition shadow-sm shrink-0"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
-        </button>
-        <div>
-          <h1 class="text-xl font-bold text-gray-800">
-            {loading() ? "Memuat..." : doc()?.title || doc()?.file_name}
-          </h1>
-          <p class="text-xs text-gray-500">Document ID: {documentId}</p>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+          
+          {/* Tambahkan min-w-0 dan break-words agar teks panjang tidak merusak layout */}
+          <div class="min-w-0">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900 tracking-tight break-words">
+              {loading() ? "Memuat..." : doc()?.title || doc()?.file_name}
+            </h1>
+            <p class="text-xs text-gray-500 font-mono mt-1">ID: {documentId}</p>
+          </div>
         </div>
+        
+        {/* Kanan: Badge Status (Rata Kanan) */}
+        <div class="shrink-0 md:ml-4 ml-14">
+          <Show when={!loading() && doc()}>
+            <span
+              class={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm ${
+                doc()?.approval_status === "APPROVED"
+                  ? "bg-green-50 border-green-200 text-green-700"
+                  : doc()?.approval_status === "DRAFT"
+                  ? "bg-gray-100 border-gray-200 text-gray-600"
+                  : doc()?.approval_status === "UNDER REVIEW"
+                  ? "bg-amber-50 border-amber-200 text-amber-700"
+                  : "bg-red-50 border-red-200 text-red-700"
+              }`}
+            >
+              {/* Dot Indicator */}
+              <span class={`w-1.5 h-1.5 rounded-full mr-2 ${doc()?.approval_status === "APPROVED" ? "bg-green-500" : doc()?.approval_status === "DRAFT" ? "bg-gray-400" : doc()?.approval_status === "UNDER REVIEW" ? "bg-amber-500" : "bg-red-500"}`}></span>
+              {doc()?.approval_status || "UNKNOWN"}
+            </span>
+          </Show>
+        </div>
+        
       </div>
 
       <Show
@@ -401,106 +418,78 @@ function DocumentDetail() {
           {/* SISI KANAN: METADATA & ACTIONS (30% Lebar) */}
           {/* ======================================= */}
           <div class="flex-[1] bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col gap-6 overflow-y-auto">
-            {/* ACTION BUTTONS (Dirender berdasarkan Permission) */}
+            {/* ACTION BUTTONS */}
             <div class="flex flex-col gap-3 pb-6 border-b border-gray-100">
-              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Actions
+              <h3 class="text-[11px] font-bold text-black-400 uppercase tracking-widest mb-1">
+                Aksi Dokumen
               </h3>
-              {/* TOMBOL MANAGE ACCESS (Contoh: Hanya muncul untuk Admin) */}
-              <Show
-                when={
-                  currentUser()?.role === "admin" ||
-                  currentUser()?.name === doc().created_by
-                }
-              >
+              
+              <Show when={currentUser()?.role === "admin" || currentUser()?.name === doc().created_by}>
                 <button
                   onClick={() => setIsAccessModalOpen(true)}
-                  class="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition mb-2"
+                  class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5 text-blue-700"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  Manage Access
+                  Kelola Akses
                 </button>
               </Show>
+
               <Show when={permissions().download}>
                 <button
                   onClick={handleDownload}
-                  class="w-full py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition"
+                  class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  Download File
+                  Unduh Dokumen
                 </button>
               </Show>
 
-              <Show when={permissions().edit_metadata}>
-                <button
-                  onClick={handleEditMetadata}
-                  class="w-full py-2.5  bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+              <div class="grid grid-cols-2 gap-2">
+                <Show when={permissions().edit_metadata}>
+                  <button
+                    onClick={handleEditMetadata}
+                    class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                  Edit Metadata
-                </button>
-              </Show>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Metadata
+                  </button>
+                </Show>
 
-              <Show when={permissions().upload}>
-                <button
-                  onClick={handleUploadRevision}
-                  class="w-full py-2.5  bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg text-sm flex items-center justify-center gap-2 transition"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <Show when={permissions().upload}>
+                  <button
+                    onClick={handleUploadRevision}
+                    class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Revisi
+                  </button>
+                </Show>
+              </div>
+
+              {/* TAMPILAN EMPTY STATE AKSI DOKUMEN */}
+              <Show
+                when={
+                  !(currentUser()?.role === "admin" || currentUser()?.name === doc().created_by) &&
+                  !permissions().download &&
+                  !permissions().edit_metadata &&
+                  !permissions().upload
+                }
+              >
+                <div class="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  Upload New Version
-                </button>
+                  <p class="text-xs text-gray-500 font-bold">Tidak Ada Aksi Tersedia</p>
+                  <p class="text-[10px] text-gray-400 mt-1">Anda hanya memiliki akses untuk melihat (preview) dokumen ini.</p>
+                </div>
               </Show>
             </div>
 
@@ -508,7 +497,7 @@ function DocumentDetail() {
             {/* PANEL WORKFLOW APPROVAL */}
             {/* ======================================= */}
             <div class=" rounded-xl  flex flex-col gap-3">
-              <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <h3 class="text-[11px] font-bold text-black-400 uppercase tracking-wider">
                 Approval Workflow
               </h3>
 
@@ -665,32 +654,24 @@ function DocumentDetail() {
                   currentUser()?.id !== activeApproval()?.id_approver
                 }
               >
-                <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-3">
-                  <span class="text-yellow-600 mt-0.5">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M8.513 20.288q-1.638-.713-2.863-1.938t-1.937-2.863T3 12q0-1.95.75-3.65t2.1-2.925q.3-.275.713-.263t.687.288l5.45 5.45q.275.275.275.7t-.275.7t-.7.275t-.7-.275L6.6 7.6q-.75.9-1.175 2.013T5 12q0 2.9 2.05 4.95T12 19t4.95-2.05T19 12q0-2.675-1.713-4.612T13 5.1V6q0 .425-.288.713T12 7t-.712-.288T11 6V4q0-.425.288-.712T12 3q1.85 0 3.488.713T18.35 5.65t1.938 2.863T21 12t-.712 3.488t-1.938 2.862t-2.863 1.938T12 21t-3.488-.712m-2.225-7.575Q6 12.425 6 12t.288-.712T7 11t.713.288T8 12t-.288.713T7 13t-.712-.288m5 5Q11 17.426 11 17t.288-.712T12 16t.713.288T13 17t-.288.713T12 18t-.712-.288m5-5Q16 12.425 16 12t.288-.712T17 11t.713.288T18 12t-.288.713T17 13t-.712-.288"
-                      />
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-sm flex items-start gap-3">
+                  <div class="bg-amber-100 p-2 rounded-lg text-amber-600 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                  </span>
+                  </div>
                   <div>
-                    <p class="text-sm font-bold text-yellow-800">
-                      Menunggu Review
-                    </p>
-                    <p class="text-xs text-yellow-700 mt-1">
-                      Pengaju approval:{" "}
-                      <b>{activeApproval()?.requester_name}</b>
-                    </p>
-                    <p class="text-xs text-yellow-700 mt-1">
-                      Menunggu approval dari:{" "}
-                      <b>{activeApproval()?.approver_name}</b>
-                    </p>
+                    <p class="text-sm font-bold text-amber-900">Menunggu Review</p>
+                    <div class="mt-2 space-y-1">
+                      <p class="text-xs text-amber-800 flex justify-between gap-4">
+                        <span class="opacity-75">Pengaju:</span> 
+                        <span class="font-semibold">{activeApproval()?.requester_name}</span>
+                      </p>
+                      <p class="text-xs text-amber-800 flex justify-between gap-4">
+                        <span class="opacity-75">Reviewer:</span> 
+                        <span class="font-semibold">{activeApproval()?.approver_name}</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
               </Show>
@@ -702,79 +683,84 @@ function DocumentDetail() {
                   currentUser()?.id === activeApproval()?.id_approver
                 }
               >
-                <div class="space-y-3">
-                  <div class="bg-blue-50 border border-blue-200 p-2 rounded text-xs text-blue-800">
-                    <b>{activeApproval()?.requester_name}</b> meminta Anda untuk
-                    mereview dokumen ini.
+                <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-sm space-y-4">
+                  <div class="flex items-center gap-3 text-indigo-900">
+                    <div class="bg-indigo-100 p-1.5 rounded-lg shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p class="text-sm">
+                      <span class="font-bold">{activeApproval()?.requester_name}</span> meminta Anda mereview dokumen ini.
+                    </p>
                   </div>
+                  
                   <textarea
-                    placeholder="Catatan review (Opsional)..."
+                    placeholder="Tulis catatan review di sini (Opsional)..."
                     value={approvalNotes()}
                     onInput={(e) => setApprovalNotes(e.target.value)}
-                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 h-20 resize-none"
+                    class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 h-20 resize-none shadow-inner"
                   ></textarea>
 
-                  <div class="flex gap-2">
+                  <div class="flex gap-3">
                     <button
                       onClick={async () => {
+                        // ... (LOGIKA TETAP SAMA SEPERTI ASLINYA)
                         setIsProcessing(true);
                         try {
-                          await api.post(
-                            `/documents/${documentId}/respond-approval`,
-                            { status: "REJECTED", notes: approvalNotes() },
-                          );
-                          Swal.fire({
-                            icon: "success",
-                            title: "Dokumen Ditolak",
-                            text: "Anda telah menolak pengajuan dokumen ini.",
-                            timer: 2000,
-                            showConfirmButton: false,
-                          });
+                          await api.post(`/documents/${documentId}/respond-approval`, { status: "REJECTED", notes: approvalNotes() });
+                          Swal.fire({ icon: "success", title: "Dokumen Ditolak", text: "Anda telah menolak pengajuan dokumen ini.", timer: 2000, showConfirmButton: false });
                           fetchDocumentDetail();
                         } catch (err) {
-                          Swal.fire({
-                            icon: "error",
-                            title: "Terjadi Kesalahan",
-                            text: "Gagal memproses penolakan dokumen.",
-                          });
+                          Swal.fire({ icon: "error", title: "Terjadi Kesalahan", text: "Gagal memproses penolakan dokumen." });
                         }
                         setIsProcessing(false);
                       }}
-                      class="flex-1 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-medium rounded text-sm transition"
+                      class="flex-1 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold rounded-lg text-sm transition shadow-sm flex justify-center items-center gap-1.5"
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                       Tolak
                     </button>
 
                     <button
                       onClick={async () => {
+                        // ... (LOGIKA TETAP SAMA SEPERTI ASLINYA)
                         setIsProcessing(true);
                         try {
-                          await api.post(
-                            `/documents/${documentId}/respond-approval`,
-                            { status: "APPROVED", notes: approvalNotes() },
-                          );
-                          Swal.fire({
-                            icon: "success",
-                            title: "Dokumen Disetujui",
-                            text: "Anda telah menyetujui pengajuan dokumen ini.",
-                            timer: 2000,
-                            showConfirmButton: false,
-                          });
+                          await api.post(`/documents/${documentId}/respond-approval`, { status: "APPROVED", notes: approvalNotes() });
+                          Swal.fire({ icon: "success", title: "Dokumen Disetujui", text: "Anda telah menyetujui pengajuan dokumen ini.", timer: 2000, showConfirmButton: false });
                           fetchDocumentDetail();
                         } catch (err) {
-                          Swal.fire({
-                            icon: "error",
-                            title: "Terjadi Kesalahan",
-                            text: "Gagal memproses persetujuan dokumen.",
-                          });
+                          Swal.fire({ icon: "error", title: "Terjadi Kesalahan", text: "Gagal memproses persetujuan dokumen." });
                         }
                         setIsProcessing(false);
                       }}
-                      class="flex-1 py-2 bg-green-600 text-white hover:bg-green-700 font-medium rounded text-sm transition"
+                      class="flex-1 py-2.5 bg-green-600 border border-transparent text-white hover:bg-green-700 font-bold rounded-lg text-sm transition shadow-sm flex justify-center items-center gap-1.5"
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                       Setujui
                     </button>
                   </div>
+                </div>
+              </Show>
+
+              {/* TAMPILAN EMPTY STATE APPROVAL WORKFLOW */}
+              <Show
+                when={
+                  !(((doc()?.approval_status === "DRAFT" || doc()?.approval_status === "REJECTED") && permissions().upload) ||
+                  doc()?.approval_status === "UNDER REVIEW")
+                }
+              >
+                <div class="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p class="text-xs text-gray-500 font-bold">Tidak Ada Tugas Persetujuan</p>
+                  <p class="text-[10px] text-gray-400 mt-1">
+                    {doc()?.approval_status === "APPROVED" 
+                      ? "Dokumen ini telah disetujui dan disahkan." 
+                      : "Anda tidak memiliki wewenang untuk memproses atau mengajukan dokumen ini."}
+                  </p>
                 </div>
               </Show>
             </div>
@@ -784,79 +770,77 @@ function DocumentDetail() {
 
             {/* METADATA INFO */}
             <div class="flex flex-col gap-4">
-              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Document Info
+              <h3 class="text-[11px] font-bold text-black-400 uppercase tracking-widest mb-1">
+                Informasi Dokumen
               </h3>
-
-              <div>
-                <p class="text-xs text-gray-500 mb-1">Status Approval</p>
-                <span
-                  class={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                    doc()?.approval_status === "APPROVED"
-                      ? "bg-green-100 text-green-700"
-                      : doc()?.approval_status === "DRAFT"
-                        ? "bg-gray-100 text-gray-600"
-                        : doc()?.approval_status === "UNDER REVIEW"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {doc()?.approval_status || "UNKNOWN"}
-                </span>
-              </div>
 
               {/* TAMPILAN NOTES JIKA STATUS APPROVED ATAU REJECTED */}
               <Show
                 when={
-                  (doc()?.approval_status === "APPROVED" ||
-                    doc()?.approval_status === "REJECTED") &&
+                  (doc()?.approval_status === "APPROVED" || doc()?.approval_status === "REJECTED") &&
                   activeApproval()?.notes
                 }
               >
                 <div
-                  class={`p-3 rounded-lg border mt-1 ${
+                  class={`p-4 rounded-xl border relative overflow-hidden ${
                     doc()?.approval_status === "APPROVED"
-                      ? "bg-green-50 border-green-100"
-                      : "bg-red-50 border-red-100"
+                      ? "bg-green-50 border-green-200"
+                      : "bg-red-50 border-red-200"
                   }`}
                 >
-                  <p class="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1">
-                    Catatan Reviewer
-                  </p>
-                  <p class="text-xs text-gray-800 italic">
+                  <div class="flex items-center gap-2 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class={`h-4 w-4 ${doc()?.approval_status === "APPROVED" ? "text-green-600" : "text-red-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    <p class="text-[11px] uppercase tracking-wider font-bold text-gray-600">Catatan Reviewer</p>
+                  </div>
+                  <p class="text-sm text-gray-800 italic leading-relaxed">
                     "{activeApproval()?.notes}"
                   </p>
-                  <p class="text-[10px] text-gray-500 mt-2 text-right">
-                    - {activeApproval()?.approver_name}
+                  <p class="text-xs font-semibold text-gray-600 mt-3 text-right">
+                    — {activeApproval()?.approver_name}
                   </p>
                 </div>
               </Show>
 
-              <div>
-                <p class="text-xs text-gray-500 mb-1">Uploader</p>
-                <p class="text-sm font-medium text-gray-800">
-                  {doc()?.created_by}
-                </p>
-              </div>
+              {/* LIST METADATA (Grid/Flex dengan Ikon) */}
+              <div class="space-y-4 mt-2">
+                <div class="flex items-start gap-3">
+                  <div class="p-2 bg-gray-50 rounded-lg text-gray-400 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Diunggah Oleh</p>
+                    <p class="text-sm font-semibold text-gray-900">{doc()?.created_by}</p>
+                  </div>
+                </div>
 
-              <div>
-                <p class="text-xs text-gray-500 mb-1">Tanggal Upload</p>
-                <p class="text-sm font-medium text-gray-800">
-                  {new Date(doc()?.created_at).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
+                <div class="flex items-start gap-3">
+                  <div class="p-2 bg-gray-50 rounded-lg text-gray-400 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Tanggal Diunggah</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {new Date(doc()?.created_at).toLocaleDateString("id-ID", {
+                        day: "numeric", month: "long", year: "numeric",
+                      })}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      Pukul {new Date(doc()?.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
 
-              <div>
-                <p class="text-xs text-gray-500 mb-1">Ukuran File</p>
-                <p class="text-sm font-medium text-gray-800">
-                  {(doc()?.file_size / 1024).toFixed(2)} KB
-                </p>
+                <div class="flex items-start gap-3">
+                  <div class="p-2 bg-gray-50 rounded-lg text-gray-400 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Ukuran File</p>
+                    <p class="text-sm font-semibold text-gray-900">{(doc()?.file_size / 1024).toFixed(2)} KB</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -867,31 +851,40 @@ function DocumentDetail() {
             <div class="flex flex-col flex-1 min-h-[250px]">
               {/* Header dengan Dropdown Filter */}
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <h3 class="text-[11px] font-bold text-black-400 uppercase tracking-widest flex items-center gap-2">
                   <span>Document History</span>
                   <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px]">
                     {filteredLogs().length}
                   </span>
                 </h3>
 
-                {/* Dropdown Filter Action */}
-                <select
-                  value={logFilter()}
-                  onInput={(e) => setLogFilter(e.target.value)}
-                  class="text-[10px] bg-white border border-gray-200 text-gray-600 rounded px-2 py-1 outline-none cursor-pointer focus:border-blue-400 hover:bg-gray-50 transition"
-                >
-                  <option value="ALL">Semua Aktivitas</option>
-                  <option value="PREVIEW">Preview</option>
-                  <option value="DOWNLOAD">Download</option>
-                  <option value="UPLOAD">Upload Revisi</option>
-                </select>
+                {/* Dropdown Filter Action yang Dipercantik */}
+                <div class="relative inline-block">
+                  <select
+                    value={logFilter()}
+                    onInput={(e) => setLogFilter(e.target.value)}
+                    class="appearance-none bg-white border border-gray-200 text-gray-600 font-semibold text-xs rounded-lg pl-3 pr-8 py-1.5 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                  >
+                    <option value="ALL">Semua Aktivitas</option>
+                    <option value="PREVIEW">Preview</option>
+                    <option value="DOWNLOAD">Download</option>
+                    <option value="UPLOAD">Upload Revisi</option>
+                  </select>
+                  {/* Custom Chevron Icon */}
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              <div class="relative border-l-2 border-gray-100 ml-3 pl-4 space-y-5 overflow-y-auto pr-2 pb-4 max-h-[280px]">
+              {/* Timeline Container */}
+              <div class="relative border-l-2 border-gray-100 ml-3 pl-4 space-y-6 overflow-y-auto pr-2 pb-4 max-h-[280px]">
                 <Show
                   when={filteredLogs().length > 0}
                   fallback={
-                    <div class="text-xs text-gray-400 italic">
+                    <div class="text-xs text-gray-400 italic mt-2">
                       {logs().length > 0
                         ? `Tidak ada riwayat aktivitas untuk filter "${logFilter()}".`
                         : "Belum ada riwayat aktivitas sama sekali."}
@@ -900,52 +893,63 @@ function DocumentDetail() {
                 >
                   <For each={filteredLogs()}>
                     {(log) => (
-                      <div class="relative">
-                        {/* Bulatan Timeline berdasarkan Action */}
+                      <div class="relative group">
+                        {/* Bulatan Timeline dengan Ring Putih (Efek memotong garis) */}
                         <div
-                          class={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
+                          class={`absolute -left-[21px] top-2.5 w-2.5 h-2.5 rounded-full ring-4 ring-white z-10 shadow-sm transition-transform group-hover:scale-110 ${
                             log.action === "UPLOAD"
                               ? "bg-blue-500"
                               : log.action === "DOWNLOAD"
-                                ? "bg-green-500"
-                                : "bg-purple-400"
+                              ? "bg-green-500"
+                              : "bg-purple-500"
                           }`}
                         ></div>
 
-                        <div class="flex flex-col">
-                          {/* Nama & Waktu */}
-                          <div class="flex items-center justify-between gap-2">
-                            <span class="text-sm font-semibold text-gray-800">
+                        {/* Card Konten dengan Hover Effect */}
+                        <div class="flex flex-col p-3 -mt-2 -ml-2 rounded-xl border border-transparent hover:border-gray-100 hover:bg-gray-50 hover:shadow-sm transition-all">
+                          
+                          {/* Hierarki 1: Nama & Waktu */}
+                          <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-sm font-bold text-gray-900">
                               {log.actor_name || "Sistem"}
                             </span>
                             <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                              {new Date(log.timestamp).toLocaleDateString(
-                                "id-ID",
-                                { day: "numeric", month: "short" },
-                              )}{" "}
-                              •{" "}
-                              {new Date(log.timestamp).toLocaleTimeString(
-                                "id-ID",
-                                { hour: "2-digit", minute: "2-digit" },
-                              )}
+                              {new Date(log.timestamp).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric"
+                              })}{" "}
+                              • {new Date(log.timestamp).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
                             </span>
                           </div>
 
-                          {/* Aksi & Detail */}
-                          <div class="flex items-center gap-2 mt-0.5">
+                          {/* Hierarki 2: Aksi (Badge + Ikon) & Detail */}
+                          <div class="flex items-start gap-2">
                             <span
-                              class={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                              class={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0 border ${
                                 log.action === "UPLOAD"
-                                  ? "bg-blue-50 text-blue-600"
+                                  ? "bg-blue-50 text-blue-700 border-blue-100"
                                   : log.action === "DOWNLOAD"
-                                    ? "bg-green-50 text-green-600"
-                                    : "bg-purple-50 text-purple-600"
+                                  ? "bg-green-50 text-green-700 border-green-100"
+                                  : "bg-purple-50 text-purple-700 border-purple-100"
                               }`}
                             >
+                              {/* Ikon Dinamis Berdasarkan Aksi */}
+                              {log.action === "UPLOAD" ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                              ) : log.action === "DOWNLOAD" ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                              )}
                               {log.action}
                             </span>
+                            
                             <span
-                              class="text-xs text-gray-500 truncate"
+                              class="text-[11px] text-gray-500 leading-snug mt-0.5 break-words"
                               title={log.details}
                             >
                               {log.action === "PREVIEW"

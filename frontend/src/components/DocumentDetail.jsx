@@ -781,7 +781,7 @@ function DocumentDetail() {
                   activeApproval()?.notes
                 }
               >
-                <div
+               <div
                   class={`p-4 rounded-xl border relative overflow-hidden ${
                     doc()?.approval_status === "APPROVED"
                       ? "bg-green-50 border-green-200"
@@ -797,9 +797,16 @@ function DocumentDetail() {
                   <p class="text-sm text-gray-800 italic leading-relaxed">
                     "{activeApproval()?.notes}"
                   </p>
-                  <p class="text-xs font-semibold text-gray-600 mt-3 text-right">
-                    — {activeApproval()?.approver_name}
-                  </p>
+                  
+                  {/* Bagian ini yang diubah: Menggunakan Flexbox & Icon User */}
+                  <div class="flex justify-end items-center gap-1.5 mt-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                    <p class="text-xs font-semibold text-gray-600">
+                      {activeApproval()?.approver_name}
+                    </p>
+                  </div>
                 </div>
               </Show>
 

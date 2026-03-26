@@ -1,6 +1,7 @@
 import { createSignal, onMount, For, Show } from "solid-js";
 import api from "../api";
 import Swal from "sweetalert2";
+import { currentUser } from "../store/authStore";
 
 function ManageAccessModal(props) {
   // props: resourceId, resourceType ('FOLDER' atau 'DOCUMENT'), onClose (fungsi untuk menutup modal)
@@ -459,28 +460,43 @@ function ManageAccessModal(props) {
                             </div>
 
                             {/* Tombol Hapus (Revoke) */}
-                            <button
-                              onClick={() =>
-                                handleRevokeAccess(item.id_permission)
+                            <Show 
+                              when={
+                                item.id_user !== currentUser()?.id && 
+                                item.role !== "admin"
                               }
-                              class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition"
-                              title="Cabut Akses"
+                              fallback={
+                                /* Jika itu adalah dirinya sendiri atau Admin, tampilkan ikon shield/gembok sebagai penanda (opsional, tapi bagus untuk UX) */
+                                <div class="p-1.5 text-gray-300 cursor-not-allowed" title="Pemilik atau Admin (Akses Permanen)">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                                  </svg>
+                                </div>
+                              }
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
+                              <button
+                                onClick={() =>
+                                  handleRevokeAccess(item.id_permission)
+                                }
+                                class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition"
+                                title="Cabut Akses"
                               >
-                                <path
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                            </button>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-5 w-5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              </button>
+                            </Show>
                           </div>
                         </div>
                       )}

@@ -69,7 +69,7 @@ function Approval() {
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
-          Riwayat Keputusan
+          Riwayat Approval
         </button>
       </div>
 
@@ -85,7 +85,7 @@ function Approval() {
                   <th class="py-4 px-6">Diajukan Oleh</th>
                 </Show>
                 <Show when={activeTab() === "outbox"}>
-                  <th class="py-4 px-6">Menunggu Keputusan</th>
+                  <th class="py-4 px-6">Menunggu Approval</th>
                 </Show>
                 <Show when={activeTab() === "history"}>
                   <th class="py-4 px-6">Pihak Terkait</th>
@@ -141,9 +141,22 @@ function Approval() {
                       </Show>
                       
                       <Show when={activeTab() === "history"}>
-                        <td class="py-4 px-6 text-xs text-gray-500">
-                          <div><span class="font-semibold text-gray-700">Req:</span> {item.requester_name}</div>
-                          <div><span class="font-semibold text-gray-700">App:</span> {item.approver_name}</div>
+                        <td class="py-4 px-6 text-xs">
+                          {/* Pengaju (Requester) */}
+                          <div class="flex items-center gap-1.5 mb-1.5" title="Diajukan oleh">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span class="text-gray-700 font-medium truncate">{item.requester_name}</span>
+                          </div>
+                          
+                          {/* Penyetuju (Approver) */}
+                          <div class="flex items-center gap-1.5" title="Direview oleh">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            <span class="text-gray-700 font-medium truncate">{item.approver_name}</span>
+                          </div>
                         </td>
                         <td class="py-4 px-6">
                           <span class={`px-2.5 py-1 rounded-md text-xs font-bold ${

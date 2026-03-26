@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors'); //biar fe bisa konek ke be
 const bodyParser = require('body-parser'); //untuk baca data json
 const cookieParser = require('cookie-parser');
+require('./config/elastic');
 
 // Import Routes
 const positionRoutes = require('./routes/positionRoutes');

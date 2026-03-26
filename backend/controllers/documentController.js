@@ -5,6 +5,8 @@ const fs = require("fs");
 const PermissionModel = require("../models/permissionModel");
 const AuditModel = require("../models/auditModel");
 const ApprovalModel = require("../models/approvalModel");
+const pdf = require("pdf-parse");
+const elasticClient = require("../config/elastic");
 
 const DocumentController = {
   getStats: async (req, res) => {
@@ -58,12 +60,55 @@ const DocumentController = {
         uploader: uploaderName || "Unknown",
         metadata: {}, // Nanti diisi dari dynamic form
       };
-      
+
       const result = await DocumentModel.create(docData);
-      await PermissionModel.grantAccess(uploaderName, result.id, "DOCUMENT", {preview: true, download: true, edit_metadata:true, upload: true},"System");
+      await PermissionModel.grantAccess(
+        uploaderName,
+        result.id,
+        "DOCUMENT",
+        { preview: true, download: true, edit_metadata: true, upload: true },
+        "System",
+      );
       res
         .status(201)
         .json({ success: true, message: "Dokumen berhasil diupload" });
+      try {
+        console.log("Mulai mengekstrak teks dari PDF...");
+
+        // 1. Baca file PDF fisik dari folder uploads Anda
+        // Asumsi path file ada di req.file.path (jika pakai multer)
+        const dataBuffer = fs.readFileSync(req.file.path);
+
+        // 2. Ekstrak teks menggunakan pdf-parse
+        const parsedPdf = await pdf(dataBuffer);
+
+        // Bersihkan teks dari enter (\n) yang berlebihan agar rapi
+        const cleanText = parsedPdf.text.replace(/\s+/g, " ").trim();
+
+        console.log("Teks berhasil diekstrak. Mengirim ke Elasticsearch...");
+
+        // 3. Simpan ke Elasticsearch
+        await elasticClient.index({
+          index: "medical_documents",
+          id: result.id, // PENTING: Samakan ID Elasticsearch dengan ID PostgreSQL agar sinkron
+          document: {
+            id_document: result.id,
+            title: req.body.title || req.file.originalname,
+            content: cleanText, // Isi lengkap PDF masuk ke sini
+            uploader: req.name, // Asumsi nama user ada di req.user
+            created_at: new Date().toISOString(),
+          },
+        });
+
+        console.log("✅ Dokumen berhasil di-index ke Elasticsearch!");
+      } catch (elasticError) {
+        console.error(
+          "⚠️ Peringatan: Dokumen tersimpan di database, tapi gagal di-index ke Elasticsearch:",
+          elasticError.message,
+        );
+        // Kita tidak melakukan 'throw error' di sini agar proses upload utama tetap sukses
+        // meskipun Elasticsearch sedang down.
+      }
     } catch (err) {
       // Hapus file jika database gagal agar tidak jadi sampah
       if (req.file) {
@@ -88,7 +133,10 @@ const DocumentController = {
 
   getAccessibleDocumentsId: async (req, res) => {
     try {
-      const result = await DocumentModel.getAccessibleDocuments(req.userId, req.name);
+      const result = await DocumentModel.getAccessibleDocuments(
+        req.userId,
+        req.name,
+      );
       res.json(result.map((item) => item.id_document));
     } catch (error) {
       res.status(500).json({ message: "Gagal mengambil accesible document" });
@@ -217,17 +265,70 @@ const DocumentController = {
       let results = [];
 
       if (type === "fulltext") {
-        // Placeholder untuk fitur Elasticsearch Anda selanjutnya
-        // results = await ElasticSearchService.search(userId, q);
-        return res.status(501).json({
-          message: "Full-Text Search sedang dalam tahap pengembangan.",
-        });
+        try {
+          if (!q) {
+            return res
+              .status(400)
+              .json({ message: "Keyword pencarian wajib diisi!" });
+          }
+
+          console.log(`Mencari dokumen dengan keyword: "${q}"...`);
+
+          // Lakukan pencarian ke Elasticsearch
+          const result = await elasticClient.search({
+            index: "medical_documents",
+
+            query: {
+              // Gunakan query_string agar kita bisa menyisipkan Wildcard (*)
+              query_string: {
+                query: `${q}*`, // <--- Menambahkan bintang di akhir kata (sibr -> sibr*)
+                fields: ["title^3", "content", "uploader"],
+                default_operator: "AND", // Memastikan jika user mengetik 2 kata, keduanya harus ada
+              },
+            },
+            // Fitur Highlight untuk mengambil potongan teks dari dalam PDF
+            highlight: {
+              // Pre dan Post tags ini akan mengapit kata yang ditemukan
+              // Kita langsung gunakan class Tailwind CSS di sini agar siap pakai di SolidJS
+              pre_tags: [
+                "<mark class='bg-yellow-200 text-yellow-900 font-bold px-1 rounded'>",
+              ],
+              post_tags: ["</mark>"],
+              fields: {
+                content: {
+                  fragment_size: 150, // Ambil 150 karakter di sekitar kata yang ditemukan
+                  number_of_fragments: 3, // Maksimal ambil 3 potongan kalimat
+                },
+                title: {},
+              },
+            },
+          });
+
+          // Mapping (merapikan) hasil dari Elasticsearch sebelum dikirim ke frontend
+          const hits = result.hits.hits.map((hit) => ({
+            score: hit._score, // Nilai BM25
+            id_document: hit._source.id_document,
+            title: hit._source.title,
+            uploader: hit._source.uploader,
+            created_at: hit._source.created_at,
+            highlights: hit.highlight, // Berisi array potongan teks HTML
+          }));
+
+          return res.status(200).json({
+            total_found: result.hits.total.value,
+            data: hits,
+          });
+        } catch (error) {
+          console.error("Error Elasticsearch Search:", error.message);
+          res
+            .status(500)
+            .json({ message: "Terjadi kesalahan pada mesin pencari." });
+        }
       } else {
         // Pencarian Metadata Default
         results = await DocumentModel.searchMetadata(userId, q);
+        return res.json({ data: results });
       }
-
-      res.json({ data: results });
     } catch (error) {
       console.error("Error search documents:", error);
       res

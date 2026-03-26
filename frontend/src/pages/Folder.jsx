@@ -593,52 +593,82 @@ function Folder() {
                       onClick={() => navigate(`/document/${doc.id_document}`)}
                       class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group"
                     >
-                      <td class="py-3 px-4 flex items-center gap-3">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="w-5 h-5 text-blue-500 shrink-0"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v6h6v10H6z" />
-                          <path d="M8 12h8v2H8zm0 4h5v2H8z" />
-                        </svg>
-                        <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate">
-                          {doc.title || doc.file_name}
-                        </span>
+                      <td class="py-3 px-4">
+                        <div class="flex items-start gap-3">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v6h6v10H6z" />
+                            <path d="M8 12h8v2H8zm0 4h5v2H8z" />
+                          </svg>
+                          <div class="min-w-0">
+                            <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate block">
+                              {/* Gunakan highlights title jika ada (dari Elasticsearch), jika tidak, gunakan title/file_name biasa */}
+                              {doc.highlights?.title ? (
+                                <span innerHTML={doc.highlights.title[0]} />
+                              ) : (
+                                doc.title || doc.file_name
+                              )}
+                            </span>
+                            
+                            {/* --- TAMPILAN HIGHLIGHT FULL-TEXT SEARCH (ELASTICSEARCH) --- */}
+                            <Show when={doc.highlights && doc.highlights.content}>
+                              <div class="mt-1 text-xs text-gray-500 max-w-2xl leading-relaxed italic border-l-2 border-yellow-300 pl-2">
+                                {/* Karena bisa ada >1 cuplikan kalimat, kita gabungkan (join) dengan tanda '...' */}
+                                <span innerHTML={`"...${doc.highlights.content.join(' ... ')}..."`} />
+                              </div>
+                            </Show>
+                            
+                            {/* Tampilkan Nilai Relevansi (BM25 Score) Jika Ada */}
+                            <Show when={doc.score}>
+                               <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block border border-gray-200">
+                                 Relevansi: {doc.score.toFixed(2)}
+                               </span>
+                            </Show>
+
+                          </div>
+                        </div>
                       </td>
-                      <td class="py-3 px-4 truncate">{doc.created_by}</td>
-                      <td class="py-3 px-4 text-gray-500">
+                      <td class="py-3 px-4 truncate align-top pt-4">{doc.created_by || doc.uploader}</td>
+                      <td class="py-3 px-4 text-gray-500 align-top pt-4">
                         {new Date(doc.created_at).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
                         })}
                       </td>
-                      <td class="py-3 px-4">
+                      <td class="py-3 px-4 align-top pt-4">
                         <span
                           class={`px-2 py-1 rounded text-xs font-medium ${
                             doc.approval_status === "APPROVED"
                               ? "bg-green-100 text-green-700"
                               : doc.approval_status === "DRAFT"
                                 ? "bg-gray-100 text-gray-600"
-                                : "bg-yellow-100 text-yellow-700"
+                                : doc.approval_status === "UNDER REVIEW"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-gray-100 text-gray-500" // Fallback jika hasil pencarian tidak membawa status lengkap
                           }`}
                         >
-                          {doc.approval_status}
+                          {doc.approval_status || "UNKNOWN"}
                         </span>
                       </td>
+                      
                       {/* TOMBOL DELETE (Berlaku aturan khusus) */}
+                      <td class="py-3 px-4 align-top pt-3 text-right">
                         <Show 
                           when={
-                            currentUser()?.role === "admin" || 
+                            !isSearching() && // Sembunyikan tombol hapus saat sedang mode pencarian agar aman
+                            (currentUser()?.role === "admin" || 
                             (currentUser()?.name === doc.created_by && 
-                            (doc.approval_status === 'DRAFT' || doc.approval_status === 'REJECTED'))
+                            (doc.approval_status === 'DRAFT' || doc.approval_status === 'REJECT')))
                           }
                         >
                           <button 
                             onClick={(e) => {
-                                e.stopPropagation(); // Mencegah masuk ke detail dokumen saat klik hapus
+                                e.stopPropagation();
                                 handleDelete(doc.id_document);
                             }} 
                             class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
@@ -649,6 +679,7 @@ function Folder() {
                             </svg>
                           </button>
                         </Show>
+                      </td>
                     </tr>
                   )}
                 </For>

@@ -22,16 +22,16 @@ const initElasticIndex = async () => {
         await elasticClient.indices.create({
             index: indexName,
             settings: {
-                // Konfigurasi Algoritma Okapi BM25 secara eksplisit
+                // pakai algoritma bm25
                 similarity: {
                     default_bm25: {
                         type: "BM25",
-                        b: 0.75,   // Parameter standar BM25
-                        k1: 1.2    // Parameter standar BM25
+                        b: 0.75,   
+                        k1: 1.2    
                     }
                 },
                 analysis: {
-                    // Mendefinisikan filter tambahan (Stopword & Stemming Snowball)
+                    // definisi filtr
                     filter: {
                         english_stop: {
                             type: "stop",
@@ -42,15 +42,15 @@ const initElasticIndex = async () => {
                             language: "English"
                         }
                     },
-                    // Merakit semua komponen menjadi satu Analyzer kustom
+                    // 
                     analyzer: {
                         custom_english_analyzer: {
                             type: "custom",
                             tokenizer: "standard",
                             filter: [
-                                "lowercase",         // 1. Ubah ke huruf kecil
-                                "english_stop",      // 2. Buang stopword
-                                "english_snowball"   // 3. Lakukan stemming
+                                "lowercase",        
+                                "english_stop",      
+                                "english_snowball"  
                             ]
                         }
                     }
@@ -61,16 +61,14 @@ const initElasticIndex = async () => {
                     id_document: { type: "integer" },
                     title: { 
                         type: "text", 
-                        analyzer: "custom_english_analyzer", // Gunakan analyzer kustom di sini
+                        analyzer: "custom_english_analyzer", 
                         similarity: "default_bm25"
                     },
                     content: { 
                         type: "text", 
-                        analyzer: "custom_english_analyzer", // Gunakan analyzer kustom di sini
+                        analyzer: "custom_english_analyzer", 
                         similarity: "default_bm25"
                     },
-                    uploader: { type: "keyword" }, // Keyword berarti pencarian kata persis (tidak di-stemming)
-                    created_at: { type: "date" }
                 }
             }
         });

@@ -4,6 +4,7 @@ import { currentUser } from "../store/authStore";
 import { useNavigate } from "@solidjs/router";
 import ManageAccessModal from "../components/ManageAccessModal";
 import Swal from "sweetalert2";
+import SearchBar from "../components/SearchBar";
 
 function Draft() {
   // State khusus untuk Draft (Sudah diisolasi, tidak ada bentrok dengan Home)
@@ -32,6 +33,9 @@ function Draft() {
   const [isDocumentAccessModalOpen, setIsDocumentAccessModalOpen] =
     createSignal(false);
   const [selectedDocumentId, setSelectedDocumentId] = createSignal(null);
+
+  const [isSearching, setIsSearching] = createSignal(false);
+
 
   // ==========================================
   // FUNGSI API (Sesuai dengan kode asli Anda)
@@ -101,6 +105,32 @@ function Draft() {
       console.error("Gagal memuat breadcrumbs draft", err);
     }
   };
+
+  const executeSearch = async (keyword, type) => { // <-- Menerima tipe dari SearchBar
+  setIsSearching(true);
+  setUploadLoading(true);
+
+  try {
+    const res = await api.get(
+      `/documents/search?q=${keyword}&type=${type}` // <-- Gunakan type argumen
+    );
+
+    setFolders([]);
+    setDocuments(res.data.data);
+    setBreadcrumbs([
+      { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
+    ]);
+  } catch (err) {
+    alert(err.response?.data?.message || "Gagal melakukan pencarian");
+  } finally {
+    setUploadLoading(false);
+  }
+};
+
+const clearSearch = () => {
+  setIsSearching(false);
+  loadFolderContents(null); // Kembali ke Root Home
+};
 
   // ==========================================
   // LIFECYCLE & NAVIGASI
@@ -354,6 +384,7 @@ function Draft() {
       {/* HEADER MY DRAFT */}
       <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b pb-4">
         <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">
+          
           {/* TOMBOL BACK DRAFT (Tampil jika BUKAN di root draft) */}
           <Show when={currentFolderId() && currentFolderId() !== draftId()}>
             <button
@@ -455,6 +486,16 @@ function Draft() {
           </button>
         </div>
       </div>
+
+      {/* ========================================== */}
+      {/* --- SEARCH BAR AREA --- */}
+      {/* ========================================== */}
+      <SearchBar 
+         isSearching={isSearching()} 
+         onSearch={executeSearch} 
+         onClear={clearSearch} 
+         placeholder="Cari draft dokumen, pengunggah, atau metadata..."
+      />
 
       {/* --- KONTEN AREA MY DRAFT (LIST VIEW GOOGLE DRIVE STYLE) --- */}
       <Show when={folders().length > 0 || documents().length > 0}>
@@ -567,88 +608,97 @@ function Draft() {
                     onClick={() => navigate(`/document/${doc.id_document}`)}
                     class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group"
                   >
-                    <td class="py-3 px-4 flex items-center gap-3">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="w-5 h-5 text-blue-500 shrink-0"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v6h6v10H6z" />
-                        <path d="M8 12h8v2H8zm0 4h5v2H8z" />
-                      </svg>
-                      <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate">
-                        {doc.title || doc.file_name}
-                      </span>
+                    <td class="py-3 px-4">
+                      <div class="flex items-start gap-3">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v6h6v10H6z" />
+                          <path d="M8 12h8v2H8zm0 4h5v2H8z" />
+                        </svg>
+                        <div class="min-w-0">
+                          <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate block">
+                            {/* Gunakan highlights title jika ada (dari Elasticsearch) */}
+                            {doc.highlights?.title ? (
+                              <span innerHTML={doc.highlights.title[0]} />
+                            ) : (
+                              doc.title || doc.file_name
+                            )}
+                          </span>
+                          
+                          {/* --- TAMPILAN HIGHLIGHT FULL-TEXT SEARCH (ELASTICSEARCH) --- */}
+                          <Show when={doc.highlights && doc.highlights.content}>
+                            <div class="mt-1 text-xs text-gray-500 max-w-2xl leading-relaxed italic border-l-2 border-yellow-300 pl-2">
+                              <span innerHTML={`"...${doc.highlights.content.join(' ... ')}..."`} />
+                            </div>
+                          </Show>
+                          
+                          {/* Tampilkan Nilai Relevansi (BM25 Score) Jika Ada */}
+                          <Show when={doc.score}>
+                              <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block border border-gray-200">
+                                Relevansi: {doc.score.toFixed(2)}
+                              </span>
+                          </Show>
+                        </div>
+                      </div>
                     </td>
-                    <td class="py-3 px-4 truncate">{doc.created_by}</td>
-                    <td class="py-3 px-4 text-gray-500">
-                      {new Date(doc.created_at).toLocaleDateString("id-ID", {
+                    
+                    <td class="py-3 px-4 truncate align-top pt-4">
+                      {doc.created_by || doc.uploader || "-"}
+                    </td>
+                    
+                    <td class="py-3 px-4 text-gray-500 align-top pt-4">
+                      {/* Safety check agar tidak muncul 'Invalid Date' jika kosong */}
+                      {doc.created_at ? new Date(doc.created_at).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
-                      })}
+                      }) : "-"}
                     </td>
-                    <td class="py-3 px-4">
+                    
+                    <td class="py-3 px-4 align-top pt-4">
                       <span
-                        class={`px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700`}
+                        class={`px-2 py-1 rounded text-xs font-medium ${
+                          doc.approval_status === "APPROVED"
+                            ? "bg-green-100 text-green-700"
+                            : doc.approval_status === "DRAFT"
+                              ? "bg-gray-100 text-gray-600"
+                              : doc.approval_status === "UNDER REVIEW"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-500"
+                        }`}
                       >
-                        {doc.approval_status}
+                        {doc.approval_status || "UNKNOWN"}
                       </span>
                     </td>
-                    {/* Tampilkan tombol HANYA jika user adalah Admin atau Pembuat Folder */}
-                    <Show
-                      when={
-                        currentUser()?.role === "admin" ||
-                        currentUser()?.name === doc.created_by
-                      }
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
-                          setSelectedDocumentId(doc.id_document);
-                          setIsDocumentAccessModalOpen(true);
-                        }}
-                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
-                        title="Manage Access"
+                    
+                    {/* TOMBOL DELETE (Sembunyi saat searching) */}
+                    <td class="py-3 px-4 align-top pt-3 text-right">
+                      <Show 
+                        when={
+                          !isSearching() && 
+                          (currentUser()?.role === "admin" || 
+                          (currentUser()?.name === doc.created_by && 
+                          (doc.approval_status === 'DRAFT' || doc.approval_status === 'REJECTED')))
+                        }
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                        <button 
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(doc.id_document);
+                          }} 
+                          class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                          title="Hapus Dokumen"
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                          />
-                        </svg>
-                      </button>
-                    </Show>
-                    {/* TOMBOL DELETE (Berlaku aturan khusus) */}
-                        <Show 
-                          when={
-                            currentUser()?.role === "admin" || 
-                            (currentUser()?.name === doc.created_by && 
-                            (doc.approval_status === 'DRAFT' || doc.approval_status === 'REJECTED'))
-                          }
-                        >
-                          <button 
-                            onClick={(e) => {
-                                e.stopPropagation(); // Mencegah masuk ke detail dokumen saat klik hapus
-                                handleDelete(doc.id_document);
-                            }} 
-                            class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
-                            title="Hapus Dokumen"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </Show>
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </Show>
+                    </td>
                   </tr>
                 )}
               </For>
@@ -682,7 +732,7 @@ function Draft() {
                   Click to select file
                 </div>
                 <div class="text-xs text-gray-400 mb-2">
-                  PDF, DOCX, XLS (Max 10MB)
+                  PDF (Max 10MB)
                 </div>
                 <Show when={uploadFile()}>
                   <div class="text-sm text-green-600 font-bold bg-green-50 py-1 px-2 rounded inline-block">

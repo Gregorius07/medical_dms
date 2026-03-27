@@ -448,7 +448,6 @@ function DocumentDetail() {
                 </button>
               </Show>
 
-              <div class="grid grid-cols-2 gap-2">
                 <Show when={permissions().edit_metadata}>
                   <button
                     onClick={handleEditMetadata}
@@ -472,7 +471,7 @@ function DocumentDetail() {
                     Upload Revisi
                   </button>
                 </Show>
-              </div>
+              
 
               {/* TAMPILAN EMPTY STATE AKSI DOKUMEN */}
               <Show
@@ -705,7 +704,6 @@ function DocumentDetail() {
                   <div class="flex gap-3">
                     <button
                       onClick={async () => {
-                        // ... (LOGIKA TETAP SAMA SEPERTI ASLINYA)
                         setIsProcessing(true);
                         try {
                           await api.post(`/documents/${documentId}/respond-approval`, { status: "REJECTED", notes: approvalNotes() });

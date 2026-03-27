@@ -395,29 +395,6 @@ const DocumentModel = {
         .json({ message: "Terjadi kesalahan sistem saat menghapus dokumen." });
     }
   },
-  /**
-   * Khusus Admin: Mengambil daftar semua dokumen di dalam sebuah FOLDER
-   * tanpa terikat oleh aturan permission.
-   */
-  // getDocumentsInFolderForAdmin: async (folderId) => {
-  //   const query = `
-  //       SELECT
-  //           d.id_document,
-  //           dv.file_name,
-  //           dv.file_size,
-  //           dv.created_at,
-  //           dv.created_by,
-  //           dv.approval_status
-  //       FROM document d
-  //       JOIN document_version dv ON d.id_document = dv.id_document
-  //       WHERE d.id_folder = $1
-  //         AND dv.is_active = true
-  //         AND d.is_deleted = false
-  //       ORDER BY dv.created_at DESC
-  //   `;
-  //   const { rows } = await pool.query(query, [folderId]);
-  //   return rows;
-  // },
 };
 
 module.exports = DocumentModel;

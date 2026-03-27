@@ -75,39 +75,34 @@ const DocumentController = {
       try {
         console.log("Mulai mengekstrak teks dari PDF...");
 
-        // 1. Baca file PDF fisik dari folder uploads Anda
-        // Asumsi path file ada di req.file.path (jika pakai multer)
+        // baca file PDF fisik berdasarkan path
         const dataBuffer = fs.readFileSync(req.file.path);
 
-        // 2. Ekstrak teks menggunakan pdf-parse
+        // ekstrak teks menggunakan pdf-parse
         const parsedPdf = await pdf(dataBuffer);
 
-        // Bersihkan teks dari enter (\n) yang berlebihan agar rapi
+        // bersihkan teks dari enter (\n) yang berlebihan agar rapi
         const cleanText = parsedPdf.text.replace(/\s+/g, " ").trim();
 
         console.log("Teks berhasil diekstrak. Mengirim ke Elasticsearch...");
 
-        // 3. Simpan ke Elasticsearch
+        // simpan ke Elasticsearch
         await elasticClient.index({
           index: "medical_documents",
-          id: result.id, // PENTING: Samakan ID Elasticsearch dengan ID PostgreSQL agar sinkron
           document: {
             id_document: result.id,
             title: req.body.title || req.file.originalname,
-            content: cleanText, // Isi lengkap PDF masuk ke sini
-            uploader: req.name, // Asumsi nama user ada di req.user
-            created_at: new Date().toISOString(),
+            content: cleanText, // berisi konten pdf
           },
         });
 
-        console.log("✅ Dokumen berhasil di-index ke Elasticsearch!");
+        console.log("Dokumen berhasil di-index ke Elasticsearch!");
       } catch (elasticError) {
+        // tidak di throw agar proses utama tetap sukses
         console.error(
-          "⚠️ Peringatan: Dokumen tersimpan di database, tapi gagal di-index ke Elasticsearch:",
+          "Dokumen tersimpan di database, tapi gagal di-index ke Elasticsearch:",
           elasticError.message,
         );
-        // Kita tidak melakukan 'throw error' di sini agar proses upload utama tetap sukses
-        // meskipun Elasticsearch sedang down.
       }
     } catch (err) {
       // Hapus file jika database gagal agar tidak jadi sampah
@@ -122,6 +117,26 @@ const DocumentController = {
   delete: async (req, res) => {
     try {
       await DocumentModel.softDelete(req.params.id);
+      try {
+        await elasticClient.delete({
+          index: "medical_documents",
+          id: req.params.id.toString(), 
+        });
+        console.log(
+          `Dokumen dengan ID ${req.params.id} berhasil dihapus dari Elasticsearch.`,
+        );
+      } catch (elasticError) {
+        if (elasticError.meta && elasticError.meta.statusCode === 404) {
+          console.log(
+            `Dokumen ID ${req.params.id} tidak ditemukan di ES, lewati.`,
+          );
+        } else {
+          console.error(
+            "Gagal menghapus dari Elasticsearch:",
+            elasticError.message,
+          );
+        }
+      }
       res.json({
         success: true,
         message: "Dokumen berhasil dihapus (Soft Delete)",
@@ -237,6 +252,32 @@ const DocumentController = {
       );
 
       const existingDoc = await DocumentModel.getDocumentById(docId);
+      try {
+        console.log("Mengekstrak teks dari file revisi terbaru...");
+
+        const dataBuffer = fs.readFileSync(req.file.path);
+        const parsedPdf = await pdf(dataBuffer); // menggunakan const pdf = require('pdf-parse')
+        const cleanText = parsedPdf.text.replace(/\s+/g, " ").trim();
+
+        // 2. Kirim perintah UPDATE ke Elasticsearch
+        await elasticClient.update({
+          index: "medical_documents",
+          id: docId.toString(), // id dokumen yang direvisi
+          doc: {
+            content: cleanText,
+          },
+        });
+
+        console.log(
+          ` Teks revisi untuk dokumen ID ${docId} berhasil di-update di Elasticsearch!`,
+        );
+      } catch (elasticError) {
+        console.error(
+          " Gagal meng-update versi baru ke Elasticsearch:",
+          elasticError.message,
+        );
+        // Jangan throw error agar user tetap sukses mengupload revisi di PostgreSQL
+      }
 
       res.status(201).json({ message: "Revisi dokumen berhasil diunggah." });
       await AuditModel.log(
@@ -259,59 +300,51 @@ const DocumentController = {
 
       if (!q || q.trim() === "") {
         ``;
-        return res.json({ data: [] });
+        return res
+          .status(400)
+          .json({ message: "Keyword pencarian wajib diisi!" });
       }
 
-      let results = [];
+      const metadataResults = await DocumentModel.searchMetadata(userId, q);
 
       if (type === "fulltext") {
         try {
-          if (!q) {
-            return res
-              .status(400)
-              .json({ message: "Keyword pencarian wajib diisi!" });
-          }
-
           console.log(`Mencari dokumen dengan keyword: "${q}"...`);
 
-          // Lakukan pencarian ke Elasticsearch
+          // lakukan pencarian ke Elasticsearch
           const result = await elasticClient.search({
             index: "medical_documents",
 
             query: {
-              // Gunakan query_string agar kita bisa menyisipkan Wildcard (*)
               query_string: {
-                query: `${q}*`, // <--- Menambahkan bintang di akhir kata (sibr -> sibr*)
-                fields: ["title^3", "content", "uploader"],
-                default_operator: "AND", // Memastikan jika user mengetik 2 kata, keduanya harus ada
+                query: `${q}*`,
+                fields: ["content"],
+                default_operator: "AND",
               },
             },
-            // Fitur Highlight untuk mengambil potongan teks dari dalam PDF
+            // untuk highlight
             highlight: {
-              // Pre dan Post tags ini akan mengapit kata yang ditemukan
-              // Kita langsung gunakan class Tailwind CSS di sini agar siap pakai di SolidJS
+              // pake tag html langsung
               pre_tags: [
                 "<mark class='bg-yellow-200 text-yellow-900 font-bold px-1 rounded'>",
               ],
               post_tags: ["</mark>"],
               fields: {
                 content: {
-                  fragment_size: 150, // Ambil 150 karakter di sekitar kata yang ditemukan
-                  number_of_fragments: 3, // Maksimal ambil 3 potongan kalimat
+                  fragment_size: 150, // ambil 150 karakter di sekitar kata yang ditemukan
+                  number_of_fragments: 3, // maksimal ambil 3 kalimat
                 },
                 title: {},
               },
             },
           });
 
-          // Mapping (merapikan) hasil dari Elasticsearch sebelum dikirim ke frontend
+          // mapping (merapikan) hasil dari Elasticsearch sebelum dikirim ke frontend
           const hits = result.hits.hits.map((hit) => ({
-            score: hit._score, // Nilai BM25
+            score: hit._score, // hasil skor BM25
             id_document: hit._source.id_document,
             title: hit._source.title,
-            uploader: hit._source.uploader,
-            created_at: hit._source.created_at,
-            highlights: hit.highlight, // Berisi array potongan teks HTML
+            highlights: hit.highlight,
           }));
 
           return res.status(200).json({
@@ -326,8 +359,7 @@ const DocumentController = {
         }
       } else {
         // Pencarian Metadata Default
-        results = await DocumentModel.searchMetadata(userId, q);
-        return res.json({ data: results });
+        return res.json({ data: metadataResults });
       }
     } catch (error) {
       console.error("Error search documents:", error);

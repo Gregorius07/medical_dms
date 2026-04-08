@@ -266,7 +266,7 @@ function Folder() {
 
   try {
     const res = await api.get(
-      `/documents/search?q=${keyword}&type=${type}` 
+      `/documents/search?q=${keyword}&type=${type}&location=home` 
     );
 
     setFolders([]);

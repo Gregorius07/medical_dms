@@ -112,7 +112,7 @@ function Draft() {
 
   try {
     const res = await api.get(
-      `/documents/search?q=${keyword}&type=${type}` // <-- Gunakan type argumen
+      `/documents/search?q=${keyword}&type=${type}&location=draft` // <-- Gunakan type argumen
     );
 
     setFolders([]);

@@ -299,22 +299,18 @@ const DocumentController = {
       const { q, type } = req.query; // q = keyword, type = 'metadata' atau 'fulltext'
 
       if (!q || q.trim() === "") {
-        ``;
         return res
           .status(400)
           .json({ message: "Keyword pencarian wajib diisi!" });
       }
 
-      const metadataResults = await DocumentModel.searchMetadata(userId, q);
-
       if (type === "fulltext") {
         try {
           console.log(`Mencari dokumen dengan keyword: "${q}"...`);
 
-          // lakukan pencarian ke Elasticsearch
+          // 1. Lakukan pencarian ke Elasticsearch
           const result = await elasticClient.search({
             index: "medical_documents",
-
             query: {
               query_string: {
                 query: `${q}*`,
@@ -322,43 +318,71 @@ const DocumentController = {
                 default_operator: "AND",
               },
             },
-            // untuk highlight
             highlight: {
-              // pake tag html langsung
               pre_tags: [
                 "<mark class='bg-yellow-200 text-yellow-900 font-bold px-1 rounded'>",
               ],
               post_tags: ["</mark>"],
               fields: {
                 content: {
-                  fragment_size: 150, // ambil 150 karakter di sekitar kata yang ditemukan
-                  number_of_fragments: 3, // maksimal ambil 3 kalimat
+                  fragment_size: 150,
+                  number_of_fragments: 3,
                 },
                 title: {},
               },
             },
           });
 
-          // mapping (merapikan) hasil dari Elasticsearch sebelum dikirim ke frontend
-          const hits = result.hits.hits.map((hit) => ({
-            score: hit._score, // hasil skor BM25
-            id_document: hit._source.id_document,
-            title: hit._source.title,
-            highlights: hit.highlight,
-          }));
+          const esHits = result.hits.hits;
 
+          // Jika Elasticsearch tidak menemukan apa-apa, langsung kembalikan array kosong
+          if (esHits.length === 0) {
+            return res.status(200).json({
+              total_found: 0,
+              data: [],
+            });
+          }
+
+          // 2. Ekstrak array ID dari hasil pencarian Elasticsearch
+          const documentIds = esHits.map((hit) => hit._source.id_document);
+
+          // 3. Tarik data (Metadata) dari PostgreSQL MELALUI MODEL
+          const dbDocuments = await DocumentModel.getDocumentsByIds(documentIds);
+
+          // 4. GABUNGKAN (Merge) data dari Elasticsearch dengan data dari PostgreSQL
+          const mergedData = esHits.map((hit) => {
+            const esId = hit._source.id_document;
+            // Cari kecocokan data dari DB berdasarkan ID
+            const dbData = dbDocuments.find((doc) => doc.id_document === esId);
+
+            return {
+              id_document: esId,
+              score: hit._score,
+              highlights: hit.highlight,
+              
+              // Prioritaskan data dari DB, jika tidak ada fallback ke ES/Default
+              title: dbData ? (dbData.title || dbData.file_name) : hit._source.title,
+              created_by: dbData ? dbData.created_by : "-",
+              created_at: dbData ? dbData.created_at : null,
+              approval_status: dbData ? dbData.approval_status : "UNKNOWN",
+            };
+          });
+
+          // 5. Kembalikan data yang sudah digabung
           return res.status(200).json({
             total_found: result.hits.total.value,
-            data: hits,
+            data: mergedData,
           });
+
         } catch (error) {
           console.error("Error Elasticsearch Search:", error.message);
-          res
+          return res
             .status(500)
             .json({ message: "Terjadi kesalahan pada mesin pencari." });
         }
       } else {
-        // Pencarian Metadata Default
+        // Pencarian Metadata Default (MELALUI MODEL)
+        const metadataResults = await DocumentModel.searchMetadata(userId, q);
         return res.json({ data: metadataResults });
       }
     } catch (error) {

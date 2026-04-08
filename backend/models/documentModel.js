@@ -224,6 +224,35 @@ const DocumentModel = {
     return rows[0]; // Akan undefined jika tidak ada
   },
 
+  // Tambahkan fungsi ini di dalam DocumentModel
+  getDocumentsByIds: async (documentIds) => {
+    // Jika array ID kosong, langsung kembalikan array kosong agar tidak error di query
+    if (!documentIds || documentIds.length === 0) {
+      return [];
+    }
+
+    const query = `
+      SELECT 
+          d.id_document, 
+          d.id_folder, 
+          dv.file_name, 
+          dv.file_name, 
+          dv.file_size,
+          dv.file_path,
+          dv.custom_metadata, 
+          dv.created_at, 
+          dv.created_by, 
+          dv.approval_status
+      FROM document d
+      JOIN document_version dv ON d.id_document = dv.id_document
+      WHERE d.id_document = ANY($1) AND dv.is_active = TRUE;
+    `;
+
+    // Pastikan variabel koneksi db/pool Anda sesuai (misalnya db.query atau pool.query)
+    const result = await pool.query(query, [documentIds]);
+    return result.rows;
+  },
+
   /**
    * Menambahkan versi baru dari sebuah dokumen
    */

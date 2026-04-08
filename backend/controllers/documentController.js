@@ -7,6 +7,7 @@ const AuditModel = require("../models/auditModel");
 const ApprovalModel = require("../models/approvalModel");
 const pdf = require("pdf-parse");
 const elasticClient = require("../config/elastic");
+const FolderModel = require("../models/folderModel");
 
 const DocumentController = {
   getStats: async (req, res) => {
@@ -306,17 +307,48 @@ const DocumentController = {
 
       if (type === "fulltext") {
         try {
+          const {location} = req.query;
+          console.log("location:", location);
+          let allowedIds = [];
+          //nanti masih harus diperbaiki (belum keambil semua dokumennya)
+          if (location === "home") {
+            const accessibleDocs = await DocumentModel.getAccessibleDocuments(userId, req.name);
+            console.log(`Isi getaccesibledocs: ${accessibleDocs}`)
+            allowedIds = accessibleDocs.map(doc => doc.id_document);
+            console.log(`Isi allowedIds: ${allowedIds}`)
+          } else{
+            const draftId = await FolderModel.getDraftFolderByUserId(userId);
+            const accessibleDocs = await DocumentModel.getDocumentsInFolder(draftId.id_folder);
+            allowedIds = accessibleDocs.map(doc => doc.id_document);
+            console.log(`Isi allowedIds: ${allowedIds}`)
+          }
           console.log(`Mencari dokumen dengan keyword: "${q}"...`);
 
           // 1. Lakukan pencarian ke Elasticsearch
           const result = await elasticClient.search({
             index: "medical_documents",
             query: {
-              query_string: {
-                query: `${q}*`,
-                fields: ["content"],
-                default_operator: "AND",
-              },
+              bool: {
+                // MUST: Syarat pencarian teks (Harus cocok dengan keyword)
+                must: [
+                  {
+                    query_string: {
+                      query: `${q}*`,
+                      fields: ["content"],
+                      default_operator: "AND",
+                    }
+                  }
+                ],
+                // FILTER: Syarat keamanan (ID dokumen harus ada di dalam array allowedIds)
+                // Filter ini sangat cepat karena tidak ikut dihitung dalam skor BM25
+                filter: [
+                  {
+                    terms: {
+                      id_document: allowedIds // Lempar array ID dari PostgreSQL ke sini
+                    }
+                  }
+                ]
+              }
             },
             highlight: {
               pre_tags: [

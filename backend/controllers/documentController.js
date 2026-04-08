@@ -424,6 +424,69 @@ const DocumentController = {
         .json({ message: "Terjadi kesalahan saat melakukan pencarian." });
     }
   },
+
+  // Mengambil daftar versi untuk frontend
+  getVersions: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const versions = await DocumentModel.getDocumentVersions(id);
+      res.status(200).json({ data: versions });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Gagal mengambil riwayat versi dokumen." });
+    }
+  },
+
+  // Melakukan aksi Rollback
+  rollbackVersion: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { targetVersionId } = req.body;
+      const userId = req.userId; // Dari middleware auth
+      const userRole = req.userRole; // Dari middleware auth, sesuaikan dengan nama properti Anda
+
+      // 1. Dapatkan detail dokumen untuk cek permission (Hanya Pemilik & Admin)
+      const doc = await DocumentModel.getDocumentById(id);
+      if (!doc) return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+
+      const isOwner = doc.created_by === req.name; // Asumsi req.username ada dari token
+      const isAdmin = userRole === 'admin' || req.isAdmin === true;
+
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "Anda tidak memiliki izin untuk melakukan rollback dokumen ini." });
+      }
+
+      // 2. Lakukan Rollback di Database PostgreSQL
+      const rolledBackDoc = await DocumentModel.rollbackVersion(id, targetVersionId);
+
+      // 3. SINKRONISASI KE ELASTICSEARCH (Sangat Penting)
+      try {
+        console.log("Sinkronisasi Rollback ke Elasticsearch...");
+
+        const dataBuffer = fs.readFileSync(rolledBackDoc.file_path);
+        const parsedPdf = await pdf(dataBuffer);
+        const cleanText = parsedPdf.text.replace(/\s+/g, ' ').trim();
+
+        await elasticClient.index({
+            index: 'medical_documents',
+            id: id.toString(),
+            document: {
+                id_document: id,
+                title: rolledBackDoc.custom_metadata?.title || rolledBackDoc.file_name,
+                content: cleanText,
+            }
+        });
+        console.log(`✅ Teks Rollback dokumen ID ${id} berhasil di-index!`);
+      } catch (esError) {
+        console.error("⚠️ Peringatan: Rollback database sukses, tapi Elasticsearch gagal:", esError.message);
+      }
+
+      res.status(200).json({ message: "Berhasil melakukan rollback dokumen." });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Gagal memproses rollback." });
+    }
+  }
 };
 
 module.exports = DocumentController;

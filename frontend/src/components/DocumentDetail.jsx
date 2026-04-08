@@ -34,6 +34,9 @@ function DocumentDetail() {
   // State untuk filter riwayat (Audit Log)
   const [logFilter, setLogFilter] = createSignal("ALL");
 
+  // STATE UNTUK VERSION HISTORY
+  const [versions, setVersions] = createSignal([]);
+
   // --- STATE UNTUK AUTOCOMPLETE USER ---
   const [userSuggestions, setUserSuggestions] = createSignal([]);
   const [showSuggestions, setShowSuggestions] = createSignal(false);
@@ -137,12 +140,22 @@ function DocumentDetail() {
       setPermissions(res.data.permissions);
       setLogs(res.data.logs || []);
       setActiveApproval(res.data.activeApproval); // Tangkap data approval
+      fetchVersions();
     } catch (err) {
       console.error("Gagal mengambil detail dokumen", err);
       // alert("Dokumen tidak ditemukan atau Anda tidak memiliki akses");
       // navigate(-1); // Kembali ke halaman sebelumnya
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVersions = async () => {
+    try {
+      const res = await api.get(`/documents/${documentId}/versions`);
+      setVersions(res.data.data);
+    } catch (err) {
+      console.error("Gagal mengambil riwayat versi", err);
     }
   };
 
@@ -266,6 +279,30 @@ function DocumentDetail() {
         setIsSearchingUsers(false);
       }
     }, 400);
+  };
+
+  // --- HANDLER ROLLBACK ---
+  const handleRollback = async (versionId, versionNumber) => {
+    const result = await Swal.fire({
+      title: `Rollback ke Versi ${versionNumber}?`,
+      text: "Dokumen akan dipulihkan ke versi ini, menjadikannya versi aktif bagi semua pengguna.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, Rollback!",
+      cancelButtonText: "Batal"
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.post(`/documents/${documentId}/rollback`, { targetVersionId: versionId });
+      Swal.fire({ icon: "success", title: "Berhasil!", text: `Dokumen dipulihkan ke Versi ${versionNumber}.`, timer: 2000, showConfirmButton: false });
+      fetchDocumentDetail(); // Refresh semua data (termasuk PDF Viewer)
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "Gagal", text: error.response?.data?.message || "Gagal melakukan rollback" });
+    }
   };
 
   // Handler saat user memilih nama dari dropdown
@@ -969,6 +1006,55 @@ function DocumentDetail() {
                 </Show>
               </div>
             </div>
+
+            {/* --- PEMBATAS --- */}
+            <hr class="border-gray-100 my-1 shrink-0" />
+
+            {/* ======================================= */}
+            {/* VIEW BARU: RIWAYAT VERSI (DOCUMENT VERSIONS) */}
+            {/* ======================================= */}
+            <div class="flex flex-col shrink-0 mb-4">
+              <h3 class="text-[11px] font-bold text-black-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span>Versi Dokumen</span>
+                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px]">{versions().length}</span>
+              </h3>
+              
+              <div class="space-y-3">
+                <Show when={versions().length > 0} fallback={<div class="text-xs text-gray-400 italic">Memuat riwayat versi...</div>}>
+                  <For each={versions()}>
+                    {(v) => (
+                      <div class={`p-3 rounded-lg border ${v.is_active ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'} flex justify-between items-center transition-all`}>
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <span class="font-bold text-sm text-gray-800">Versi {v.version_number}</span>
+                            <Show when={v.is_active}>
+                              <span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded font-bold border border-blue-200">AKTIF</span>
+                            </Show>
+                            <Show when={!v.is_active && v.approval_status !== 'APPROVED'}>
+                              <span class="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold border border-gray-200">{v.approval_status}</span>
+                            </Show>
+                          </div>
+                          <p class="text-[10px] text-gray-500 mt-1">
+                            {new Date(v.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year:'numeric'})} • Oleh: {v.created_by} 
+                          </p>
+                        </div>
+                        
+                        {/* Tombol Rollback (Hanya Tampil Jika Tidak Aktif & User adalah Admin/Pemilik) */}
+                        <Show when={!v.is_active && (currentUser()?.role === "admin" || currentUser()?.name === doc()?.created_by)}>
+                          <button 
+                            onClick={() => handleRollback(v.id_version, v.version_number)}
+                            class="text-[10px] font-bold px-3 py-1.5 bg-white border border-gray-300 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded transition shadow-sm whitespace-nowrap"
+                          >
+                            Rollback
+                          </button>
+                        </Show>
+                      </div>
+                    )}
+                  </For>
+                </Show>
+              </div>
+            </div>
+            
           </div>
         </div>
       </Show>

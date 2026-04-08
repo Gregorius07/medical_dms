@@ -424,6 +424,49 @@ const DocumentModel = {
         .json({ message: "Terjadi kesalahan sistem saat menghapus dokumen." });
     }
   },
+
+  // Mengambil riwayat versi berdasarkan id_document
+  getDocumentVersions: async (documentId) => {
+    const query = `
+      SELECT id_version, version_number, file_name, file_size, approval_status, created_by, created_at, is_active
+      FROM document_version
+      WHERE id_document = $1
+      ORDER BY version_number DESC
+    `;
+    const result = await pool.query(query, [documentId]);
+    return result.rows;
+  },
+
+  // Melakukan Rollback versi
+  rollbackVersion: async (documentId, targetVersionId) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Nonaktifkan versi yang saat ini sedang aktif
+      await client.query(`
+        UPDATE document_version 
+        SET is_active = FALSE 
+        WHERE id_document = $1
+      `, [documentId]);
+
+      // 2. Aktifkan versi target (Rollback) dan pastikan statusnya APPROVED agar langsung tayang
+      const result = await client.query(`
+        UPDATE document_version 
+        SET is_active = TRUE
+        WHERE id_version = $2 AND id_document = $1
+        RETURNING *
+      `, [documentId, targetVersionId]);
+
+      await client.query('COMMIT');
+      return result.rows[0]; // Kembalikan data versi yang baru saja diaktifkan
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 };
 
 module.exports = DocumentModel;

@@ -10,11 +10,11 @@ const getFolderContents = async (req, res) => {
     const name = req.name;
     let folders = [];
     let documents = [];
-
+    let parentFolderDetail = {};
     // KONDISI 1: User di halaman depan (Root)
     if (!parentId) {
       // Ambil semua folder dan dokumen yang dizinkan dari tabel permission
-      console.log(userId);
+      // console.log(userId);
       if (req.role === "admin") {
         folders = await FolderModel.getAllRootFoldersForAdmin();
         documents = await DocumentModel.getDocumentsInRootForAdmin();
@@ -23,6 +23,7 @@ const getFolderContents = async (req, res) => {
         // console.log("Isi variabel folders:", folders);
         documents = await DocumentModel.getAccessibleDocuments(userId, name);
         // console.log('Isi variabel documents:',documents);
+        parentFolderDetail = await FolderModel.getFolderDetail(parentId);
       }
     }
     // KONDISI 2: User sedang menelusuri isi di dalam sebuah folder
@@ -31,10 +32,13 @@ const getFolderContents = async (req, res) => {
       // (Catatan: Akses ke sini sudah dilindungi oleh middleware 'checkPermission' di routes)
       folders = await FolderModel.getSubFolders(parentId);
       documents = await DocumentModel.getDocumentsInFolder(parentId);
+      parentFolderDetail = await FolderModel.getFolderDetail(parentId);
     }
 
+    
     res.json({
       currentFolderId: parentId,
+      currentFolderMetadata : parentFolderDetail? parentFolderDetail.metadata_schema : [], 
       folders: folders,
       documents: documents,
     });

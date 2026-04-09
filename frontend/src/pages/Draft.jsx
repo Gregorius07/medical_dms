@@ -34,6 +34,12 @@ function Draft() {
     createSignal(false);
   const [selectedDocumentId, setSelectedDocumentId] = createSignal(null);
 
+  // --- STATE UNTUK CUSTOM METADATA ---
+  // Menyimpan skema dari folder yang sedang dibuka (contoh: ["nama_pasien", "ruangan"])
+  const [currentFolderSchema, setCurrentFolderSchema] = createSignal([]); 
+  // Menyimpan hasil ketikan user (contoh: { nama_pasien: "John Doe", ruangan: "ICU" })
+  const [customMetadata, setCustomMetadata] = createSignal({});
+
   const [isSearching, setIsSearching] = createSignal(false);
 
   //untuk custom metadata
@@ -86,6 +92,20 @@ function Draft() {
       const activeFolderId = res.data.currentFolderId;
       setCurrentFolderId(activeFolderId);
 
+      // console.log("metadata", res.data.currentFolderMetadata);
+      
+
+      // MENANGKAP METADATA SCHEMA DARI FOLDER YANG DIBUKA
+      // (Asumsi backend Anda mengirimkan data folder saat ini di res.data.currentFolder)
+      if (res.data.currentFolderMetadata) {
+        // Karena di database kita simpan sebagai JSONB Array, kita langsung set
+        setCurrentFolderSchema(res.data.currentFolderMetadata);
+      } else {
+        // Kosongkan jika folder ini tidak punya aturan khusus (atau jika di Root)
+        setCurrentFolderSchema([]); 
+      }
+      
+      setCustomMetadata({}); // Reset isian form setiap kali pindah folder
       // Logika Breadcrumbs Draft
       if (activeFolderId && activeFolderId !== draftId()) {
         loadBreadcrumbs(activeFolderId);
@@ -186,6 +206,11 @@ const clearSearch = () => {
       formData.append("folderId", targetFolderId);
     }
 
+    // KUNCI UTAMA: Ubah objek metadata menjadi JSON String dan kirim ke backend
+    if (Object.keys(customMetadata()).length > 0) {
+      formData.append("customMetadata", JSON.stringify(customMetadata()));
+    }
+
     try {
       await api.post("/documents", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -201,6 +226,7 @@ const clearSearch = () => {
       setIsUploadOpen(false);
       setUploadFile(null);
       setDocTitle("");
+      setCustomMetadata({});
 
       // Refresh Data Draft
       loadFolderContents(targetFolderId);
@@ -769,6 +795,46 @@ const clearSearch = () => {
                   onInput={(e) => setDocTitle(e.target.value)}
                 />
               </div>
+
+              {/* ======================================================= */}
+              {/* FORM CUSTOM METADATA (MUNCUL OTOMATIS JIKA ADA SKEMA) */}
+              {/* ======================================================= */}
+              <Show when={currentFolderSchema().length > 0}>
+                <div class="border-t border-gray-200 pt-4 mt-2 space-y-3">
+                  <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Metadata Wajib Folder Ini
+                  </h4>
+                  
+                  <div class="grid grid-cols-1 gap-3">
+                    <For each={currentFolderSchema()}>
+                      {(field) => (
+                        <div>
+                          <label class="block text-[11px] font-bold text-gray-600 mb-1 uppercase tracking-wider">
+                            {field.replace(/_/g, ' ')} <span class="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none bg-indigo-50/30"
+                            value={customMetadata()[field] || ""}
+                            onInput={(e) => 
+                              setCustomMetadata({
+                                ...customMetadata(),
+                                [field]: e.target.value
+                              })
+                            }
+                            placeholder={`Masukkan ${field.replace(/_/g, ' ')}...`}
+                          />
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </div>
+              </Show>
+              {/* ======================================================= */}
 
               <div class="flex justify-end gap-2 pt-4 border-t">
                 <button

@@ -129,7 +129,7 @@ class FolderModel {
                 FROM folder f
                 INNER JOIN user_draft_tree dt ON f.parent_folder = dt.id_folder
             )
-            SELECT f.id_folder, f.folder_name, f.parent_folder, f.created_by,
+            SELECT f.id_folder, f.folder_name, f.parent_folder, f.created_by, f.metadata_schema,
                    p.preview, p.upload, p.download, p.edit_metadata
             FROM folder f
             JOIN permission p ON f.id_folder = p.id_folder
@@ -149,7 +149,14 @@ class FolderModel {
   /**
    * Membuat folder baru dan otomatis memberikan permission penuh kepada pembuatnya
    */
-  static async createFolder(folderName, parentId, userId, name,  metadataSchema, client) {
+  static async createFolder(
+    folderName,
+    parentId,
+    userId,
+    name,
+    metadataSchema,
+    client,
+  ) {
     try {
       await client.query("BEGIN"); // Mulai Transaksi
 
@@ -163,7 +170,7 @@ class FolderModel {
         folderName,
         parentId,
         name,
-        metadataSchema
+        metadataSchema,
       ]);
       const newFolderId = folderResult.rows[0].id_folder;
 
@@ -184,70 +191,87 @@ class FolderModel {
     }
   }
 
-   /**
-    * Menghapus folder (HANYA JIKA KOSONG)
-    */
+  /**
+   * Menghapus folder (HANYA JIKA KOSONG)
+   */
   static async deleteFolder(folderId) {
-        const client = await pool.connect();
-        try {
-            console.log("Delete folder dimulai:", folderId);
-            await client.query('BEGIN');
+    const client = await pool.connect();
+    try {
+      console.log("Delete folder dimulai:", folderId);
+      await client.query("BEGIN");
 
-            //Cek subfolder
-            const checkSub = await client.query(
-                'SELECT COUNT(*) FROM folder WHERE parent_folder = $1',
-                [folderId]
-            );
-            if (parseInt(checkSub.rows[0].count) > 0) {
-                throw new Error("Folder tidak kosong! Terdapat sub-folder di dalamnya.");
-            }
+      //Cek subfolder
+      const checkSub = await client.query(
+        "SELECT COUNT(*) FROM folder WHERE parent_folder = $1",
+        [folderId],
+      );
+      if (parseInt(checkSub.rows[0].count) > 0) {
+        throw new Error(
+          "Folder tidak kosong! Terdapat sub-folder di dalamnya.",
+        );
+      }
 
-            //Cek dokumen AKTIF
-            const checkDoc = await client.query(
-                'SELECT COUNT(*) FROM document WHERE id_folder = $1',
-                [folderId]
-            );
-            if (parseInt(checkDoc.rows[0].count) > 0) {
-                throw new Error("Folder tidak kosong! Terdapat dokumen aktif di dalamnya.");
-            }
+      //Cek dokumen AKTIF
+      const checkDoc = await client.query(
+        "SELECT COUNT(*) FROM document WHERE id_folder = $1",
+        [folderId],
+      );
+      if (parseInt(checkDoc.rows[0].count) > 0) {
+        throw new Error(
+          "Folder tidak kosong! Terdapat dokumen aktif di dalamnya.",
+        );
+      }
 
-            // keluarkan dokumen 
-            const unlinkTrash = await client.query(
-                'UPDATE document SET id_folder = NULL WHERE id_folder = $1',
-                [folderId]
-            );
-            // console.log(`Dokumen di tempat sampah dikeluarkan dari folder: ${unlinkTrash.rowCount}`);
+      // keluarkan dokumen
+      const unlinkTrash = await client.query(
+        "UPDATE document SET id_folder = NULL WHERE id_folder = $1",
+        [folderId],
+      );
+      // console.log(`Dokumen di tempat sampah dikeluarkan dari folder: ${unlinkTrash.rowCount}`);
 
-            // keluarkan versi dokumen 
-            const unlinkVersionTrash = await client.query(
-                'UPDATE document_version SET id_folder = NULL WHERE id_folder = $1',
-                [folderId]
-            );
-            // console.log(`Riwayat versi dokumen dikeluarkan dari folder: ${unlinkVersionTrash.rowCount}`);
+      // keluarkan versi dokumen
+      const unlinkVersionTrash = await client.query(
+        "UPDATE document_version SET id_folder = NULL WHERE id_folder = $1",
+        [folderId],
+      );
+      // console.log(`Riwayat versi dokumen dikeluarkan dari folder: ${unlinkVersionTrash.rowCount}`);
 
-            // hapus permission
-            const deletePerm = await client.query(
-                'DELETE FROM permission WHERE id_folder = $1 AND resource_type = $2',
-                [folderId, 'FOLDER']
-            );
-            // console.log("Permission terhapus:", deletePerm.rowCount);
+      // hapus permission
+      const deletePerm = await client.query(
+        "DELETE FROM permission WHERE id_folder = $1 AND resource_type = $2",
+        [folderId, "FOLDER"],
+      );
+      // console.log("Permission terhapus:", deletePerm.rowCount);
 
-            // hapus folder
-            const deleteFolder = await client.query(
-                'DELETE FROM folder WHERE id_folder = $1',
-                [folderId]
-            );
-            // console.log("Folder terhapus:", deleteFolder.rowCount);
+      // hapus folder
+      const deleteFolder = await client.query(
+        "DELETE FROM folder WHERE id_folder = $1",
+        [folderId],
+      );
+      // console.log("Folder terhapus:", deleteFolder.rowCount);
 
-            await client.query('COMMIT');
-        } catch (error) {
-            await client.query('ROLLBACK');
-            console.error("Error deleteFolder:", error.message);
-            throw error;
-        } finally {
-            client.release();
-        }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error deleteFolder:", error.message);
+      throw error;
+    } finally {
+      client.release();
     }
+  }
+
+  static async getFolderDetail(idFolder){
+    let query = `SELECT * FROM folder WHERE id_folder IS NULL ORDER BY folder_name ASC`;
+    let params = [];
+
+    if (idFolder) {
+      query = `SELECT * FROM folder WHERE id_folder = $1 ORDER BY folder_name ASC`;
+      params = [idFolder];
+    }
+
+    const { rows } = await pool.query(query, params);
+    return rows[0];
+  }
 }
 
 module.exports = FolderModel;

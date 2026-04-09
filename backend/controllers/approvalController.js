@@ -10,7 +10,7 @@ const requestApproval = async (req, res) => {
 
     await ApprovalModel.createRequest(docId, req.userId, approverFullName);
     AuditModel.log(
-      "UPDATE",
+      "REQUEST_APPROVAL",
       "DOCUMENT",
       req.userId,
       null,
@@ -36,14 +36,26 @@ const respondApproval = async (req, res) => {
     const docId = req.params.id;
 
     await ApprovalModel.respondRequest(docId, req.userId, status, notes);
-    AuditModel.log(
-      "UPDATE",
-      "DOCUMENT",
-      req.userId,
-      null,
-      docId,
-      `Merespons approval: ${status}`,
-    );
+    if (status === "APPROVED") {
+      AuditModel.log(
+        "APPROVE",
+        "DOCUMENT",
+        req.userId,
+        null,
+        docId,
+        `Menyetujui pengajuan approval`,
+      );
+    }
+    else{
+      AuditModel.log(
+        "REJECT",
+        "DOCUMENT",
+        req.userId,
+        null,
+        docId,
+        `Menolak pengajuan approval`,
+      );
+    }
 
     res
       .status(200)

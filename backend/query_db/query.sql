@@ -87,7 +87,11 @@ CREATE TABLE audit_log (
     id_document         INT REFERENCES document(id_document)
 );
 
-CREATE TYPE approval_state AS ENUM ('PENDING','APPROVED','REJECTED');
+CREATE TYPE approval_state AS ENUM ('PENDING','APPROVED','REJECTED' 'ROLLBACK',
+'EDIT',
+'REQUEST_APPROVAL',
+'APPROVE',
+'REJECT');
 
 CREATE TABLE approval_request (
     id_approval     SERIAL PRIMARY KEY,

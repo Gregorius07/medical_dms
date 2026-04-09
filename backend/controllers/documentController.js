@@ -190,8 +190,9 @@ const DocumentController = {
         "PREVIEW",
         "DOCUMENT",
         userId,
-        document.id_folder,
+        null,
         docId,
+        `${req.name} melakukan preview`
       );
 
       const activeApproval = await ApprovalModel.getActiveApprovalInfo(docId);
@@ -229,8 +230,9 @@ const DocumentController = {
         "DOWNLOAD",
         "DOCUMENT",
         req.userId,
-        document.id_folder,
+        null,
         docId,
+        `${req.name} melakukan download`
       );
     } catch (error) {
       console.error("Error download document:", error);
@@ -302,8 +304,9 @@ const DocumentController = {
         "UPLOAD",
         "DOCUMENT",
         req.userId,
-        existingDoc.id_folder,
+        null,
         docId,
+        `${req.name} melakukan upload`
       );
     } catch (error) {
       console.error("Error upload revision:", error);
@@ -476,6 +479,14 @@ const DocumentController = {
       // 2. Lakukan Rollback di Database PostgreSQL
       const rolledBackDoc = await DocumentModel.rollbackVersion(id, targetVersionId);
 
+      await AuditModel.log(
+        "ROLLBACK",
+        "DOCUMENT",
+        req.userId,
+        null,
+        id,
+        `${req.name} melakukan rollback`
+      );
       // 3. SINKRONISASI KE ELASTICSEARCH (Sangat Penting)
       try {
         console.log("Sinkronisasi Rollback ke Elasticsearch...");
@@ -521,6 +532,14 @@ const DocumentController = {
 
       // 2. Eksekusi UPDATE ke PostgreSQL melalui MODEL
       const updatedVersion = await DocumentModel.updateCustomMetadata(id, custom_metadata);
+      await AuditModel.log(
+        "EDIT",
+        "DOCUMENT",
+        req.userId,
+        null,
+        id,
+        `${req.name} melakukan edit metadata`
+      );
 
       if (!updatedVersion) {
         return res.status(404).json({ message: "Gagal memperbarui. Tidak ada versi dokumen yang aktif." });

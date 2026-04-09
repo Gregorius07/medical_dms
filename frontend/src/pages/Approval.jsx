@@ -30,14 +30,14 @@ function Approval() {
   });
 
   return (
-    <div class="min-h-screen bg-gray-50 p-4 md:p-6 flex flex-col">
-      {/* HEADER */}
+    <div class="min-h-screen bg-white p-4 md:p-6 flex flex-col">
+      {/* HEADER
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Pusat Approval</h1>
         <p class="text-sm text-gray-500 mt-1">
           Kelola alur persetujuan dokumen administrasi Anda di sini.
         </p>
-      </div>
+      </div> */}
 
       {/* TABS NAVIGATION */}
       <div class="flex border-b border-gray-200 mb-6 gap-6">

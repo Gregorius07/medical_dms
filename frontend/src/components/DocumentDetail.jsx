@@ -501,7 +501,7 @@ function DocumentDetail() {
               <Show when={currentUser()?.role === "admin" || currentUser()?.name === doc().created_by}>
                 <button
                   onClick={() => setIsAccessModalOpen(true)}
-                  class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
+                  class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -537,7 +537,13 @@ function DocumentDetail() {
                 <Show when={permissions().upload}>
                   <button
                     onClick={handleUploadRevision}
-                    class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
+                    // 1. Matikan fungsi klik jika statusnya UNDER REVIEW atau APPROVED
+                    disabled={
+                      doc()?.approval_status === "UNDER REVIEW" ||
+                      doc()?.approval_status === "APPROVED"
+                    }
+                    // 2. Tambahkan class disabled: untuk mengatur tampilan saat tombol mati
+                    class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-200 disabled:hover:text-gray-700"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -645,7 +651,7 @@ function DocumentDetail() {
                             {(user) => (
                               <div
                                 onClick={() => selectApprover(user)}
-                                class="px-3 py-2 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
+                                class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 transition"
                               >
                                 <div class="text-sm font-medium text-gray-800">
                                   {user.username}
@@ -713,7 +719,7 @@ function DocumentDetail() {
                       }
                     }}
                     disabled={isProcessing()}
-                    class="w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                    class="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                   >
                     {isProcessing() ? "Memproses..." : "Ajukan Approval"}
                   </button>
@@ -756,9 +762,9 @@ function DocumentDetail() {
                   currentUser()?.id === activeApproval()?.id_approver
                 }
               >
-                <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-sm space-y-4">
-                  <div class="flex items-center gap-3 text-indigo-900">
-                    <div class="bg-indigo-100 p-1.5 rounded-lg shrink-0">
+                <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm space-y-4">
+                  <div class="flex items-center gap-3 text-blue-900">
+                    <div class="bg-blue-100 p-1.5 rounded-lg shrink-0">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
@@ -772,7 +778,7 @@ function DocumentDetail() {
                     placeholder="Tulis catatan review di sini (Opsional)..."
                     value={approvalNotes()}
                     onInput={(e) => setApprovalNotes(e.target.value)}
-                    class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 h-20 resize-none shadow-inner"
+                    class="w-full border border-blue-200 bg-white rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 h-20 resize-none shadow-inner"
                   ></textarea>
 
                   <div class="flex gap-3">
@@ -926,27 +932,37 @@ function DocumentDetail() {
                 {/* ========================================= */}
                 <Show when={doc()?.custom_metadata && Object.keys(doc().custom_metadata).length > 0}>
                   <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
-                    <h4 class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                      </svg>
-                      Metadata Khusus
+                    {/* Header Kecil Opsional */}
+                    <h4 class="text-[10px] font-bold text-black-500 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                      Metadata
                     </h4>
-                    <div class="grid grid-cols-2 gap-3">
+                    
+                    {/* List Metadata Custom dengan Layout yang Sama Persis */}
+                    <div class="space-y-4">
                       <For each={Object.entries(doc().custom_metadata)}>
                         {([key, value]) => (
-                          <div class="bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-100/50">
-                            <span class="block text-[9px] text-indigo-400 uppercase font-bold tracking-wider mb-0.5">
-                              {/* Mengganti underscore dengan spasi agar lebih rapi (cth: patient_name -> patient name) */}
-                              {key.replace(/_/g, ' ')}
-                            </span>
-                            <span class="text-xs font-semibold text-gray-800 break-words">{value}</span>
+                          <div class="flex items-start gap-3">
+                            <div class="p-2 bg-gray-50 rounded-lg text-gray-400 shrink-0">
+                              {/* Ikon Tag/Label untuk custom metadata */}
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                                {key.replace(/_/g, ' ')}
+                              </p>
+                              <p class="text-sm font-semibold text-gray-900 break-words">
+                                {value || "-"}
+                              </p>
+                            </div>
                           </div>
                         )}
                       </For>
                     </div>
                   </div>
                 </Show>
+                {/* ========================================= */}
               </div>
             </div>
 
@@ -1104,7 +1120,9 @@ function DocumentDetail() {
                         </div>
                         
                         {/* Tombol Rollback (Hanya Tampil Jika Tidak Aktif & User adalah Admin/Pemilik) */}
-                        <Show when={!v.is_active && (currentUser()?.role === "admin" || currentUser()?.name === doc()?.created_by)}>
+                        <Show when={!v.is_active && (currentUser()?.role === "admin" || currentUser()?.name === doc()?.created_by) &&
+                            doc()?.approval_status !== "UNDER REVIEW" &&
+                            doc()?.approval_status !== "APPROVED"}>
                           <button 
                             onClick={() => handleRollback(v.id_version, v.version_number)}
                             class="text-[10px] font-bold px-3 py-1.5 bg-white border border-gray-300 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded transition shadow-sm whitespace-nowrap"
@@ -1188,14 +1206,14 @@ function DocumentDetail() {
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div class="bg-white rounded-xl shadow-lg w-[400px] p-6 max-h-[90vh] overflow-y-auto">
             <h3 class="text-lg font-bold mb-4 text-gray-800">
-              Edit Metadata Khusus
+              Edit Metadata
             </h3>
             
             <Show 
               when={Object.keys(editMetadataForm()).length > 0}
               fallback={
                 <div class="text-sm text-gray-500 italic mb-6 text-center py-4 bg-gray-50 rounded border border-dashed">
-                  Dokumen ini tidak memiliki skema metadata khusus.
+                  Dokumen ini tidak memiliki skema metadata.
                 </div>
               }
             >

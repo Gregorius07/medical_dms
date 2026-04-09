@@ -752,7 +752,7 @@ function Folder() {
               {/* ======================================================= */}
               <Show when={currentFolderSchema().length > 0}>
                 <div class="border-t border-gray-200 pt-4 mt-2 space-y-3">
-                  <h4 class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <h4 class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       class="h-4 w-4"
@@ -767,7 +767,7 @@ function Folder() {
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    Metadata Wajib Folder Ini
+                    Metadata
                   </h4>
 
                   <div class="grid grid-cols-1 gap-3">
@@ -776,12 +776,11 @@ function Folder() {
                         <div>
                           <label class="block text-[11px] font-bold text-gray-600 mb-1 uppercase tracking-wider">
                             {field.replace(/_/g, " ")}{" "}
-                            <span class="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
                             required
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none bg-indigo-50/30"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none bg-blue-50/30"
                             value={customMetadata()[field] || ""}
                             onInput={(e) =>
                               setCustomMetadata({
@@ -877,7 +876,7 @@ function Folder() {
                   </span>
                 </label>
                 <p class="text-[10px] text-gray-500 mb-3 leading-relaxed">
-                  Tambahkan atribut spesifik yang WAJIB diisi saat mengunggah
+                  Tambahkan atribut spesifik yang dapat diisi saat mengunggah
                   dokumen ke folder ini. Contoh: "Nama Pasien", "Tanggal
                   Pemeriksaan".
                 </p>
@@ -903,7 +902,7 @@ function Folder() {
                         }
                       }
                     }}
-                    placeholder="Ketik nama field lalu tekan Enter..."
+                    placeholder="Ketik nama field ..."
                   />
                   <button
                     type="button"
@@ -934,7 +933,7 @@ function Folder() {
                   </Show>
                   <For each={customFields()}>
                     {(field) => (
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                         {field}
                         <button
                           type="button"
@@ -943,7 +942,7 @@ function Folder() {
                               customFields().filter((f) => f !== field),
                             )
                           }
-                          class="text-indigo-400 hover:text-red-500 transition focus:outline-none"
+                          class="text-blue-400 hover:text-red-500 transition focus:outline-none"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"

@@ -376,7 +376,7 @@ function ManageAccessModal(props) {
                         <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition">
                           {/* Info User */}
                           <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
                               {item.user_name.charAt(0).toUpperCase()}
                             </div>
                             <div>

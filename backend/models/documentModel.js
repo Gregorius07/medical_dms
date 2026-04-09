@@ -263,6 +263,7 @@ const DocumentModel = {
     fileSize,
     createdBy,
     fileFormat,
+    customMetadata
   ) => {
     const client = await pool.connect();
     try {
@@ -296,7 +297,7 @@ const DocumentModel = {
         fileSize,
         fileFormat,
         createdBy,
-        {},
+        customMetadata,
       ]);
 
       await client.query("COMMIT");

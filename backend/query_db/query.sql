@@ -33,7 +33,6 @@ CREATE TABLE folder (
     metadata_schema JSONB,
     created_by      VARCHAR(150) NOT NULL,
     parent_folder   INT REFERENCES folder(id_folder),
-    is_deleted      BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TYPE approval_status AS ENUM ('DRAFT','UNDER REVIEW','APPROVED', 'REJECTED');

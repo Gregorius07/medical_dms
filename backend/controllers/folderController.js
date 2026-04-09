@@ -82,8 +82,8 @@ const getAccessibleFoldersId = async (req, res) => {
 const createFolder = async (req, res) => {
   try {
     const client = await pool.connect();
-    const { folder_name, parent_folder } = req.body;
-    const userId = req.userId; // Dari token JWT
+    const { folder_name, parent_folder, metadata_schema } = req.body;
+    const userId = req.userId;
     const name = req.name;
     if (!folder_name) {
       return res
@@ -96,6 +96,7 @@ const createFolder = async (req, res) => {
       parent_folder || null,
       userId,
       name,
+      metadata_schema && metadata_schema.length > 0 ? JSON.stringify(metadata_schema) : null,
       client,
     );
 

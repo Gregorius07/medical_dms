@@ -36,7 +36,9 @@ function Draft() {
 
   const [isSearching, setIsSearching] = createSignal(false);
 
-
+  //untuk custom metadata
+  const [customFields, setCustomFields] = createSignal([]); // Array penyimpan field
+  const [newFieldInput, setNewFieldInput] = createSignal(""); // Input teks sementara
   // ==========================================
   // FUNGSI API (Sesuai dengan kode asli Anda)
   // ==========================================
@@ -274,10 +276,22 @@ const clearSearch = () => {
       });
       return;
     }
+
+    // Format fields menjadi JSONB object.
+    // Kita ubah "Nama Pasien" menjadi "nama_pasien" (snake_case) agar seragam di database
+    let schemaPayload = null;
+    if (customFields().length > 0) {
+      const formattedFields = customFields().map(f => 
+        f.trim().toLowerCase().replace(/\s+/g, '_')
+      );
+      schemaPayload = formattedFields;
+    }
+
     try {
       await api.post("/folders/create", {
         folder_name: newFolderName(),
         parent_folder: parentId,
+        metadata_schema : schemaPayload
       });
 
       Swal.fire({
@@ -289,6 +303,8 @@ const clearSearch = () => {
       });
       setIsFolderModalOpen(false);
       setNewFolderName("");
+      setCustomFields([]); // Bersihkan array fields
+      setNewFieldInput("");
 
       // Refresh Data Draft agar folder baru langsung muncul di layar
       loadFolderContents(parentId);
@@ -805,30 +821,98 @@ const clearSearch = () => {
               </h3>
             </div>
 
-            {/* Form Input */}
-            <form onSubmit={handleCreateFolder} class="p-6 space-y-4">
+            {/* Form Input Modal Create Folder */}
+            <form onSubmit={handleCreateFolder} class="p-6 space-y-5">
+              
+              {/* Input Nama Folder */}
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">
-                  Folder Name
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  Nama Folder <span class="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   autofocus
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                   value={newFolderName()}
                   onInput={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Contoh: Laporan Mingguan"
+                  placeholder="Contoh: Radiology Reports"
                 />
               </div>
 
-              {/* Tombol Aksi */}
+              {/* Input Custom Metadata Schema */}
+              <div class="border-t border-gray-100 pt-4">
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  Custom Metadata Fields <span class="text-gray-400 font-normal capitalize">(Opsional)</span>
+                </label>
+                <p class="text-[10px] text-gray-500 mb-3 leading-relaxed">
+                  Tambahkan atribut spesifik yang WAJIB diisi saat mengunggah dokumen ke folder ini. Contoh: "Nama Pasien", "Tanggal Pemeriksaan".
+                </p>
+                
+                <div class="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition"
+                    value={newFieldInput()}
+                    onInput={(e) => setNewFieldInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault(); // Cegah form tersubmit
+                        if (newFieldInput().trim() && !customFields().includes(newFieldInput().trim())) {
+                          setCustomFields([...customFields(), newFieldInput().trim()]);
+                          setNewFieldInput("");
+                        }
+                      }
+                    }}
+                    placeholder="Ketik nama field lalu tekan Enter..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newFieldInput().trim() && !customFields().includes(newFieldInput().trim())) {
+                        setCustomFields([...customFields(), newFieldInput().trim()]);
+                        setNewFieldInput("");
+                      }
+                    }}
+                    class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium text-sm transition"
+                  >
+                    Tambah
+                  </button>
+                </div>
+
+                {/* Daftar Field yang Ditambahkan (Tags) */}
+                <div class="flex flex-wrap gap-2">
+                  <Show when={customFields().length === 0}>
+                    <span class="text-xs text-gray-400 italic">Belum ada field khusus.</span>
+                  </Show>
+                  <For each={customFields()}>
+                    {(field) => (
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {field}
+                        <button
+                          type="button"
+                          onClick={() => setCustomFields(customFields().filter(f => f !== field))}
+                          class="text-indigo-400 hover:text-red-500 transition focus:outline-none"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      </span>
+                    )}
+                  </For>
+                </div>
+              </div>
+
+              {/* Tombol Aksi Submit */}
               <div class="flex justify-end gap-2 pt-4 mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setIsFolderModalOpen(false);
                     setNewFolderName("");
+                    setCustomFields([]);
+                    setNewFieldInput("");
                   }}
                   class="px-4 py-2 text-gray-600 hover:bg-gray-100 font-medium rounded-lg text-sm transition"
                 >
@@ -839,33 +923,7 @@ const clearSearch = () => {
                   disabled={folderLoading()}
                   class="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
                 >
-                  {folderLoading() ? (
-                    <>
-                      <svg
-                        class="animate-spin h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          class="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          stroke-width="4"
-                        ></circle>
-                        <path
-                          class="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Folder"
-                  )}
+                  {folderLoading() ? "Creating..." : "Create Folder"}
                 </button>
               </div>
             </form>

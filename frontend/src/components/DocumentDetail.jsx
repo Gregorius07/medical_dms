@@ -883,6 +883,33 @@ function DocumentDetail() {
                     <p class="text-sm font-semibold text-gray-900">{(doc()?.file_size / 1024).toFixed(2)} KB</p>
                   </div>
                 </div>
+
+                {/* ========================================= */}
+                {/* RENDER CUSTOM METADATA SECARA DINAMIS */}
+                {/* ========================================= */}
+                <Show when={doc()?.custom_metadata && Object.keys(doc().custom_metadata).length > 0}>
+                  <div class="mt-4 pt-4 border-t border-dashed border-gray-200">
+                    <h4 class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      Metadata Khusus
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3">
+                      <For each={Object.entries(doc().custom_metadata)}>
+                        {([key, value]) => (
+                          <div class="bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-100/50">
+                            <span class="block text-[9px] text-indigo-400 uppercase font-bold tracking-wider mb-0.5">
+                              {/* Mengganti underscore dengan spasi agar lebih rapi (cth: patient_name -> patient name) */}
+                              {key.replace(/_/g, ' ')}
+                            </span>
+                            <span class="text-xs font-semibold text-gray-800 break-words">{value}</span>
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </div>
+                </Show>
               </div>
             </div>
 

@@ -26,7 +26,10 @@ function Folder() {
 
   // State untuk Search
   const [isSearching, setIsSearching] = createSignal(false);
- 
+
+  //untuk custom metadata
+  const [customFields, setCustomFields] = createSignal([]); // Array penyimpan field
+  const [newFieldInput, setNewFieldInput] = createSignal(""); // Input teks sementara
 
   // State untuk modal permission folder
   const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
@@ -43,7 +46,7 @@ function Folder() {
 
       setFolders(res.data.folders);
       console.log(res.data.folders);
-      
+
       setDocuments(res.data.documents);
 
       const activeFolderId = res.data.currentFolderId;
@@ -156,7 +159,7 @@ function Folder() {
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Ya, Hapus Folder!",
-      cancelButtonText: "Batal"
+      cancelButtonText: "Batal",
     });
 
     if (!result.isConfirmed) return;
@@ -164,13 +167,13 @@ function Folder() {
     try {
       // Pastikan endpoint backend ini sudah sesuai dengan route Anda
       await api.delete(`/folders/${folderId}`);
-      
+
       Swal.fire({
         icon: "success",
         title: "Terhapus!",
         text: "Folder berhasil dihapus secara permanen.",
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
 
       // Refresh tampilan folder
@@ -180,7 +183,9 @@ function Folder() {
       Swal.fire({
         icon: "error",
         title: "Gagal Menghapus",
-        text: err.response?.data?.message || "Terjadi kesalahan saat menghapus folder.",
+        text:
+          err.response?.data?.message ||
+          "Terjadi kesalahan saat menghapus folder.",
       });
     }
   };
@@ -194,7 +199,7 @@ function Folder() {
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Ya, Hapus!",
-      cancelButtonText: "Batal"
+      cancelButtonText: "Batal",
     });
 
     if (!result.isConfirmed) return;
@@ -206,7 +211,7 @@ function Folder() {
         title: "Terhapus!",
         text: "Dokumen berhasil dihapus.",
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
       loadFolderContents(currentFolderId() || draftId());
     } catch (err) {
@@ -231,16 +236,35 @@ function Folder() {
 
     // Tentukan di mana folder ini akan dibuat (apakah di root draft atau di dalam sub-folder draft)
     const parentId = currentFolderId();
+    // Format fields menjadi JSONB object.
+    // Kita ubah "Nama Pasien" menjadi "nama_pasien" (snake_case) agar seragam di database
+    let schemaPayload = null;
+    if (customFields().length > 0) {
+      const formattedFields = customFields().map((f) =>
+        f.trim().toLowerCase().replace(/\s+/g, "_"),
+      );
+      schemaPayload = formattedFields;
+    }
 
     try {
       await api.post("/folders/create", {
         folder_name: newFolderName(),
         parent_folder: parentId,
+        metadata_schema: schemaPayload,
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Folder berhasil dibuat.",
+        timer: 1500,
+        showConfirmButton: false,
       });
 
       setIsFolderModalOpen(false);
       setNewFolderName("");
-
+      setCustomFields([]); // Bersihkan array fields
+      setNewFieldInput("");
       // Refresh Data Draft agar folder baru langsung muncul di layar
       loadFolderContents(parentId);
     } catch (err) {
@@ -260,26 +284,27 @@ function Folder() {
     }
   };
 
-  const executeSearch = async (keyword, type) => { // Menerima tipe dari SearchBar
-  setIsSearching(true);
-  setUploadLoading(true);
+  const executeSearch = async (keyword, type) => {
+    // Menerima tipe dari SearchBar
+    setIsSearching(true);
+    setUploadLoading(true);
 
-  try {
-    const res = await api.get(
-      `/documents/search?q=${keyword}&type=${type}&location=home` 
-    );
+    try {
+      const res = await api.get(
+        `/documents/search?q=${keyword}&type=${type}&location=home`,
+      );
 
-    setFolders([]);
-    setDocuments(res.data.data);
-    setBreadcrumbs([
-      { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
-    ]);
-  } catch (err) {
-    alert(err.response?.data?.message || "Gagal melakukan pencarian");
-  } finally {
-    setUploadLoading(false);
-  }
-};
+      setFolders([]);
+      setDocuments(res.data.data);
+      setBreadcrumbs([
+        { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
+      ]);
+    } catch (err) {
+      alert(err.response?.data?.message || "Gagal melakukan pencarian");
+    } finally {
+      setUploadLoading(false);
+    }
+  };
 
   const clearSearch = () => {
     setIsSearching(false);
@@ -403,10 +428,10 @@ function Folder() {
         </div>
 
         {/* --- SEARCH BAR AREA --- */}
-        <SearchBar 
-           isSearching={isSearching()} 
-           onSearch={executeSearch} 
-           onClear={clearSearch} 
+        <SearchBar
+          isSearching={isSearching()}
+          onSearch={executeSearch}
+          onClear={clearSearch}
         />
 
         {/* --- KONTEN AREA HOME (LIST VIEW) --- */}
@@ -480,36 +505,36 @@ function Folder() {
                           </button>
                         </Show>
                         {/* TOMBOL DELETE FOLDER */}
-                    <Show
-                      when={
-                        currentUser()?.role === "admin" ||
-                        currentUser()?.name === folder.created_by
-                      }
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation(); // SANGAT PENTING: Agar klik tombol tidak memicu masuk ke dalam folder
-                          handleDeleteFolder(folder.id_folder);
-                        }}
-                        class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition ml-1"
-                        title="Hapus Folder"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                        <Show
+                          when={
+                            currentUser()?.role === "admin" ||
+                            currentUser()?.name === folder.created_by
+                          }
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                    </Show>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation(); // SANGAT PENTING: Agar klik tombol tidak memicu masuk ke dalam folder
+                              handleDeleteFolder(folder.id_folder);
+                            }}
+                            class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition ml-1"
+                            title="Hapus Folder"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </Show>
                       </td>
                     </tr>
                   )}
@@ -542,26 +567,31 @@ function Folder() {
                                 doc.title || doc.file_name
                               )}
                             </span>
-                            
+
                             {/* --- TAMPILAN HIGHLIGHT FULL-TEXT SEARCH (ELASTICSEARCH) --- */}
-                            <Show when={doc.highlights && doc.highlights.content}>
+                            <Show
+                              when={doc.highlights && doc.highlights.content}
+                            >
                               <div class="mt-1 text-xs text-gray-500 max-w-2xl leading-relaxed italic border-l-2 border-yellow-300 pl-2">
                                 {/* Karena bisa ada >1 cuplikan kalimat, kita gabungkan (join) dengan tanda '...' */}
-                                <span innerHTML={`"...${doc.highlights.content.join(' ... ')}..."`} />
+                                <span
+                                  innerHTML={`"...${doc.highlights.content.join(" ... ")}..."`}
+                                />
                               </div>
                             </Show>
-                            
+
                             {/* Tampilkan Nilai Relevansi (BM25 Score) Jika Ada */}
                             <Show when={doc.score}>
-                               <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block border border-gray-200">
-                                 Relevansi: {doc.score.toFixed(2)}
-                               </span>
+                              <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block border border-gray-200">
+                                Relevansi: {doc.score.toFixed(2)}
+                              </span>
                             </Show>
-
                           </div>
                         </div>
                       </td>
-                      <td class="py-3 px-4 truncate align-top pt-4">{doc.created_by || doc.uploader}</td>
+                      <td class="py-3 px-4 truncate align-top pt-4">
+                        {doc.created_by || doc.uploader}
+                      </td>
                       <td class="py-3 px-4 text-gray-500 align-top pt-4">
                         {new Date(doc.created_at).toLocaleDateString("id-ID", {
                           day: "numeric",
@@ -577,34 +607,46 @@ function Folder() {
                               : doc.approval_status === "DRAFT"
                                 ? "bg-gray-100 text-gray-600"
                                 : doc.approval_status === "UNDER REVIEW"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-gray-100 text-gray-500" // Fallback jika hasil pencarian tidak membawa status lengkap
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-gray-100 text-gray-500" // Fallback jika hasil pencarian tidak membawa status lengkap
                           }`}
                         >
                           {doc.approval_status || "UNKNOWN"}
                         </span>
                       </td>
-                      
+
                       {/* TOMBOL DELETE (Berlaku aturan khusus) */}
                       <td class="py-3 px-4 align-top pt-3 text-right">
-                        <Show 
+                        <Show
                           when={
                             !isSearching() && // Sembunyikan tombol hapus saat sedang mode pencarian agar aman
-                            (currentUser()?.role === "admin" || 
-                            (currentUser()?.name === doc.created_by && 
-                            (doc.approval_status === 'DRAFT' || doc.approval_status === 'REJECT')))
+                            (currentUser()?.role === "admin" ||
+                              (currentUser()?.name === doc.created_by &&
+                                (doc.approval_status === "DRAFT" ||
+                                  doc.approval_status === "REJECT")))
                           }
                         >
-                          <button 
+                          <button
                             onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(doc.id_document);
-                            }} 
+                              e.stopPropagation();
+                              handleDelete(doc.id_document);
+                            }}
                             class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                             title="Hapus Dokumen"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
                             </svg>
                           </button>
                         </Show>
@@ -659,9 +701,7 @@ function Folder() {
                 <div class="text-blue-600 font-medium mb-1">
                   Click to select file
                 </div>
-                <div class="text-xs text-gray-400 mb-2">
-                  PDF (Max 10MB)
-                </div>
+                <div class="text-xs text-gray-400 mb-2">PDF (Max 10MB)</div>
                 <Show when={uploadFile()}>
                   <div class="text-sm text-green-600 font-bold bg-green-50 py-1 px-2 rounded inline-block">
                     {uploadFile()?.name}
@@ -733,30 +773,129 @@ function Folder() {
               </h3>
             </div>
 
-            {/* Form Input */}
-            <form onSubmit={handleCreateFolder} class="p-6 space-y-4">
+            {/* Form Input Modal Create Folder */}
+            <form onSubmit={handleCreateFolder} class="p-6 space-y-5">
+              {/* Input Nama Folder */}
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">
-                  Folder Name
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  Nama Folder <span class="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   autofocus
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                   value={newFolderName()}
                   onInput={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Contoh: Laporan Mingguan"
+                  placeholder="Contoh: Radiology Reports"
                 />
               </div>
 
-              {/* Tombol Aksi */}
+              {/* Input Custom Metadata Schema */}
+              <div class="border-t border-gray-100 pt-4">
+                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                  Custom Metadata Fields{" "}
+                  <span class="text-gray-400 font-normal capitalize">
+                    (Opsional)
+                  </span>
+                </label>
+                <p class="text-[10px] text-gray-500 mb-3 leading-relaxed">
+                  Tambahkan atribut spesifik yang WAJIB diisi saat mengunggah
+                  dokumen ke folder ini. Contoh: "Nama Pasien", "Tanggal
+                  Pemeriksaan".
+                </p>
+
+                <div class="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition"
+                    value={newFieldInput()}
+                    onInput={(e) => setNewFieldInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault(); // Cegah form tersubmit
+                        if (
+                          newFieldInput().trim() &&
+                          !customFields().includes(newFieldInput().trim())
+                        ) {
+                          setCustomFields([
+                            ...customFields(),
+                            newFieldInput().trim(),
+                          ]);
+                          setNewFieldInput("");
+                        }
+                      }
+                    }}
+                    placeholder="Ketik nama field lalu tekan Enter..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        newFieldInput().trim() &&
+                        !customFields().includes(newFieldInput().trim())
+                      ) {
+                        setCustomFields([
+                          ...customFields(),
+                          newFieldInput().trim(),
+                        ]);
+                        setNewFieldInput("");
+                      }
+                    }}
+                    class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium text-sm transition"
+                  >
+                    Tambah
+                  </button>
+                </div>
+
+                {/* Daftar Field yang Ditambahkan (Tags) */}
+                <div class="flex flex-wrap gap-2">
+                  <Show when={customFields().length === 0}>
+                    <span class="text-xs text-gray-400 italic">
+                      Belum ada field khusus.
+                    </span>
+                  </Show>
+                  <For each={customFields()}>
+                    {(field) => (
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {field}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCustomFields(
+                              customFields().filter((f) => f !== field),
+                            )
+                          }
+                          class="text-indigo-400 hover:text-red-500 transition focus:outline-none"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-3.5 w-3.5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                              clip-rule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </span>
+                    )}
+                  </For>
+                </div>
+              </div>
+
+              {/* Tombol Aksi Submit */}
               <div class="flex justify-end gap-2 pt-4 mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setIsFolderModalOpen(false);
                     setNewFolderName("");
+                    setCustomFields([]);
+                    setNewFieldInput("");
                   }}
                   class="px-4 py-2 text-gray-600 hover:bg-gray-100 font-medium rounded-lg text-sm transition"
                 >
@@ -765,35 +904,9 @@ function Folder() {
                 <button
                   type="submit"
                   disabled={folderLoading()}
-                  class="px-5 py-2 bg-purple-600 text-white font-medium rounded-lg text-sm hover:bg-purple-700 transition disabled:opacity-50 flex items-center gap-2"
+                  class="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
                 >
-                  {folderLoading() ? (
-                    <>
-                      <svg
-                        class="animate-spin h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          class="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          stroke-width="4"
-                        ></circle>
-                        <path
-                          class="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Folder"
-                  )}
+                  {folderLoading() ? "Creating..." : "Create Folder"}
                 </button>
               </div>
             </form>

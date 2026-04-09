@@ -149,20 +149,21 @@ class FolderModel {
   /**
    * Membuat folder baru dan otomatis memberikan permission penuh kepada pembuatnya
    */
-  static async createFolder(folderName, parentId, userId, name, client) {
+  static async createFolder(folderName, parentId, userId, name,  metadataSchema, client) {
     try {
       await client.query("BEGIN"); // Mulai Transaksi
 
       // 1. Insert ke tabel folder
       const insertFolderQuery = `
-                INSERT INTO folder (folder_name, parent_folder, created_by)
-                VALUES ($1, $2, $3)
+                INSERT INTO folder (folder_name, parent_folder, created_by, metadata_schema)
+                VALUES ($1, $2, $3, $4)
                 RETURNING id_folder;
             `;
       const folderResult = await client.query(insertFolderQuery, [
         folderName,
         parentId,
         name,
+        metadataSchema
       ]);
       const newFolderId = folderResult.rows[0].id_folder;
 
@@ -203,7 +204,7 @@ class FolderModel {
 
             //Cek dokumen AKTIF
             const checkDoc = await client.query(
-                'SELECT COUNT(*) FROM document WHERE id_folder = $1 AND is_deleted = false',
+                'SELECT COUNT(*) FROM document WHERE id_folder = $1',
                 [folderId]
             );
             if (parseInt(checkDoc.rows[0].count) > 0) {
@@ -212,7 +213,7 @@ class FolderModel {
 
             // keluarkan dokumen 
             const unlinkTrash = await client.query(
-                'UPDATE document SET id_folder = NULL WHERE id_folder = $1 AND is_deleted = true',
+                'UPDATE document SET id_folder = NULL WHERE id_folder = $1',
                 [folderId]
             );
             // console.log(`Dokumen di tempat sampah dikeluarkan dari folder: ${unlinkTrash.rowCount}`);

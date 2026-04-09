@@ -50,8 +50,15 @@ const DocumentController = {
 
     try {
       // Data dari Frontend (FormData)
-      const { title, folderId, uploaderName } = req.body;
-
+      const { title, folderId, uploaderName, customMetadata  } = req.body;
+      let customMetadataParsed = null;
+      if (customMetadata) {
+        try {
+          customMetadataParsed = JSON.parse (customMetadata);
+        } catch (error) {
+          console.error("gagal memparsing custom metadata", error);
+        }
+      }
       const docData = {
         title: title,
         folderId: folderId ? parseInt(folderId) : null,
@@ -59,7 +66,7 @@ const DocumentController = {
         storedFilename: req.file.filename,
         fileSize: req.file.size,
         uploader: uploaderName || "Unknown",
-        metadata: {}, // Nanti diisi dari dynamic form
+        metadata: customMetadataParsed, // Nanti diisi dari dynamic form
       };
 
       const result = await DocumentModel.create(docData);
@@ -235,7 +242,16 @@ const DocumentController = {
     try {
       const docId = req.params.id;
       const file = req.file; // Didapat dari middleware Multer
-      const { uploaderName } = req.body;
+      const { uploaderName, customMetadata } = req.body;
+
+      let customMetadataParsed = null;
+      if (customMetadata) {
+        try {
+          customMetadataParsed = JSON.parse (customMetadata);
+        } catch (error) {
+          console.error("gagal memparsing custom metadata", error);
+        }
+      }
 
       if (!file) {
         return res
@@ -250,6 +266,7 @@ const DocumentController = {
         file.size,
         uploaderName,
         (file.format = path.extname(req.file.originalname).substring(1)),
+        customMetadataParsed
       );
 
       const existingDoc = await DocumentModel.getDocumentById(docId);

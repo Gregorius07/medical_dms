@@ -503,7 +503,40 @@ const DocumentController = {
       console.error(error);
       res.status(500).json({ message: "Gagal memproses rollback." });
     }
-  }
+  },
+  // Tambahkan fungsi ini di dalam documentController.js
+  updateMetadata: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { custom_metadata } = req.body;
+      const userId = req.userId;
+      const userRole = req.userRole; // Asumsi dari middleware auth
+
+      // 1. Cek eksistensi dokumen & Hak Akses (Otorisasi)
+      // (Anda juga bisa menggunakan middleware permission yang sudah ada)
+      const doc = await DocumentModel.getDocumentById(id);
+      if (!doc) {
+        return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+      }
+
+      // 2. Eksekusi UPDATE ke PostgreSQL melalui MODEL
+      const updatedVersion = await DocumentModel.updateCustomMetadata(id, custom_metadata);
+
+      if (!updatedVersion) {
+        return res.status(404).json({ message: "Gagal memperbarui. Tidak ada versi dokumen yang aktif." });
+      }
+
+      // 4. Kembalikan respons sukses ke Frontend
+      res.status(200).json({ 
+        message: "Metadata berhasil diperbarui.",
+        data: updatedVersion
+      });
+
+    } catch (error) {
+      console.error("Error update metadata:", error);
+      res.status(500).json({ message: "Terjadi kesalahan pada server saat memperbarui metadata." });
+    }
+  },
 };
 
 module.exports = DocumentController;

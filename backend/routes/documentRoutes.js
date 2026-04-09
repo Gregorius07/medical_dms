@@ -30,6 +30,7 @@ router.get('/stats',verifyToken,DocumentController.getStats)
 router.get('/getaccesibledocs',verifyToken, DocumentController.getAccessibleDocumentsId);
 // Route pencarian
 router.get('/search', verifyToken, DocumentController.searchDocuments);
+// Tambahkan baris ini di file documentRoutes.js
 // ... route /:id dan lainnya di bawahnya ...
 router.delete('/:id', verifyToken,DocumentController.delete);
 router.get('/:id', verifyToken, requirePermission('preview', 'DOCUMENT'), DocumentController.getDocumentDetail);
@@ -39,4 +40,5 @@ router.get('/:id/download', verifyToken, requirePermission('download', 'DOCUMENT
 router.post('/:id/revisions', verifyToken, requirePermission('upload', 'DOCUMENT'), upload.single('file'), DocumentController.uploadRevision);
 router.post('/:id/request-approval',verifyToken, ApprovalController.requestApproval);
 router.post('/:id/respond-approval',verifyToken, ApprovalController.respondApproval);
+router.put('/:id/metadata', verifyToken, requirePermission('edit_metadata', 'DOCUMENT'), DocumentController.updateMetadata);
 module.exports = router;

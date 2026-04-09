@@ -50,6 +50,11 @@ function DocumentDetail() {
   const [scale, setScale] = createSignal(1.2); // Default zoom
   let canvasRef; // Referensi untuk elemen <canvas>
 
+  // STATE UNTUK EDIT METADATA
+  const [isEditMetadataOpen, setIsEditMetadataOpen] = createSignal(false);
+  const [editMetadataForm, setEditMetadataForm] = createSignal({});
+  const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
+
   // Fungsi untuk menggambar halaman PDF ke Canvas
   const renderPage = (num, pdfDocument) => {
     if (!pdfDocument || !canvasRef) return;
@@ -193,12 +198,44 @@ function DocumentDetail() {
     }
   };
 
+  // Membuka modal dan mengisi form dengan metadata saat ini
   const handleEditMetadata = () => {
-    Swal.fire({
-      icon: "info",
-      title: "Segera Hadir",
-      text: "Fitur Edit Metadata akan memunculkan form di sini.",
-    });
+    // Ambil custom_metadata dari dokumen saat ini. Jika null, gunakan object kosong {}
+    const currentMetadata = doc()?.custom_metadata || {};
+    setEditMetadataForm({ ...currentMetadata });
+    setIsEditMetadataOpen(true);
+  };
+
+  // Handler untuk menyimpan perubahan metadata ke backend
+  const submitEditMetadata = async (e) => {
+    e.preventDefault();
+    setEditMetadataLoading(true);
+
+    try {
+      // Endpoint untuk update metadata (Pastikan backend Anda merespons endpoint ini)
+      await api.put(`/documents/${documentId}/metadata`, {
+        custom_metadata: editMetadataForm()
+      });
+      
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Metadata dokumen berhasil diperbarui.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      setIsEditMetadataOpen(false);
+      fetchDocumentDetail(); // Refresh data di layar
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Menyimpan",
+        text: err.response?.data?.message || "Terjadi kesalahan saat menyimpan metadata.",
+      });
+    } finally {
+      setEditMetadataLoading(false);
+    }
   };
 
   const handleUploadRevision = () => {
@@ -1144,6 +1181,79 @@ function DocumentDetail() {
           resourceType="DOCUMENT"
           onClose={() => setIsAccessModalOpen(false)}
         />
+      </Show>
+
+      {/* MODAL EDIT METADATA */}
+      <Show when={isEditMetadataOpen()}>
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white rounded-xl shadow-lg w-[400px] p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold mb-4 text-gray-800">
+              Edit Metadata Khusus
+            </h3>
+            
+            <Show 
+              when={Object.keys(editMetadataForm()).length > 0}
+              fallback={
+                <div class="text-sm text-gray-500 italic mb-6 text-center py-4 bg-gray-50 rounded border border-dashed">
+                  Dokumen ini tidak memiliki skema metadata khusus.
+                </div>
+              }
+            >
+              <form onSubmit={submitEditMetadata} class="space-y-4">
+                <For each={Object.keys(editMetadataForm())}>
+                  {(key) => (
+                    <div>
+                      <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                        {key.replace(/_/g, ' ')}
+                      </label>
+                      <input
+                        type="text"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none transition"
+                        value={editMetadataForm()[key] || ""}
+                        onInput={(e) => 
+                          setEditMetadataForm({
+                            ...editMetadataForm(),
+                            [key]: e.target.value
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </For>
+                
+                <div class="flex justify-end gap-2 pt-4 border-t mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditMetadataOpen(false)}
+                    class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editMetadataLoading()}
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {editMetadataLoading() ? "Menyimpan..." : "Simpan Perubahan"}
+                  </button>
+                </div>
+              </form>
+            </Show>
+
+            {/* Tombol Tutup jika fallback (kosong) muncul */}
+            <Show when={Object.keys(editMetadataForm()).length === 0}>
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsEditMetadataOpen(false)}
+                  class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
+                >
+                  Tutup
+                </button>
+              </div>
+            </Show>
+          </div>
+        </div>
       </Show>
     </div>
   );

@@ -467,7 +467,24 @@ const DocumentModel = {
     } finally {
       client.release();
     }
-  }
+  },
+  
+  updateCustomMetadata: async (documentId, customMetadata) => {
+    // Kita ubah object javascript menjadi JSON string agar diterima oleh kolom JSONB PostgreSQL
+    const metadataString = customMetadata ? JSON.stringify(customMetadata) : null;
+
+    const query = `
+      UPDATE document_version
+      SET custom_metadata = $1
+      WHERE id_document = $2 AND is_active = TRUE
+      RETURNING *;
+    `;
+    
+    const values = [metadataString, documentId];
+    const result = await pool.query(query, values);
+    
+    return result.rows[0]; // Mengembalikan data versi yang berhasil diupdate
+  },
 };
 
 module.exports = DocumentModel;

@@ -155,6 +155,19 @@ const DocumentModel = {
   // 2. Ambil SEMUA dokumen yang user punya hak akses SECARA LANGSUNG KECUALI DRAFT miliknya sendiri
   getAccessibleDocuments: async (userId, name) => {
     const query = `
+            WITH RECURSIVE user_draft_tree AS (
+                -- 1. BASE CASE: Cari folder Root 'Draft' milik user ini
+                SELECT id_folder 
+                FROM folder 
+                WHERE folder_name LIKE 'Draft - ' || $2
+                
+                UNION ALL
+                
+                -- 2. RECURSIVE STEP: Cari seluruh sub-folder (anak cucu) yang berada di dalam folder Draft tadi
+                SELECT f.id_folder 
+                FROM folder f
+                INNER JOIN user_draft_tree dt ON f.parent_folder = dt.id_folder
+            )
             SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status,
                    p.preview, p.upload, p.download, p.edit_metadata
             FROM document d
@@ -165,9 +178,7 @@ const DocumentModel = {
               AND p.preview = TRUE 
               AND dv.is_active = true
               AND d.is_deleted = false
-              -- PERUBAHAN DI SINI: Kecualikan dokumen berstatus DRAFT buatan user ini sendiri
-              -- Asumsi d.created_by menyimpan ID user sesuai dengan query Dashboard sebelumnya
-              AND NOT (dv.approval_status = 'DRAFT' AND dv.created_by = $2 AND dv.is_active = TRUE)
+              AND d.id_folder NOT IN (SELECT id_folder FROM user_draft_tree)
             ORDER BY dv.created_at DESC;
         `;
     const { rows } = await pool.query(query, [userId, name]);
@@ -263,7 +274,7 @@ const DocumentModel = {
     fileSize,
     createdBy,
     fileFormat,
-    customMetadata
+    customMetadata,
   ) => {
     const client = await pool.connect();
     try {
@@ -442,36 +453,44 @@ const DocumentModel = {
   rollbackVersion: async (documentId, targetVersionId) => {
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       // 1. Nonaktifkan versi yang saat ini sedang aktif
-      await client.query(`
+      await client.query(
+        `
         UPDATE document_version 
         SET is_active = FALSE 
         WHERE id_document = $1
-      `, [documentId]);
+      `,
+        [documentId],
+      );
 
       // 2. Aktifkan versi target (Rollback) dan pastikan statusnya APPROVED agar langsung tayang
-      const result = await client.query(`
+      const result = await client.query(
+        `
         UPDATE document_version 
         SET is_active = TRUE
         WHERE id_version = $2 AND id_document = $1
         RETURNING *
-      `, [documentId, targetVersionId]);
+      `,
+        [documentId, targetVersionId],
+      );
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
       return result.rows[0]; // Kembalikan data versi yang baru saja diaktifkan
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
     }
   },
-  
+
   updateCustomMetadata: async (documentId, customMetadata) => {
     // Kita ubah object javascript menjadi JSON string agar diterima oleh kolom JSONB PostgreSQL
-    const metadataString = customMetadata ? JSON.stringify(customMetadata) : null;
+    const metadataString = customMetadata
+      ? JSON.stringify(customMetadata)
+      : null;
 
     const query = `
       UPDATE document_version
@@ -479,10 +498,10 @@ const DocumentModel = {
       WHERE id_document = $2 AND is_active = TRUE
       RETURNING *;
     `;
-    
+
     const values = [metadataString, documentId];
     const result = await pool.query(query, values);
-    
+
     return result.rows[0]; // Mengembalikan data versi yang berhasil diupdate
   },
 };

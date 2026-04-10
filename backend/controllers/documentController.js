@@ -358,6 +358,7 @@ const DocumentController = {
           const { location } = req.query;
           console.log("location:", location);
           let allowedIds = [];
+          
           //nanti masih harus diperbaiki (belum keambil semua dokumennya)
           if (location === "home") {
             const accessibleDocs = await DocumentModel.getAccessibleDocuments(

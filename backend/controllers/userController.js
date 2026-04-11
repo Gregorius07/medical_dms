@@ -44,19 +44,17 @@ const UserController = {
     create: async (req, res) => {
         const client = await pool.connect();
         try {
-            console.log('Memulai create user!');
+            // console.log('Memulai create user!');
             
             await client.query('BEGIN');
 
-            const newUser = await UserModel.create(req.body,client);
-            console.log("Variabel newUser :", newUser);
-            const folderName = `Draft - ${newUser.id_user}`;
+            const newUser = await UserModel.create(req.body, client);
+            // console.log("Variabel newUser :", newUser);
+            const folderName = `Draft - ${newUser.full_name}`;
             
             // console.log(folderName);
-            const newFolder = await FolderModel.createFolder(folderName, null,newUser.id_user, req.name, client);
-            console.log("New Folder", newFolder);
-            
-            // await PermissionModel.createFolderPermission(newUser.id_user, newFolder.id_folder, 'system', client);
+            await FolderModel.createFolder(folderName, null, newUser.id_user, req.name, null ,client);
+            // console.log("New Folder", newFolder);
 
             await client.query('COMMIT');
 
@@ -64,7 +62,8 @@ const UserController = {
         } catch (err) {
             await client.query('ROLLBACK');
             res.status(500).json({ message: 'Gagal menambahkan User' , err});
-        } finally{
+        }
+         finally{
             client.release();
         }
     },

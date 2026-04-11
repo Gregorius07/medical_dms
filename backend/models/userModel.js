@@ -50,18 +50,16 @@ const UserModel = {
 
   // 2. CREATE
   create: async (data, client) => {
-    // Generate ID manual karena BIGINT (Simple Timestamp workaround)
-    const id = Date.now();
-    console.log(`data: ${data}`);
-
+    // console.log("Isi variabel data", Object.keys(data));
+    // console.log("Isi variabel data", Object.values(data));
+    
     const query = `
-            INSERT INTO "user" (id_user, full_name, username, password, is_admin, id_position, id_department)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO "user" (full_name, username, password, is_admin, id_position, id_department)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id_user, username, full_name;
         `;
 
     const result = await client.query(query, [
-      id,
       data.fullName,
       data.username,
       data.password,

@@ -158,12 +158,11 @@ class FolderModel {
     client,
   ) {
     try {
-      await client.query("BEGIN"); // Mulai Transaksi
-
+     
       // 1. Insert ke tabel folder
       const insertFolderQuery = `
-                INSERT INTO folder (folder_name, parent_folder, created_by, metadata_schema)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO folder (folder_name, parent_folder, created_by, metadata_schema, created_at)
+                VALUES ($1, $2, $3, $4, NOW())
                 RETURNING id_folder;
             `;
       const folderResult = await client.query(insertFolderQuery, [
@@ -180,17 +179,13 @@ class FolderModel {
                 VALUES ($1, $2, 'FOLDER', TRUE, TRUE, TRUE, TRUE, NOW(), $3);
             `;
       await client.query(insertPermissionQuery, [userId, newFolderId, name]);
-
-      await client.query("COMMIT"); // Simpan Permanen
       return newFolderId;
     } catch (error) {
-      await client.query("ROLLBACK"); // Batalkan jika terjadi error
+      console.log("error di model", error);
       throw error;
-    } finally {
-      client.release();
-    }
+    } 
   }
-
+  
   /**
    * Menghapus folder (HANYA JIKA KOSONG)
    */

@@ -16,7 +16,7 @@ CREATE TABLE department (
 );
 
 CREATE TABLE "user" (
-    id_user         BIGINT PRIMARY KEY,
+    id_user         SERIAL PRIMARY KEY,
     full_name       VARCHAR(150) NOT NULL,
     username        VARCHAR(100) UNIQUE NOT NULL,
     password        VARCHAR(255) NOT NULL,
@@ -32,10 +32,11 @@ CREATE TABLE folder (
     folder_name     VARCHAR(150) NOT NULL,
     metadata_schema JSONB,
     created_by      VARCHAR(150) NOT NULL,
-    parent_folder   INT REFERENCES folder(id_folder),
+    created_at      TIMESTAMPTZ NOT NULL,
+    parent_folder   INT REFERENCES folder(id_folder)
 );
 
-CREATE TYPE approval_status AS ENUM ('DRAFT','UNDER REVIEW','APPROVED', 'REJECTED');
+CREATE TYPE approval_status AS ENUM ('DRAFT','PENDING','APPROVED', 'REJECTED');
 
 CREATE TABLE document (
     id_document     SERIAL PRIMARY KEY,
@@ -48,7 +49,6 @@ CREATE TABLE document_version (
     id_version          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     version_number      INT NOT NULL,
     file_name           VARCHAR(200) NOT NULL,
-    file_format         VARCHAR(10) NOT NULL,
     file_size           INT,
     custom_metadata     JSONB,
     file_path           VARCHAR(255),
@@ -74,7 +74,7 @@ CREATE TABLE permission (
     id_document         INT REFERENCES document(id_document)
 );
 
-CREATE TYPE audit_action AS ENUM ('PREVIEW','UPLOAD','DOWNLOAD', 'UPDATE', 'DELETE');
+CREATE TYPE audit_action AS ENUM ('PREVIEW','UPLOAD','DOWNLOAD', 'UPDATE', 'DELETE', 'ROLLBACK','EDIT', 'REQUEST_APPROVAL','APPROVE','REJECT');
 
 CREATE TABLE audit_log (
     id_log              SERIAL PRIMARY KEY,
@@ -87,11 +87,7 @@ CREATE TABLE audit_log (
     id_document         INT REFERENCES document(id_document)
 );
 
-CREATE TYPE approval_state AS ENUM ('PENDING','APPROVED','REJECTED' 'ROLLBACK',
-'EDIT',
-'REQUEST_APPROVAL',
-'APPROVE',
-'REJECT');
+CREATE TYPE approval_state AS ENUM ('PENDING','APPROVED','REJECTED');
 
 CREATE TABLE approval_request (
     id_approval     SERIAL PRIMARY KEY,
@@ -99,6 +95,7 @@ CREATE TABLE approval_request (
     notes           TEXT,
     created_at      TIMESTAMPTZ NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL,
+    id_target_folder INT REFERENCES folder(id_folder),
     id_requester    BIGINT REFERENCES "user"(id_user),
     id_approver     BIGINT REFERENCES "user"(id_user),
     id_document     INT REFERENCES document(id_document)
@@ -120,12 +117,12 @@ INSERT INTO department (department_name) VALUES
 
 INSERT INTO "user" (id_user, full_name, username, password, is_admin, id_position, id_department)
 VALUES
-(1001, 'Andi Pratama', 'andi.pratama', 'hashed_password_1', TRUE, 4, 4),
-(1002, 'Siti Rahmawati', 'siti.rahma', 'hashed_password_2', FALSE, 1, 1),
-(1003, 'Budi Santoso', 'budi.s', 'hashed_password_3', FALSE, 2, 2),
-(1004, 'Nina Lestari', 'nina.l', 'hashed_password_4', FALSE, 3, 3),
-(1005, 'Maria Kristina', 'maria.k', 'hashed_password_5', FALSE, 5, 5),
-(1006, 'Gregorius Denmas', 'bagus', 'bagus123', FALSE, 5, 5);
+-- (1001, 'Andi Pratama', 'andi.pratama', 'hashed_password_1', TRUE, 4, 4),
+-- (1002, 'Siti Rahmawati', 'siti.rahma', 'hashed_password_2', FALSE, 1, 1),
+-- (1003, 'Budi Santoso', 'budi.s', 'hashed_password_3', FALSE, 2, 2),
+-- (1004, 'Nina Lestari', 'nina.l', 'hashed_password_4', FALSE, 3, 3),
+-- (1005, 'Maria Kristina', 'maria.k', 'hashed_password_5', FALSE, 5, 5),
+(1006, 'Gregorius Denmas', 'bagus', 'bagus123', TRUE, 5, 5);
 
 INSERT INTO folder (folder_name, metadata_schema, created_by, parent_folder) VALUES
 ('Patient Registrations', '{"fields": ["patient_name", "registration_date"]}', 'andi.pratama', NULL),

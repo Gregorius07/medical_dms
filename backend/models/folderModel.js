@@ -90,7 +90,7 @@ class FolderModel {
     return rows[0]; // Mengembalikan data folder yang baru dibuat (termasuk id_folder-nya)
   }
 
-  static async getDraftFolderByUserId(idUser) {
+  static async getDraftFolderByUserId(userId) {
     const query = `
             SELECT f.* FROM folder f
             JOIN permission p ON f.id_folder = p.id_folder
@@ -103,7 +103,7 @@ class FolderModel {
 
     try {
       // $1 akan digantikan dengan nilai idUser
-      const { rows } = await pool.query(query, [idUser]);
+      const { rows } = await pool.query(query, [userId]);
 
       // Mengembalikan baris pertama (objek folder) jika ada, jika tidak kembalikan null
       return rows.length > 0 ? rows[0] : null;
@@ -158,6 +158,9 @@ class FolderModel {
     client,
   ) {
     try {
+
+      console.log("metadataSchema di model", metadataSchema);
+      
      
       // 1. Insert ke tabel folder
       const insertFolderQuery = `

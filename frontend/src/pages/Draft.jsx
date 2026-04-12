@@ -5,6 +5,8 @@ import { useNavigate } from "@solidjs/router";
 import ManageAccessModal from "../components/ManageAccessModal";
 import Swal from "sweetalert2";
 import SearchBar from "../components/SearchBar";
+import NewFolderModal from "../components/NewFolderModal";
+import UploadDocumentModal from "../components/UploadDocumentModal";
 
 function Draft() {
   // State khusus untuk Draft (Sudah diisolasi, tidak ada bentrok dengan Home)
@@ -12,8 +14,6 @@ function Draft() {
   const [stats, setStats] = createSignal({});
   const [draftId, setDraftId] = createSignal(null);
   const [isUploadOpen, setIsUploadOpen] = createSignal(false);
-  const [uploadFile, setUploadFile] = createSignal(null);
-  const [docTitle, setDocTitle] = createSignal("");
   const [uploadLoading, setUploadLoading] = createSignal(false);
 
   const [currentFolderId, setCurrentFolderId] = createSignal(null);
@@ -21,8 +21,6 @@ function Draft() {
   const [documents, setDocuments] = createSignal([]);
   const [breadcrumbs, setBreadcrumbs] = createSignal([]);
   const [isFolderModalOpen, setIsFolderModalOpen] = createSignal(false);
-  const [newFolderName, setNewFolderName] = createSignal("");
-  const [folderLoading, setFolderLoading] = createSignal(false);
 
   // State untuk modal permission folder
   const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
@@ -36,15 +34,12 @@ function Draft() {
 
   // --- STATE UNTUK CUSTOM METADATA ---
   // Menyimpan skema dari folder yang sedang dibuka (contoh: ["nama_pasien", "ruangan"])
-  const [currentFolderSchema, setCurrentFolderSchema] = createSignal([]); 
+  const [currentFolderSchema, setCurrentFolderSchema] = createSignal([]);
   // Menyimpan hasil ketikan user (contoh: { nama_pasien: "John Doe", ruangan: "ICU" })
   const [customMetadata, setCustomMetadata] = createSignal({});
 
   const [isSearching, setIsSearching] = createSignal(false);
 
-  //untuk custom metadata
-  const [customFields, setCustomFields] = createSignal([]); // Array penyimpan field
-  const [newFieldInput, setNewFieldInput] = createSignal(""); // Input teks sementara
   // ==========================================
   // FUNGSI API (Sesuai dengan kode asli Anda)
   // ==========================================
@@ -64,9 +59,9 @@ function Draft() {
         userId: currentUser().id,
       });
       // console.log("CurrentUser().id", currentUser().id);
-      
+
       // console.log("isi variabel Draft Folder",draftFolder);
-      
+
       // console.log("Draft ID:", draftFolder.data.id_folder);
       setDraftId(draftFolder.data.id_folder);
 
@@ -93,7 +88,6 @@ function Draft() {
       setCurrentFolderId(activeFolderId);
 
       // console.log("metadata", res.data.currentFolderMetadata);
-      
 
       // MENANGKAP METADATA SCHEMA DARI FOLDER YANG DIBUKA
       // (Asumsi backend Anda mengirimkan data folder saat ini di res.data.currentFolder)
@@ -102,9 +96,9 @@ function Draft() {
         setCurrentFolderSchema(res.data.currentFolderMetadata);
       } else {
         // Kosongkan jika folder ini tidak punya aturan khusus (atau jika di Root)
-        setCurrentFolderSchema([]); 
+        setCurrentFolderSchema({});
       }
-      
+
       setCustomMetadata({}); // Reset isian form setiap kali pindah folder
       // Logika Breadcrumbs Draft
       if (activeFolderId && activeFolderId !== draftId()) {
@@ -128,31 +122,32 @@ function Draft() {
     }
   };
 
-  const executeSearch = async (keyword, type) => { // <-- Menerima tipe dari SearchBar
-  setIsSearching(true);
-  setUploadLoading(true);
+  const executeSearch = async (keyword, type) => {
+    // <-- Menerima tipe dari SearchBar
+    setIsSearching(true);
+    setUploadLoading(true);
 
-  try {
-    const res = await api.get(
-      `/documents/search?q=${keyword}&type=${type}&location=draft` // <-- Gunakan type argumen
-    );
+    try {
+      const res = await api.get(
+        `/documents/search?q=${keyword}&type=${type}&location=draft`, // <-- Gunakan type argumen
+      );
 
-    setFolders([]);
-    setDocuments(res.data.data);
-    setBreadcrumbs([
-      { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
-    ]);
-  } catch (err) {
-    alert(err.response?.data?.message || "Gagal melakukan pencarian");
-  } finally {
-    setUploadLoading(false);
-  }
-};
+      setFolders([]);
+      setDocuments(res.data.data);
+      setBreadcrumbs([
+        { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
+      ]);
+    } catch (err) {
+      alert(err.response?.data?.message || "Gagal melakukan pencarian");
+    } finally {
+      setUploadLoading(false);
+    }
+  };
 
-const clearSearch = () => {
-  setIsSearching(false);
-  loadFolderContents(null); // Kembali ke Root Home
-};
+  const clearSearch = () => {
+    setIsSearching(false);
+    loadFolderContents(null); // Kembali ke Root Home
+  };
 
   // ==========================================
   // LIFECYCLE & NAVIGASI
@@ -182,65 +177,7 @@ const clearSearch = () => {
   // HANDLERS (UPLOAD, DELETE, DOWNLOAD)
   // ==========================================
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setUploadFile(file);
-    if (!docTitle() && file) setDocTitle(file.name);
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!uploadFile()) return alert("Pilih file terlebih dahulu!");
-
-    setUploadLoading(true);
-
-    const targetFolderId = currentFolderId() || draftId();
-
-    const formData = new FormData();
-    formData.append("file", uploadFile());
-    formData.append("title", docTitle());
-    formData.append("uploaderId", currentUser().id);
-    formData.append("uploaderName", currentUser().name);
-
-    if (targetFolderId) {
-      formData.append("folderId", targetFolderId);
-    }
-
-    // KUNCI UTAMA: Ubah objek metadata menjadi JSON String dan kirim ke backend
-    if (Object.keys(customMetadata()).length > 0) {
-      formData.append("customMetadata", JSON.stringify(customMetadata()));
-    }
-
-    try {
-      await api.post("/documents", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil!",
-        text: "Upload Berhasil!",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      setIsUploadOpen(false);
-      setUploadFile(null);
-      setDocTitle("");
-      setCustomMetadata({});
-
-      // Refresh Data Draft
-      loadFolderContents(targetFolderId);
-    } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Upload Gagal",
-        text: err.response?.data?.message || err.message,
-      });
-    } finally {
-      setUploadLoading(false);
-    }
-  };
-
+  
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Hapus dokumen?",
@@ -250,7 +187,7 @@ const clearSearch = () => {
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Ya, Hapus!",
-      cancelButtonText: "Batal"
+      cancelButtonText: "Batal",
     });
 
     if (!result.isConfirmed) return;
@@ -262,7 +199,7 @@ const clearSearch = () => {
         title: "Terhapus!",
         text: "Dokumen berhasil dihapus.",
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
       loadFolderContents(currentFolderId() || draftId());
     } catch (err) {
@@ -274,76 +211,6 @@ const clearSearch = () => {
     }
   };
 
-  const handleDownload = (filename) => {
-    window.open(`http://localhost:5000/uploads/${filename}`, "_blank");
-  };
-
-  // ==========================================
-  // HANDLER NEW FOLDER
-  // ==========================================
-  const handleCreateFolder = async (e) => {
-    e.preventDefault();
-    if (!newFolderName().trim())
-      return Swal.fire({
-        icon: "warning",
-        title: "Peringatan",
-        text: "Nama folder tidak boleh kosong!",
-      });
-    setFolderLoading(true);
-
-    // Tentukan di mana folder ini akan dibuat (apakah di root draft atau di dalam sub-folder draft)
-    const parentId = currentFolderId() || draftId();
-
-    if (!parentId) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Draft folder belum siap",
-      });
-      return;
-    }
-
-    // Format fields menjadi JSONB object.
-    // Kita ubah "Nama Pasien" menjadi "nama_pasien" (snake_case) agar seragam di database
-    let schemaPayload = null;
-    if (customFields().length > 0) {
-      const formattedFields = customFields().map(f => 
-        f.trim().toLowerCase().replace(/\s+/g, '_')
-      );
-      schemaPayload = formattedFields;
-    }
-
-    try {
-      await api.post("/folders/create", {
-        folder_name: newFolderName(),
-        parent_folder: parentId,
-        metadata_schema : schemaPayload
-      });
-
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil!",
-        text: "Folder berhasil dibuat.",
-        timer: 1500,
-        showConfirmButton: false
-      });
-      setIsFolderModalOpen(false);
-      setNewFolderName("");
-      setCustomFields([]); // Bersihkan array fields
-      setNewFieldInput("");
-
-      // Refresh Data Draft agar folder baru langsung muncul di layar
-      loadFolderContents(parentId);
-    } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Gagal Membuat Folder",
-        text: err.response?.data?.message || err.message,
-      });
-    } finally {
-      setFolderLoading(false);
-    }
-  };
 
   const handleDeleteFolder = async (folderId) => {
     const result = await Swal.fire({
@@ -354,7 +221,7 @@ const clearSearch = () => {
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Ya, Hapus Folder!",
-      cancelButtonText: "Batal"
+      cancelButtonText: "Batal",
     });
 
     if (!result.isConfirmed) return;
@@ -362,13 +229,13 @@ const clearSearch = () => {
     try {
       // Pastikan endpoint backend ini sudah sesuai dengan route Anda
       await api.delete(`/folders/${folderId}`);
-      
+
       Swal.fire({
         icon: "success",
         title: "Terhapus!",
         text: "Folder berhasil dihapus secara permanen.",
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
 
       // Refresh tampilan folder
@@ -378,7 +245,9 @@ const clearSearch = () => {
       Swal.fire({
         icon: "error",
         title: "Gagal Menghapus",
-        text: err.response?.data?.message || "Terjadi kesalahan saat menghapus folder.",
+        text:
+          err.response?.data?.message ||
+          "Terjadi kesalahan saat menghapus folder.",
       });
     }
   };
@@ -426,7 +295,6 @@ const clearSearch = () => {
       {/* HEADER MY DRAFT */}
       <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b pb-4">
         <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">
-          
           {/* TOMBOL BACK DRAFT (Tampil jika BUKAN di root draft) */}
           <Show when={currentFolderId() && currentFolderId() !== draftId()}>
             <button
@@ -532,11 +400,11 @@ const clearSearch = () => {
       {/* ========================================== */}
       {/* --- SEARCH BAR AREA --- */}
       {/* ========================================== */}
-      <SearchBar 
-         isSearching={isSearching()} 
-         onSearch={executeSearch} 
-         onClear={clearSearch} 
-         placeholder="Cari draft dokumen, pengunggah, atau metadata..."
+      <SearchBar
+        isSearching={isSearching()}
+        onSearch={executeSearch}
+        onClear={clearSearch}
+        placeholder="Cari draft dokumen, pengunggah, atau metadata..."
       />
 
       {/* --- KONTEN AREA MY DRAFT (LIST VIEW GOOGLE DRIVE STYLE) --- */}
@@ -670,37 +538,41 @@ const clearSearch = () => {
                               doc.title || doc.file_name
                             )}
                           </span>
-                          
+
                           {/* --- TAMPILAN HIGHLIGHT FULL-TEXT SEARCH (ELASTICSEARCH) --- */}
                           <Show when={doc.highlights && doc.highlights.content}>
                             <div class="mt-1 text-xs text-gray-500 max-w-2xl leading-relaxed italic border-l-2 border-yellow-300 pl-2">
-                              <span innerHTML={`"...${doc.highlights.content.join(' ... ')}..."`} />
+                              <span
+                                innerHTML={`"...${doc.highlights.content.join(" ... ")}..."`}
+                              />
                             </div>
                           </Show>
-                          
+
                           {/* Tampilkan Nilai Relevansi (BM25 Score) Jika Ada */}
                           <Show when={doc.score}>
-                              <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block border border-gray-200">
-                                Relevansi: {doc.score.toFixed(2)}
-                              </span>
+                            <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block border border-gray-200">
+                              Relevansi: {doc.score.toFixed(2)}
+                            </span>
                           </Show>
                         </div>
                       </div>
                     </td>
-                    
+
                     <td class="py-3 px-4 truncate align-top pt-4">
                       {doc.created_by || doc.uploader || "-"}
                     </td>
-                    
+
                     <td class="py-3 px-4 text-gray-500 align-top pt-4">
                       {/* Safety check agar tidak muncul 'Invalid Date' jika kosong */}
-                      {doc.created_at ? new Date(doc.created_at).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }) : "-"}
+                      {doc.created_at
+                        ? new Date(doc.created_at).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "-"}
                     </td>
-                    
+
                     <td class="py-3 px-4 align-top pt-4">
                       <span
                         class={`px-2 py-1 rounded text-xs font-medium ${
@@ -709,34 +581,46 @@ const clearSearch = () => {
                             : doc.approval_status === "DRAFT"
                               ? "bg-gray-100 text-gray-600"
                               : doc.approval_status === "UNDER REVIEW"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-500"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-gray-100 text-gray-500"
                         }`}
                       >
                         {doc.approval_status || "UNKNOWN"}
                       </span>
                     </td>
-                    
+
                     {/* TOMBOL DELETE (Sembunyi saat searching) */}
                     <td class="py-3 px-4 align-top pt-3 text-right">
-                      <Show 
+                      <Show
                         when={
-                          !isSearching() && 
-                          (currentUser()?.role === "admin" || 
-                          (currentUser()?.name === doc.created_by && 
-                          (doc.approval_status === 'DRAFT' || doc.approval_status === 'REJECTED')))
+                          !isSearching() &&
+                          (currentUser()?.role === "admin" ||
+                            (currentUser()?.name === doc.created_by &&
+                              (doc.approval_status === "DRAFT" ||
+                                doc.approval_status === "REJECTED")))
                         }
                       >
-                        <button 
+                        <button
                           onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(doc.id_document);
-                          }} 
+                            e.stopPropagation();
+                            handleDelete(doc.id_document);
+                          }}
                           class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                           title="Hapus Dokumen"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
                           </svg>
                         </button>
                       </Show>
@@ -758,243 +642,27 @@ const clearSearch = () => {
 
       {/* MODAL UPLOAD KHUSUS DRAFT */}
       <Show when={isUploadOpen()}>
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-xl shadow-lg w-[500px] p-6">
-            <h3 class="text-lg font-bold mb-4">Upload to My Draft</h3>
-
-            <form onSubmit={handleUpload} class="space-y-4">
-              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition cursor-pointer relative">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required
-                />
-                <div class="text-blue-600 font-medium mb-1">
-                  Click to select file
-                </div>
-                <div class="text-xs text-gray-400 mb-2">
-                  PDF (Max 10MB)
-                </div>
-                <Show when={uploadFile()}>
-                  <div class="text-sm text-green-600 font-bold bg-green-50 py-1 px-2 rounded inline-block">
-                    {uploadFile()?.name}
-                  </div>
-                </Show>
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">
-                  Document Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  class="w-full border rounded-lg px-3 py-2 text-sm"
-                  value={docTitle()}
-                  onInput={(e) => setDocTitle(e.target.value)}
-                />
-              </div>
-
-              {/* ======================================================= */}
-              {/* FORM CUSTOM METADATA (MUNCUL OTOMATIS JIKA ADA SKEMA) */}
-              {/* ======================================================= */}
-              <Show when={currentFolderSchema().length > 0}>
-                <div class="border-t border-gray-200 pt-4 mt-2 space-y-3">
-                  <h4 class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Metadata
-                  </h4>
-                  
-                  <div class="grid grid-cols-1 gap-3">
-                    <For each={currentFolderSchema()}>
-                      {(field) => (
-                        <div>
-                          <label class="block text-[11px] font-bold text-gray-600 mb-1 uppercase tracking-wider">
-                            {field.replace(/_/g, ' ')}
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none bg-blue-50/30"
-                            value={customMetadata()[field] || ""}
-                            onInput={(e) => 
-                              setCustomMetadata({
-                                ...customMetadata(),
-                                [field]: e.target.value
-                              })
-                            }
-                            placeholder={`Masukkan ${field.replace(/_/g, ' ')}...`}
-                          />
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                </div>
-              </Show>
-              {/* ======================================================= */}
-
-              <div class="flex justify-end gap-2 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsUploadOpen(false)}
-                  class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploadLoading()}
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                >
-                  {uploadLoading() ? "Uploading..." : "Upload"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        {/* Modal Upload Document */}
+        <UploadDocumentModal
+          isOpen={isUploadOpen()}
+          onClose={() => setIsUploadOpen(false)}
+          folderId={currentFolderId()}
+          schema={currentFolderSchema()}
+          onSuccess={() => loadFolderContents(currentFolderId())}
+        />
       </Show>
 
       {/* ========================================== */}
       {/* MODAL CREATE NEW FOLDER (KHUSUS DRAFT) */}
       {/* ========================================== */}
       <Show when={isFolderModalOpen()}>
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          {/* Animasi sederhana menggunakan transform */}
-          <div class="bg-white rounded-xl shadow-2xl w-[400px] overflow-hidden">
-            {/* Header Modal */}
-            <div class="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center gap-3">
-              <div class="bg-blue-200 text-blue-700 p-2 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-              <h3 class="text-lg font-bold text-gray-800">
-                Create New Sub-Folder
-              </h3>
-            </div>
-
-            {/* Form Input Modal Create Folder */}
-            <form onSubmit={handleCreateFolder} class="p-6 space-y-5">
-              
-              {/* Input Nama Folder */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                  Nama Folder <span class="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  autofocus
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-                  value={newFolderName()}
-                  onInput={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Contoh: Radiology Reports"
-                />
-              </div>
-
-              {/* Input Custom Metadata Schema */}
-              <div class="border-t border-gray-100 pt-4">
-                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                  Custom Metadata Fields <span class="text-gray-400 font-normal capitalize">(Opsional)</span>
-                </label>
-                <p class="text-[10px] text-gray-500 mb-3 leading-relaxed">
-                  Tambahkan atribut spesifik yang dapat diisi saat mengunggah dokumen ke folder ini. Contoh: "Nama Pasien", "Tanggal Pemeriksaan".
-                </p>
-                
-                <div class="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition"
-                    value={newFieldInput()}
-                    onInput={(e) => setNewFieldInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault(); // Cegah form tersubmit
-                        if (newFieldInput().trim() && !customFields().includes(newFieldInput().trim())) {
-                          setCustomFields([...customFields(), newFieldInput().trim()]);
-                          setNewFieldInput("");
-                        }
-                      }
-                    }}
-                    placeholder="Ketik nama field ..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (newFieldInput().trim() && !customFields().includes(newFieldInput().trim())) {
-                        setCustomFields([...customFields(), newFieldInput().trim()]);
-                        setNewFieldInput("");
-                      }
-                    }}
-                    class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium text-sm transition"
-                  >
-                    Tambah
-                  </button>
-                </div>
-
-                {/* Daftar Field yang Ditambahkan (Tags) */}
-                <div class="flex flex-wrap gap-2">
-                  <Show when={customFields().length === 0}>
-                    <span class="text-xs text-gray-400 italic">Belum ada field khusus.</span>
-                  </Show>
-                  <For each={customFields()}>
-                    {(field) => (
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        {field}
-                        <button
-                          type="button"
-                          onClick={() => setCustomFields(customFields().filter(f => f !== field))}
-                          class="text-blue-400 hover:text-red-500 transition focus:outline-none"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                          </svg>
-                        </button>
-                      </span>
-                    )}
-                  </For>
-                </div>
-              </div>
-
-              {/* Tombol Aksi Submit */}
-              <div class="flex justify-end gap-2 pt-4 mt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsFolderModalOpen(false);
-                    setNewFolderName("");
-                    setCustomFields([]);
-                    setNewFieldInput("");
-                  }}
-                  class="px-4 py-2 text-gray-600 hover:bg-gray-100 font-medium rounded-lg text-sm transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={folderLoading()}
-                  class="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
-                >
-                  {folderLoading() ? "Creating..." : "Create Folder"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        {/* Modal New Folder */}
+        <NewFolderModal
+          isOpen={isFolderModalOpen()}
+          onClose={() => setIsFolderModalOpen(false)}
+          parentId={currentFolderId()}
+          onSuccess={() => loadFolderContents(currentFolderId())}
+        />
       </Show>
 
       {/* MODAL MANAGE ACCESS UNTUK FOLDER */}

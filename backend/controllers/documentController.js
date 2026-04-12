@@ -63,7 +63,6 @@ const DocumentController = {
       const docData = {
         title: title,
         folderId: folderId ? parseInt(folderId) : null,
-        fileFormat: path.extname(req.file.originalname).substring(1), // pdf, docx
         storedFilename: req.file.filename,
         fileSize: req.file.size,
         uploader: uploaderName || "Unknown",
@@ -76,7 +75,7 @@ const DocumentController = {
         result.id,
         "DOCUMENT",
         { preview: true, download: true, edit_metadata: true, upload: true },
-        "System",
+        req.name,
       );
       res
         .status(201)

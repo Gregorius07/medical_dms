@@ -5,6 +5,8 @@ import { useNavigate } from "@solidjs/router";
 import ManageAccessModal from "../components/ManageAccessModal";
 import Swal from "sweetalert2";
 import SearchBar from "../components/SearchBar";
+import NewFolderModal from "../components/NewFolderModal";
+import UploadDocumentModal from "../components/UploadDocumentModal";
 
 function Folder() {
   // ==========================================
@@ -12,8 +14,6 @@ function Folder() {
   // ==========================================
   const navigate = useNavigate();
   const [isUploadOpen, setIsUploadOpen] = createSignal(false);
-  const [uploadFile, setUploadFile] = createSignal(null);
-  const [docTitle, setDocTitle] = createSignal("");
   const [uploadLoading, setUploadLoading] = createSignal(false);
 
   const [currentFolderId, setCurrentFolderId] = createSignal(null);
@@ -21,15 +21,8 @@ function Folder() {
   const [documents, setDocuments] = createSignal([]);
   const [breadcrumbs, setBreadcrumbs] = createSignal([]);
   const [isFolderModalOpen, setIsFolderModalOpen] = createSignal(false);
-  const [newFolderName, setNewFolderName] = createSignal("");
-  const [folderLoading, setFolderLoading] = createSignal(false);
-
   // State untuk Search
   const [isSearching, setIsSearching] = createSignal(false);
-
-  //untuk custom metadata
-  const [customFields, setCustomFields] = createSignal([]); // Array penyimpan field
-  const [newFieldInput, setNewFieldInput] = createSignal(""); // Input teks sementara
 
   // State untuk modal permission folder
   const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
@@ -117,63 +110,6 @@ function Folder() {
   // ==========================================
   // HANDLERS (UPLOAD, DELETE, DOWNLOAD)
   // ==========================================
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setUploadFile(file);
-    if (!docTitle() && file) setDocTitle(file.name);
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!uploadFile()) {
-      Swal.fire({
-        title: "Error",
-        text: "Pilih File terlebih dahulu",
-        icon: "error",
-      });
-    }
-
-    setUploadLoading(true);
-
-    const formData = new FormData();
-    formData.append("file", uploadFile());
-    formData.append("title", docTitle());
-    formData.append("uploaderId", currentUser().id);
-    formData.append("uploaderName", currentUser().name);
-
-    // Jika sedang di dalam folder, lampirkan ID foldernya
-    if (currentFolderId()) {
-      formData.append("folderId", currentFolderId());
-    }
-
-    // KUNCI UTAMA: Ubah objek metadata menjadi JSON String dan kirim ke backend
-    if (Object.keys(customMetadata()).length > 0) {
-      formData.append("customMetadata", JSON.stringify(customMetadata()));
-    }
-
-    try {
-      await api.post("/documents", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      Swal.fire({
-        title: "Success",
-        text: "Upload Berhasil",
-        icon: "success",
-      });
-
-      // Refresh Data
-      setIsUploadOpen(false);
-      setUploadFile(null);
-      setDocTitle("");
-      setCustomMetadata({});
-
-      loadFolderContents(currentFolderId());
-    } catch (err) {
-      alert("Upload Gagal: " + (err.response?.data?.message || err.message));
-    } finally {
-      setUploadLoading(false);
-    }
-  };
 
   const handleDeleteFolder = async (folderId) => {
     const result = await Swal.fire({
@@ -245,67 +181,6 @@ function Folder() {
         title: "Gagal",
         text: "Gagal menghapus dokumen.",
       });
-    }
-  };
-
-  const handleDownload = (filename) => {
-    window.open(`http://localhost:5000/uploads/${filename}`, "_blank");
-  };
-
-  const handleCreateFolder = async (e) => {
-    e.preventDefault();
-    if (!newFolderName().trim())
-      return alert("Nama folder tidak boleh kosong!");
-
-    setFolderLoading(true);
-
-    // Tentukan di mana folder ini akan dibuat (apakah di root draft atau di dalam sub-folder draft)
-    const parentId = currentFolderId();
-    // Format fields menjadi JSONB object.
-    // Kita ubah "Nama Pasien" menjadi "nama_pasien" (snake_case) agar seragam di database
-    let schemaPayload = null;
-    if (customFields().length > 0) {
-      const formattedFields = customFields().map((f) =>
-        f.trim().toLowerCase().replace(/\s+/g, "_"),
-      );
-      schemaPayload = formattedFields;
-    }
-
-    try {
-      await api.post("/folders/create", {
-        folder_name: newFolderName(),
-        parent_folder: parentId,
-        metadata_schema: schemaPayload,
-      });
-
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil!",
-        text: "Folder berhasil dibuat.",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      setIsFolderModalOpen(false);
-      setNewFolderName("");
-      setCustomFields([]); // Bersihkan array fields
-      setNewFieldInput("");
-      // Refresh Data Draft agar folder baru langsung muncul di layar
-      loadFolderContents(parentId);
-    } catch (err) {
-      alert(
-        "Gagal membuat folder: " + (err.response?.data?.message || err.message),
-      );
-    } finally {
-      setFolderLoading(false);
-    }
-  };
-
-  const handleSearch = async (e) => {
-    e.preventDefault(); // Mencegah form me-reload halaman
-    clearTimeout(searchTimeout); // Batalkan timer jika ada
-    if (searchQuery().trim()) {
-      executeSearch(searchQuery());
     }
   };
 
@@ -711,283 +586,25 @@ function Folder() {
 
       {/* MODAL UPLOAD KHUSUS HOME */}
       <Show when={isUploadOpen()}>
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-xl shadow-lg w-[500px] p-6">
-            <h3 class="text-lg font-bold mb-4">Upload to Home</h3>
-
-            <form onSubmit={handleUpload} class="space-y-4">
-              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition cursor-pointer relative">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required
-                />
-                <div class="text-blue-600 font-medium mb-1">
-                  Click to select file
-                </div>
-                <div class="text-xs text-gray-400 mb-2">PDF (Max 10MB)</div>
-                <Show when={uploadFile()}>
-                  <div class="text-sm text-green-600 font-bold bg-green-50 py-1 px-2 rounded inline-block">
-                    {uploadFile()?.name}
-                  </div>
-                </Show>
-              </div>
-
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">
-                  Document Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  class="w-full border rounded-lg px-3 py-2 text-sm"
-                  value={docTitle()}
-                  onInput={(e) => setDocTitle(e.target.value)}
-                />
-              </div>
-
-              {/* ======================================================= */}
-              {/* FORM CUSTOM METADATA (MUNCUL OTOMATIS JIKA ADA SKEMA) */}
-              {/* ======================================================= */}
-              <Show when={currentFolderSchema().length > 0}>
-                <div class="border-t border-gray-200 pt-4 mt-2 space-y-3">
-                  <h4 class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    Metadata
-                  </h4>
-
-                  <div class="grid grid-cols-1 gap-3">
-                    <For each={currentFolderSchema()}>
-                      {(field) => (
-                        <div>
-                          <label class="block text-[11px] font-bold text-gray-600 mb-1 uppercase tracking-wider">
-                            {field.replace(/_/g, " ")}{" "}
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none bg-blue-50/30"
-                            value={customMetadata()[field] || ""}
-                            onInput={(e) =>
-                              setCustomMetadata({
-                                ...customMetadata(),
-                                [field]: e.target.value,
-                              })
-                            }
-                            placeholder={`Masukkan ${field.replace(/_/g, " ")}...`}
-                          />
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                </div>
-              </Show>
-              {/* ======================================================= */}
-
-              <div class="flex justify-end gap-2 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsUploadOpen(false)}
-                  class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploadLoading()}
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                >
-                  {uploadLoading() ? "Uploading..." : "Upload"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <UploadDocumentModal
+          isOpen={isUploadOpen()}
+          onClose={() => setIsUploadOpen(false)}
+          folderId={currentFolderId()}
+          schema={currentFolderSchema()}
+          onSuccess={() => loadFolderContents(currentFolderId())}
+        />
       </Show>
 
       {/* ========================================== */}
-      {/* MODAL CREATE NEW FOLDER (KHUSUS DRAFT) */}
+      {/* MODAL CREATE NEW FOLDER */}
       {/* ========================================== */}
       <Show when={isFolderModalOpen()}>
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          {/* Animasi sederhana menggunakan transform */}
-          <div class="bg-white rounded-xl shadow-2xl w-[400px] overflow-hidden">
-            {/* Header Modal */}
-            <div class="bg-purple-50 px-6 py-4 border-b border-purple-100 flex items-center gap-3">
-              <div class="bg-purple-200 text-purple-700 p-2 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-              <h3 class="text-lg font-bold text-gray-800">
-                Create New Sub-Folder
-              </h3>
-            </div>
-
-            {/* Form Input Modal Create Folder */}
-            <form onSubmit={handleCreateFolder} class="p-6 space-y-5">
-              {/* Input Nama Folder */}
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                  Nama Folder <span class="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  autofocus
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-                  value={newFolderName()}
-                  onInput={(e) => setNewFolderName(e.target.value)}
-                  placeholder="Contoh: Radiology Reports"
-                />
-              </div>
-
-              {/* Input Custom Metadata Schema */}
-              <div class="border-t border-gray-100 pt-4">
-                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
-                  Custom Metadata Fields{" "}
-                  <span class="text-gray-400 font-normal capitalize">
-                    (Opsional)
-                  </span>
-                </label>
-                <p class="text-[10px] text-gray-500 mb-3 leading-relaxed">
-                  Tambahkan atribut spesifik yang dapat diisi saat mengunggah
-                  dokumen ke folder ini. Contoh: "Nama Pasien", "Tanggal
-                  Pemeriksaan".
-                </p>
-
-                <div class="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition"
-                    value={newFieldInput()}
-                    onInput={(e) => setNewFieldInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault(); // Cegah form tersubmit
-                        if (
-                          newFieldInput().trim() &&
-                          !customFields().includes(newFieldInput().trim())
-                        ) {
-                          setCustomFields([
-                            ...customFields(),
-                            newFieldInput().trim(),
-                          ]);
-                          setNewFieldInput("");
-                        }
-                      }
-                    }}
-                    placeholder="Ketik nama field ..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        newFieldInput().trim() &&
-                        !customFields().includes(newFieldInput().trim())
-                      ) {
-                        setCustomFields([
-                          ...customFields(),
-                          newFieldInput().trim(),
-                        ]);
-                        setNewFieldInput("");
-                      }
-                    }}
-                    class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium text-sm transition"
-                  >
-                    Tambah
-                  </button>
-                </div>
-
-                {/* Daftar Field yang Ditambahkan (Tags) */}
-                <div class="flex flex-wrap gap-2">
-                  <Show when={customFields().length === 0}>
-                    <span class="text-xs text-gray-400 italic">
-                      Belum ada field khusus.
-                    </span>
-                  </Show>
-                  <For each={customFields()}>
-                    {(field) => (
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        {field}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setCustomFields(
-                              customFields().filter((f) => f !== field),
-                            )
-                          }
-                          class="text-blue-400 hover:text-red-500 transition focus:outline-none"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-3.5 w-3.5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fill-rule="evenodd"
-                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                              clip-rule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </span>
-                    )}
-                  </For>
-                </div>
-              </div>
-
-              {/* Tombol Aksi Submit */}
-              <div class="flex justify-end gap-2 pt-4 mt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsFolderModalOpen(false);
-                    setNewFolderName("");
-                    setCustomFields([]);
-                    setNewFieldInput("");
-                  }}
-                  class="px-4 py-2 text-gray-600 hover:bg-gray-100 font-medium rounded-lg text-sm transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={folderLoading()}
-                  class="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
-                >
-                  {folderLoading() ? "Creating..." : "Create Folder"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <NewFolderModal
+          isOpen={isFolderModalOpen()}
+          onClose={() => setIsFolderModalOpen(false)}
+          parentId={currentFolderId()}
+          onSuccess={() => loadFolderContents(currentFolderId())}
+        />
       </Show>
 
       {/* MODAL MANAGE ACCESS UNTUK FOLDER */}

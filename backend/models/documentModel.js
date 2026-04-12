@@ -21,14 +21,14 @@ const DocumentModel = {
           [fullname],
         ),
 
-        // 2. Total dokumen milik user berstatus "UNDER REVIEW" (Status = 'PENDING')
+        // 2. Total dokumen milik user (Status = 'PENDING')
         pool.query(
           `
                 SELECT COUNT(DISTINCT d.id_document) as count
                 FROM document d
                 JOIN document_version dv ON d.id_document = dv.id_document
                 WHERE dv.created_by = $1 
-                  AND dv.approval_status = 'UNDER REVIEW' 
+                  AND dv.approval_status = 'PENDING' 
                   AND dv.is_active = TRUE
                   AND d.is_deleted = false
             `,
@@ -120,12 +120,12 @@ const DocumentModel = {
       // B. Insert ke Tabel Version (File Fisik)
       await pool.query(
         `INSERT INTO document_version 
-                (version_number, file_name, file_format, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder,  created_at, file_path)
-                VALUES ($1, $2, $3, $4, $5, 'DRAFT', $6, true, $7, $8, $9, $10)`,
+                (version_number, file_name, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder,  created_at, file_path)
+                VALUES ($1, $2, $3, $4, 'DRAFT', $5, true, $6, $7, $8, $9)`,
         [
           1, // Versi pertama
           data.title, // Nama file fisik (UUID)
-          data.fileFormat,
+          
           data.fileSize,
           data.metadata || {},
           data.uploader, // Nama user

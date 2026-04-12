@@ -66,7 +66,7 @@ const getFolderBreadcrumbs = async (req, res) => {
 const getDraftFolderByUserId = async (req, res) => {
   try {
     const result = await FolderModel.getDraftFolderByUserId(req.userId);
-    console.log("result di controller", result);
+    // console.log("result di controller", result);
 
     res.json(result);
   } catch (error) {
@@ -95,14 +95,19 @@ const createFolder = async (req, res) => {
         .json({ message: "Nama folder tidak boleh kosong" });
     }
 
+    console.log("Metadata dari view = ",JSON.stringify(metadata_schema));
+    
     const newFolderId = await FolderModel.createFolder(
       folder_name,
       parent_folder || null,
       userId,
       name,
-      metadata_schema && metadata_schema.length > 0 ? JSON.stringify(metadata_schema) : null,
+      metadata_schema ? JSON.stringify(metadata_schema) : null,
       client,
     );
+
+    console.log(newFolderId);
+    
 
     res.status(201).json({
       message: "Folder berhasil dibuat",

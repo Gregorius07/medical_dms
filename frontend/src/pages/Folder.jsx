@@ -368,7 +368,16 @@ function Folder() {
                         </span>
                       </td>
                       <td class="py-3 px-4 truncate">{folder.created_by}</td>
-                      <td class="py-3 px-4 text-gray-400">—</td>
+                      <td class="py-3 px-4 text-gray-400">
+                        {new Date(folder.created_at).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )}
+                      </td>
                       <td class="py-3 px-4 text-gray-400">—</td>
                       {/* Kolom Status/Action Tambahan */}
                       <td class="py-3 px-4 flex justify-end">

@@ -78,7 +78,7 @@ function DocumentDetail() {
   // Efek reaktif: Load PDF dari backend ketika doc() dan permission preview sudah tersedia
   createEffect(() => {
     const currentDoc = doc();
-    if (currentDoc?.file_path && permissions().preview) {
+    if (currentDoc?.file_path && (permissions().preview || currentUser()?.role === "admin") ) {
       // PENTING: File harus bisa diakses secara publik atau via auth header yang diizinkan CORS
       const url = `http://localhost:5000/${currentDoc.file_path}`;
 
@@ -442,7 +442,7 @@ function DocumentDetail() {
 
             <div class="flex-1 w-full h-full relative flex flex-col items-center overflow-auto p-4">
               <Show
-                when={permissions().preview}
+                when={permissions().preview || currentUser()?.role === "admin"}
                 fallback={
                   <div class="absolute inset-0 flex items-center justify-center text-gray-400">
                     Anda tidak memiliki izin preview untuk dokumen ini.
@@ -604,7 +604,7 @@ function DocumentDetail() {
                 </button>
               </Show>
 
-              <Show when={permissions().download}>
+              <Show when={permissions().download || currentUser()?.role === "admin"}>
                 <button
                   onClick={handleDownload}
                   class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
@@ -627,7 +627,7 @@ function DocumentDetail() {
                 </button>
               </Show>
 
-              <Show when={permissions().edit_metadata}>
+              <Show when={permissions().edit_metadata || currentUser()?.role === "admin"}>
                 <button
                   onClick={handleEditMetadata}
                   class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
@@ -650,7 +650,7 @@ function DocumentDetail() {
                 </button>
               </Show>
 
-              <Show when={permissions().upload}>
+              <Show when={permissions().upload || currentUser()?.role === "admin"}>
                 <button
                   onClick={handleUploadRevision}
                   // 1. Matikan fungsi klik jika statusnya UNDER REVIEW atau APPROVED

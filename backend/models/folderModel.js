@@ -48,7 +48,8 @@ class FolderModel {
                 folder_name, 
                 parent_folder, 
                 created_by,
-                metadata_schema
+                metadata_schema,
+                created_at
             FROM folder 
             WHERE parent_folder IS NULL 
             ORDER BY 
@@ -114,7 +115,7 @@ class FolderModel {
   }
 
   // 1. Ambil SEMUA folder yang user punya hak akses KECUALI Draft miliknya sendiri BESERTA seluruh isinya
-  static async getAccessibleFolders(userId) {
+  static async getAccessibleFolders(userId, fullname) {
     const query = `
             WITH RECURSIVE user_draft_tree AS (
                 -- 1. BASE CASE: Cari folder Root 'Draft' milik user ini
@@ -129,7 +130,7 @@ class FolderModel {
                 FROM folder f
                 INNER JOIN user_draft_tree dt ON f.parent_folder = dt.id_folder
             )
-            SELECT f.id_folder, f.folder_name, f.parent_folder, f.created_by, f.metadata_schema,
+            SELECT f.id_folder, f.folder_name, f.parent_folder, f.created_by, f.metadata_schema, f.created_at
                    p.preview, p.upload, p.download, p.edit_metadata
             FROM folder f
             JOIN permission p ON f.id_folder = p.id_folder
@@ -142,7 +143,7 @@ class FolderModel {
                 CASE WHEN f.folder_name LIKE 'Draft - %' THEN 0 ELSE 1 END, 
                 f.folder_name ASC;
         `;
-    const { rows } = await pool.query(query, [userId, userId + ""]);
+    const { rows } = await pool.query(query, [userId, fullname]);
     return rows;
   }
 

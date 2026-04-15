@@ -19,7 +19,7 @@ const getFolderContents = async (req, res) => {
         folders = await FolderModel.getAllRootFoldersForAdmin();
         documents = await DocumentModel.getDocumentsInRootForAdmin();
       } else {
-        folders = await FolderModel.getAccessibleFolders(userId);
+        folders = await FolderModel.getAccessibleFolders(userId, name);
         // console.log("Isi variabel folders:", folders);
         documents = await DocumentModel.getAccessibleDocuments(userId, name);
         // console.log('Isi variabel documents:',documents);

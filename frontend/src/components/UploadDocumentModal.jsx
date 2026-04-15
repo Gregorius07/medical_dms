@@ -43,35 +43,37 @@ function UploadDocumentModal(props) {
 
   return (
     <Show when={props.isOpen}>
-      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-lg w-[500px] p-6 max-h-[90vh] overflow-y-auto">
-          <h3 class="text-lg font-bold mb-4">Upload Document</h3>
-          <form onSubmit={handleUpload} class="space-y-4">
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative bg-gray-50">
+      <div class="modal-overlay">
+        <div class="modal-card w-[500px] max-h-[90vh] overflow-y-auto">
+          <div class="modal-header">
+            <h3 class="text-base font-bold text-gray-800">Upload Document</h3>
+          </div>
+          <form onSubmit={handleUpload} class="modal-body space-y-4">
+            <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center relative bg-gray-50/80 hover:bg-gray-50 transition-colors">
               <input type="file" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                 onChange={(e) => {
                   const file = e.target.files[0];
                   setUploadFile(file);
                   if(!docTitle()) setDocTitle(file.name);
                 }} />
-              <div class="text-blue-600 font-medium">{uploadFile() ? uploadFile().name : "Click to select file"}</div>
+              <div class="text-primary-600 font-medium text-sm">{uploadFile() ? uploadFile().name : "Click to select file"}</div>
             </div>
 
             <div>
-              <label class="text-xs font-bold text-black uppercase">Document Title</label>
-              <input type="text" required class="w-full border rounded-lg px-3 py-2 text-sm" 
+              <label class="input-label">Document Title</label>
+              <input type="text" required class="input-field" 
                 value={docTitle()} onInput={(e) => setDocTitle(e.target.value)} />
             </div>
 
             {/* FORM DINAMIS BERDASARKAN SCHEMA */}
             <Show when={props.schema && Object.keys(props.schema).length > 0}>
               <div class="border-t pt-4 space-y-3">
-                <p class="text-xs font-bold text-black uppercase">Metadata</p>
+                <p class="input-label">Metadata</p>
                 <For each={Object.entries(props.schema)}>
                   {([field, type]) => (
                     <div>
-                      <label class="block text-[11px] font-bold text-gray-600 uppercase">{field.replace(/_/g, ' ')}</label>
-                      <input type={type} required class="w-full border rounded-lg px-3 py-2 text-sm bg-indigo-50/30"
+                      <label class="input-label">{field.replace(/_/g, ' ')}</label>
+                      <input type={type} required class="input-field"
                         value={customMetadata()[field] || ""}
                         onInput={(e) => setCustomMetadata({ ...customMetadata(), [field]: e.target.value })} />
                     </div>
@@ -80,9 +82,9 @@ function UploadDocumentModal(props) {
               </div>
             </Show>
 
-            <div class="flex justify-end gap-2 pt-4 border-t">
-              <button type="button" onClick={props.onClose} class="px-4 py-2 text-gray-500 text-sm">Cancel</button>
-              <button type="submit" disabled={loading()} class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
+            <div class="modal-footer">
+              <button type="button" onClick={props.onClose} class="btn-ghost">Cancel</button>
+              <button type="submit" disabled={loading()} class="btn-primary">
                 {loading() ? "Uploading..." : "Upload"}
               </button>
             </div>

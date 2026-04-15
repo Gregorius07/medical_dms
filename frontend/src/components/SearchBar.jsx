@@ -44,13 +44,13 @@ function SearchBar(props) {
   };
 
   return (
-    <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-6 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
+    <div class="bg-gray-50/80 border border-gray-200 rounded-xl p-3 mb-6 flex flex-col sm:flex-row gap-3 items-center">
       <form onSubmit={handleSearch} class="flex-1 flex w-full">
         {/* Dropdown Tipe Pencarian */}
         <select
           value={searchType()}
           onChange={handleTypeChange}
-          class="bg-white border border-gray-300 text-gray-700 text-sm rounded-l-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 border-r-0 cursor-pointer"
+          class="bg-white border border-gray-200 text-gray-700 text-sm rounded-l-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 border-r-0 cursor-pointer transition-colors"
         >
           <option value="metadata">Metadata Search</option>
           <option value="fulltext">Full-Text Search (Elastic)</option>
@@ -67,7 +67,7 @@ function SearchBar(props) {
             type="text"
             value={searchQuery()}
             onInput={handleInputSearch}
-            class="bg-white border border-gray-300 text-gray-900 text-sm rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none"
+            class="bg-white border border-gray-200 text-gray-900 text-sm rounded-r-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 block w-full pl-10 p-2.5 outline-none transition-colors"
             placeholder={props.placeholder || "Cari nama dokumen, pengunggah, atau metadata..."}
           />
         </div>
@@ -78,7 +78,7 @@ function SearchBar(props) {
       <Show when={props.isSearching}>
         <button
           onClick={handleClear}
-          class="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition whitespace-nowrap"
+          class="btn-danger-text whitespace-nowrap"
         >
           Batal Pencarian
         </button>

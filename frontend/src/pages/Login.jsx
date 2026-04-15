@@ -38,38 +38,40 @@ const [showPassword, setShowPassword] = createSignal(false);
   };
 
   return (
-    <div class="min-h-screen w-full bg-[#F4F6FB] flex flex-col items-center pt-16 px-4">
+    <div class="min-h-screen w-full bg-gray-50 flex flex-col items-center pt-16 px-4">
       {/* HEADER ATAS */}
       <div class="flex flex-col items-center mb-10">
-        <div class="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center mb-4">
-          <span class="w-7 h-7 rounded-full bg-white inline-block" />
+        <div class="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center mb-4 shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
         </div>
-        <h1 class="text-2xl font-semibold text-[#111827] mb-1">
+        <h1 class="text-2xl font-bold text-gray-900 mb-1 tracking-tight">
           MedDocs
         </h1>
-        <p class="text-sm text-[#6B7280] text-center max-w-md">
+        <p class="text-sm text-gray-500 text-center max-w-md">
           Centralized medical document management with a controlled approval process.
         </p>
       </div>
 
       {/* CARD LOGIN */}
-      <div class="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-[#E5E7EB] px-10 py-10">
-        <h2 class="text-xl font-semibold text-[#111827] mb-2">
+      <div class="w-full max-w-xl bg-white rounded-2xl shadow-card border border-gray-100 px-10 py-10">
+        <h2 class="text-xl font-bold text-gray-900 mb-1.5">
           Log in to the system
         </h2>
-        <p class="text-sm text-[#6B7280] mb-7">
+        <p class="text-sm text-gray-500 mb-7">
           Use your hospital account to manage and access documents.
         </p>
 
-        <form onSubmit={handleLogin} class="space-y-6">
+        <form onSubmit={handleLogin} class="space-y-5">
           <div>
-            <label class="block text-sm font-medium text-[#374151] mb-2">
+            <label class="input-label">
               Username
             </label>
             <input
               type="text"
               placeholder="Enter your username"
-              class="w-full px-4 py-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-sm text-[#111827] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]"
+              class="input-field"
               value={email()}
               onInput={(e) => setEmail(e.target.value)}
               disabled={isLoading()}
@@ -77,18 +79,16 @@ const [showPassword, setShowPassword] = createSignal(false);
           </div>
 
           <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="block text-sm font-medium text-[#374151]">
-                Password
-              </label>
-            </div>
+            <label class="input-label">
+              Password
+            </label>
             
             {/* Bungkus input dengan relative agar icon bisa diposisikan absolute di dalamnya */}
             <div class="relative">
               <input
                 type={showPassword() ? "text" : "password"}
                 placeholder="Enter your password"
-                class="w-full px-4 py-3 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-sm text-[#111827] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] pr-12 transition-colors"
+                class="input-field pr-12"
                 value={password()}
                 onInput={(e) => setPassword(e.target.value)}
                 disabled={isLoading()}
@@ -98,7 +98,7 @@ const [showPassword, setShowPassword] = createSignal(false);
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword())}
-                class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
               >
                 <Show
                   when={showPassword()}
@@ -117,40 +117,29 @@ const [showPassword, setShowPassword] = createSignal(false);
                 </Show>
               </button>
             </div>
-            {/* <div class="mt-3 flex items-center justify-between text-sm">
-              <label class="inline-flex items-center gap-2 text-[#4B5563]">
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-[#D1D5DB] text-[#2563EB] focus:ring-[#2563EB]"
-                  disabled={isLoading()}
-                />
-                <span>Remember Me</span>
-              </label>
-              <button
-                type="button"
-                class="text-[#2563EB] hover:underline"
-              >
-                Forgot Password?
-              </button>
-            </div> */}
           </div>
 
           <button
             type="submit"
             disabled={isLoading()}
-            class="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-3 rounded-full text-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
+            class="w-full btn-primary py-3 rounded-full text-sm"
           >
             {isLoading() ? "Loading..." : "Login"}
           </button>
 
           {error() && (
-            <div class="mt-3 rounded-lg bg-[#EF4444] text-white text-sm px-4 py-3">
-              <p class="font-semibold mb-1">Login gagal</p>
-              <p>{error()}</p>
+            <div class="rounded-xl bg-red-50 border border-red-200 text-sm px-4 py-3 flex items-start gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              <div>
+                <p class="font-semibold text-red-700 mb-0.5">Login gagal</p>
+                <p class="text-red-600">{error()}</p>
+              </div>
             </div>
           )}
 
-          <p class="mt-4 text-xs text-center text-[#6B7280]">
+          <p class="mt-4 text-xs text-center text-gray-400">
             Contact the administrator if you encounter access issues.
           </p>
         </form>

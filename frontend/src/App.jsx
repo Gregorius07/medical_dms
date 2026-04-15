@@ -15,7 +15,17 @@ function App() {
     checkSession();
   });
   return (
-    <Show when={!isAuthLoading()} fallback={<div>Loading aplikasi...</div>}>
+    <Show when={!isAuthLoading()} fallback={
+      <div class="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
+        <div class="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div class="w-5 h-5 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+        <p class="mt-3 text-xs text-gray-400 font-medium">Loading...</p>
+      </div>
+    }>
       <Router>
         <Route path="/" component={Login} />
 

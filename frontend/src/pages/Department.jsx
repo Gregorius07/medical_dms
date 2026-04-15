@@ -116,50 +116,52 @@ function Department() {
   return (
     <div>
       {/* FILTER & ACTION BAR */}
-      <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div class="flex gap-4 w-full md:w-auto">
+      <div class="action-bar">
+        <div class="flex gap-3 w-full md:w-auto">
             <input 
                 type="text" 
                 placeholder="Search department..." 
-                class="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-full md:w-64"
+                class="input-field md:w-64"
                 value={search()}
                 onInput={(e) => { setSearch(e.target.value); setPage(1); }}
             />
-            {/* Visual Filter (Mock) */}
-            {/* <select class="border border-gray-200 rounded-lg px-4 py-2 text-sm bg-white text-gray-500">
-                <option>Status: All</option>
-                <option>Active</option>
-            </select> */}
         </div>
         <button 
             onClick={openAdd}
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+            class="btn-primary flex items-center gap-2"
         >
-            + Add New Department
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Add Department
         </button>
       </div>
 
       {/* TABLE */}
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="table-container">
         <table class="w-full text-left border-collapse">
-            <thead class="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
+            <thead class="table-head">
                 <tr>
-                    <th class="px-6 py-4">ID</th>
-                    <th class="px-6 py-4">Department Name</th>
-                    <th class="px-6 py-4 text-right">Actions</th>
+                    <th>ID</th>
+                    <th>Department Name</th>
+                    <th class="text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="text-sm text-gray-700">
+            <tbody class="table-body">
                 {data().length === 0 ? (
-                    <tr><td colspan="3" class="px-6 py-8 text-center text-gray-400">Data not found</td></tr>
+                    <tr><td colspan="3" class="px-6 py-10 text-center text-gray-400">Data not found</td></tr>
                 ) : (
                     data().map((item) => (
-                        <tr class="border-b last:border-0 hover:bg-gray-50">
-                            <td class="px-6 py-4">{item.id_department}</td>
-                            <td class="px-6 py-4 font-medium">{item.department_name}</td>
-                            <td class="px-6 py-4 text-right">
-                                <button onClick={() => openEdit(item)} class="text-blue-500 hover:text-blue-700 mr-3">Edit</button>
-                                <button onClick={() => handleDelete(item.id_department)} class="text-red-500 hover:text-red-700">Delete</button>
+                        <tr class="table-row-hover">
+                            <td class="text-gray-400 font-mono text-xs">{item.id_department}</td>
+                            <td class="font-medium text-gray-800">{item.department_name}</td>
+                            <td class="text-right">
+                                <div class="flex items-center justify-end gap-1">
+                                    <button onClick={() => openEdit(item)} class="btn-icon" title="Edit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                    </button>
+                                    <button onClick={() => handleDelete(item.id_department)} class="btn-icon-danger" title="Delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     ))
@@ -168,22 +170,22 @@ function Department() {
         </table>
 
         {/* PAGINATION */}
-        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center">
-            <p class="text-xs text-gray-500">
-                Showing page {page()} of {totalPages()} ({totalItems()} results)
+        <div class="pagination-container">
+            <p class="text-xs text-gray-400">
+                Page {page()} of {totalPages()} · {totalItems()} results
             </p>
             <div class="flex gap-2">
                 <button 
                     disabled={page() === 1}
                     onClick={() => setPage(p => p - 1)}
-                    class="px-3 py-1 border rounded text-xs hover:bg-gray-50 disabled:opacity-50"
+                    class="pagination-btn"
                 >
                     Previous
                 </button>
                 <button 
                     disabled={page() === totalPages()}
                     onClick={() => setPage(p => p + 1)}
-                    class="px-3 py-1 border rounded text-xs hover:bg-gray-50 disabled:opacity-50"
+                    class="pagination-btn"
                 >
                     Next
                 </button>
@@ -193,22 +195,26 @@ function Department() {
 
       {/* MODAL FORM */}
       {isModalOpen() && (
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-xl shadow-lg w-96 p-6">
-                <h3 class="text-lg font-bold mb-4">{editId() ? "Edit Department" : "Add New Department"}</h3>
-                <form onSubmit={handleSubmit}>
-                    <label class="block text-sm text-gray-600 mb-2">Department Name</label>
-                    <input 
-                        type="text" 
-                        class="w-full border rounded-lg px-4 py-2 mb-4 focus:outline-none focus:border-blue-500"
-                        value={formName()}
-                        onInput={(e) => setFormName(e.target.value)}
-                        required
-                        autofocus
-                    />
-                    <div class="flex justify-end gap-2">
-                        <button type="button" onClick={() => setIsModalOpen(false)} class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
-                        <button type="submit" disabled={loading()} class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+        <div class="modal-overlay">
+            <div class="modal-card w-[420px]">
+                <div class="modal-header">
+                    <h3 class="text-base font-bold text-gray-800">{editId() ? "Edit Department" : "Add New Department"}</h3>
+                </div>
+                <form onSubmit={handleSubmit} class="modal-body">
+                    <div>
+                        <label class="input-label">Department Name</label>
+                        <input 
+                            type="text" 
+                            class="input-field"
+                            value={formName()}
+                            onInput={(e) => setFormName(e.target.value)}
+                            required
+                            autofocus
+                        />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" onClick={() => setIsModalOpen(false)} class="btn-ghost">Cancel</button>
+                        <button type="submit" disabled={loading()} class="btn-primary">
                             {loading() ? "Saving..." : "Save"}
                         </button>
                     </div>

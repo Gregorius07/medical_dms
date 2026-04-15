@@ -217,7 +217,7 @@ function Folder() {
   return (
     <div class="space-y-6">
       {/* SECTION EXPLORER: HOME */}
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div class="card p-6">
         {/* HEADER AREA */}
         <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8 border-b pb-4">
           <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">
@@ -285,7 +285,7 @@ function Folder() {
             <Show when={currentUser()?.role === "admin"}>
               <button
                 onClick={() => setIsFolderModalOpen(true)}
-                class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition"
+                class="btn-outline flex items-center gap-2"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -306,7 +306,7 @@ function Folder() {
             </Show>
             <button
               onClick={() => setIsUploadOpen(true)}
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-sm"
+              class="btn-primary flex items-center gap-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

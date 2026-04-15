@@ -30,7 +30,7 @@ function Approval() {
   });
 
   return (
-    <div class="min-h-screen bg-white p-4 md:p-6 flex flex-col">
+    <div class="flex flex-col">
       {/* HEADER
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Pusat Approval</h1>
@@ -40,33 +40,33 @@ function Approval() {
       </div> */}
 
       {/* TABS NAVIGATION */}
-      <div class="flex border-b border-gray-200 mb-6 gap-6">
+      <div class="flex border-b border-gray-200 mb-6 gap-1">
         <button
           onClick={() => setActiveTab("inbox")}
-          class={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+          class={`pb-3 px-4 text-sm font-medium transition-colors border-b-2 ${
             activeTab() === "inbox"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-primary-600 text-primary-600"
+              : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
           }`}
         >
           Inbox (Perlu Review)
         </button>
         <button
           onClick={() => setActiveTab("outbox")}
-          class={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+          class={`pb-3 px-4 text-sm font-medium transition-colors border-b-2 ${
             activeTab() === "outbox"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-primary-600 text-primary-600"
+              : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
           }`}
         >
           Outbox (Menunggu Jawaban)
         </button>
         <button
           onClick={() => setActiveTab("history")}
-          class={`pb-3 text-sm font-medium transition-colors border-b-2 ${
+          class={`pb-3 px-4 text-sm font-medium transition-colors border-b-2 ${
             activeTab() === "history"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-primary-600 text-primary-600"
+              : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
           }`}
         >
           Riwayat Approval
@@ -74,10 +74,10 @@ function Approval() {
       </div>
 
       {/* KONTEN TABEL */}
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1">
+      <div class="table-container flex-1">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
-            <thead class="bg-gray-50 border-b border-gray-200 text-xs uppercase font-semibold text-gray-600">
+            <thead class="table-head">
               <tr>
                 <th class="py-4 px-6">Nama Dokumen</th>
                 {/* Kolom Dinamis berdasarkan Tab */}
@@ -97,7 +97,7 @@ function Approval() {
               </tr>
             </thead>
             
-            <tbody class="text-sm text-gray-700">
+            <tbody class="table-body">
               <Show when={loading()}>
                 <tr>
                   <td colspan="5" class="py-10 text-center text-gray-500 italic">
@@ -123,7 +123,7 @@ function Approval() {
               <Show when={!loading() && data().length > 0}>
                 <For each={data()}>
                   {(item) => (
-                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <tr class="table-row-hover">
                       <td class="py-4 px-6 font-medium text-gray-900 flex items-center gap-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
@@ -159,8 +159,8 @@ function Approval() {
                           </div>
                         </td>
                         <td class="py-4 px-6">
-                          <span class={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                            item.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          <span class={`badge ${
+                            item.status === 'APPROVED' ? 'badge-success' : 'badge-danger'
                           }`}>
                             {item.status}
                           </span>
@@ -176,7 +176,7 @@ function Approval() {
                       <td class="py-4 px-6 text-right">
                         <button
                           onClick={() => navigate(`/document/${item.id_document}`)}
-                          class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition"
+                          class="btn-outline text-xs"
                         >
                           {activeTab() === "inbox" ? "Review Dokumen" : "Lihat Detail"}
                         </button>

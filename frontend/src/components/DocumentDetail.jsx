@@ -864,7 +864,7 @@ function DocumentDetail() {
                       }
                     }}
                     disabled={isProcessing()}
-                    class="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                    class="w-full btn-primary flex justify-center items-center gap-2"
                   >
                     {isProcessing() ? "Memproses..." : "Ajukan Approval"}
                   </button>
@@ -1610,21 +1610,23 @@ function DocumentDetail() {
 
       {/* MODAL UPLOAD REVISION */}
       <Show when={isUploadOpen()}>
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-xl shadow-lg w-[400px] p-6">
-            <h3 class="text-lg font-bold mb-4 text-gray-800">
-              Upload New Version
-            </h3>
+        <div class="modal-overlay">
+          <div class="modal-card w-[420px]">
+            <div class="modal-header">
+              <h3 class="text-base font-bold text-gray-800">
+                Upload New Version
+              </h3>
+            </div>
 
-            <form onSubmit={submitRevision} class="space-y-4">
-              <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center hover:bg-blue-50 transition cursor-pointer relative bg-blue-50/50">
+            <form onSubmit={submitRevision} class="modal-body space-y-4">
+              <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:bg-gray-50 transition cursor-pointer relative bg-gray-50/80">
                 <input
                   type="file"
                   onChange={(e) => setUploadFile(e.target.files[0])}
                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   required
                 />
-                <div class="text-blue-600 font-medium mb-1">
+                <div class="text-primary-600 font-medium text-sm mb-1">
                   Click to select new PDF file
                 </div>
                 <div class="text-xs text-gray-400 mb-2">Max 10MB</div>
@@ -1635,21 +1637,21 @@ function DocumentDetail() {
                 </Show>
               </div>
 
-              <div class="flex justify-end gap-2 pt-4 border-t mt-4">
+              <div class="modal-footer">
                 <button
                   type="button"
                   onClick={() => {
                     setIsUploadOpen(false);
                     setUploadFile(null);
                   }}
-                  class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                  class="btn-ghost"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={uploadLoading()}
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium flex items-center gap-2"
+                  class="btn-primary flex items-center gap-2"
                 >
                   {uploadLoading() ? "Uploading..." : "Upload Revision"}
                 </button>
@@ -1670,9 +1672,11 @@ function DocumentDetail() {
 
       {/* MODAL EDIT METADATA */}
       <Show when={isEditMetadataOpen()}>
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-xl shadow-lg w-[400px] p-6 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-lg font-bold mb-4 text-gray-800">Edit Metadata</h3>
+        <div class="modal-overlay">
+          <div class="modal-card w-[420px] max-h-[90vh] overflow-y-auto">
+            <div class="modal-header">
+              <h3 class="text-base font-bold text-gray-800">Edit Metadata</h3>
+            </div>
 
             <Show
               when={Object.keys(editMetadataForm()).length > 0}
@@ -1682,16 +1686,16 @@ function DocumentDetail() {
                 </div>
               }
             >
-              <form onSubmit={submitEditMetadata} class="space-y-4">
+              <form onSubmit={submitEditMetadata} class="modal-body space-y-4">
                 <For each={Object.keys(editMetadataForm())}>
                   {(key) => (
                     <div>
-                      <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                      <label class="input-label">
                         {key.replace(/_/g, " ")}
                       </label>
                       <input
                         type="text"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none transition"
+                        class="input-field"
                         value={editMetadataForm()[key] || ""}
                         onInput={(e) =>
                           setEditMetadataForm({
@@ -1704,18 +1708,18 @@ function DocumentDetail() {
                   )}
                 </For>
 
-                <div class="flex justify-end gap-2 pt-4 border-t mt-4">
+                <div class="modal-footer">
                   <button
                     type="button"
                     onClick={() => setIsEditMetadataOpen(false)}
-                    class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                    class="btn-ghost"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={editMetadataLoading()}
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium flex items-center gap-2 disabled:opacity-50"
+                    class="btn-primary flex items-center gap-2"
                   >
                     {editMetadataLoading()
                       ? "Menyimpan..."

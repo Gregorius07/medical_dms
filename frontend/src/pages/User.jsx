@@ -151,48 +151,55 @@ function User() {
   return (
     <div>
       {/* FILTER & ACTION */}
-      <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row justify-between gap-4">
+      <div class="action-bar">
         <input 
             type="text" 
             placeholder="Search user..." 
-            class="border rounded-lg px-4 py-2 text-sm w-full md:w-64"
+            class="input-field md:w-64"
             value={search()}
             onInput={(e) => { setSearch(e.target.value); setPage(1); }}
         />
-        <button onClick={openAdd} class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
-            + Add New User
+        <button onClick={openAdd} class="btn-primary flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            Add User
         </button>
       </div>
 
       {/* TABLE */}
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto">
+      <div class="table-container overflow-x-auto">
         <table class="w-full text-left border-collapse">
-            <thead class="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
+            <thead class="table-head">
                 <tr>
-                    <th class="px-6 py-4">Name</th>
-                    <th class="px-6 py-4">Email/Username</th>
-                    <th class="px-6 py-4">Position</th>
-                    <th class="px-6 py-4">Department</th>
-                    <th class="px-6 py-4">Role</th>
-                    <th class="px-6 py-4 text-right">Actions</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Position</th>
+                    <th>Department</th>
+                    <th>Role</th>
+                    <th class="text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="text-sm text-gray-700">
+            <tbody class="table-body">
                 {data().map((item) => (
-                    <tr class="border-b last:border-0 hover:bg-gray-50">
-                        <td class="px-6 py-4 font-medium">{item.full_name}</td>
-                        <td class="px-6 py-4">{item.username}</td>
+                    <tr class="table-row-hover">
+                        <td class="font-medium text-gray-800">{item.full_name}</td>
+                        <td class="text-gray-500">{item.username}</td>
                         {/* Menampilkan Nama Posisi & Dept dari hasil JOIN */}
-                        <td class="px-6 py-4">{item.position_name || '-'}</td>
-                        <td class="px-6 py-4">{item.department_name || '-'}</td>
-                        <td class="px-6 py-4">
-                            <span class={`px-2 py-1 rounded text-xs ${item.is_admin ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                        <td>{item.position_name || '-'}</td>
+                        <td>{item.department_name || '-'}</td>
+                        <td>
+                            <span class={item.is_admin ? 'badge-info' : 'badge-neutral'}>
                                 {item.is_admin ? 'Admin' : 'Staff'}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-right">
-                            <button onClick={() => openEdit(item)} class="text-blue-500 hover:text-blue-700 mr-3">Edit</button>
-                            <button onClick={() => handleDelete(item.id_user)} class="text-red-500 hover:text-red-700">Delete</button>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <button onClick={() => openEdit(item)} class="btn-icon" title="Edit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                </button>
+                                <button onClick={() => handleDelete(item.id_user)} class="btn-icon-danger" title="Delete">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 ))}
@@ -202,36 +209,38 @@ function User() {
 
       {/* MODAL FORM */}
       {isModalOpen() && (
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-xl shadow-lg w-[500px] p-6 max-h-[90vh] overflow-y-auto">
-                <h3 class="text-lg font-bold mb-4">{editId() ? "Edit User" : "Add New User"}</h3>
-                <form onSubmit={handleSubmit} class="space-y-4">
+        <div class="modal-overlay">
+            <div class="modal-card w-[520px]">
+                <div class="modal-header">
+                    <h3 class="text-base font-bold text-gray-800">{editId() ? "Edit User" : "Add New User"}</h3>
+                </div>
+                <form onSubmit={handleSubmit} class="modal-body space-y-4">
                     
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
-                        <input type="text" required class="w-full border rounded-lg px-3 py-2 text-sm"
+                        <label class="input-label">Full Name</label>
+                        <input type="text" required class="input-field"
                             value={formData().fullName} onInput={(e) => updateForm('fullName', e.target.value)} />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Username</label>
-                        <input type="text" required class="w-full border rounded-lg px-3 py-2 text-sm"
+                        <label class="input-label">Username</label>
+                        <input type="text" required class="input-field"
                             value={formData().username} onInput={(e) => updateForm('username', e.target.value)} />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                            Password {editId() && <span class="text-gray-400 font-normal">(Leave blank to keep current)</span>}
+                        <label class="input-label">
+                            Password {editId() && <span class="text-gray-400 font-normal normal-case tracking-normal">(Leave blank to keep current)</span>}
                         </label>
-                        <input type="password" class="w-full border rounded-lg px-3 py-2 text-sm"
+                        <input type="password" class="input-field"
                             required={!editId()} // Wajib hanya saat Add
                             value={formData().password} onInput={(e) => updateForm('password', e.target.value)} />
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Position</label>
-                            <select class="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                            <label class="input-label">Position</label>
+                            <select class="select-field"
                                 value={formData().idPosition} onChange={(e) => updateForm('idPosition', e.target.value)} required>
                                 <option value="">Select Position</option>
                                 {positions().map(p => (
@@ -240,8 +249,8 @@ function User() {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Department</label>
-                            <select class="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                            <label class="input-label">Department</label>
+                            <select class="select-field"
                                 value={formData().idDepartment} onChange={(e) => updateForm('idDepartment', e.target.value)} required>
                                 <option value="">Select Department</option>
                                 {departments().map(d => (
@@ -251,17 +260,17 @@ function User() {
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 pt-2">
-                        <input type="checkbox" id="isAdmin" 
+                    <div class="flex items-center gap-2.5 pt-1">
+                        <input type="checkbox" id="isAdmin" class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             checked={formData().isAdmin} 
                             onChange={(e) => updateForm('isAdmin', e.target.checked)} 
                         />
                         <label for="isAdmin" class="text-sm text-gray-700">Grant Administrator Access</label>
                     </div>
 
-                    <div class="flex justify-end gap-2 pt-4 border-t mt-4">
-                        <button type="button" onClick={() => setIsModalOpen(false)} class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm">Cancel</button>
-                        <button type="submit" disabled={loading()} class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                    <div class="modal-footer">
+                        <button type="button" onClick={() => setIsModalOpen(false)} class="btn-ghost">Cancel</button>
+                        <button type="submit" disabled={loading()} class="btn-primary">
                             {loading() ? "Saving..." : "Save User"}
                         </button>
                     </div>

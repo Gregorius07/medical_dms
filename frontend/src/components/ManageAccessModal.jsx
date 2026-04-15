@@ -153,12 +153,12 @@ function ManageAccessModal(props) {
   };
 
   return (
-    <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] backdrop-blur-sm">
-      <div class="bg-white rounded-2xl shadow-2xl w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="modal-overlay" style="z-index: 100">
+      <div class="modal-card w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
         {/* HEADER MODAL */}
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <div class="modal-header flex justify-between items-center">
           <div>
-            <h3 class="text-lg font-bold text-gray-800">Manage Access</h3>
+            <h3 class="text-base font-bold text-gray-800">Manage Access</h3>
           </div>
           <button
             onClick={props.onClose}
@@ -207,7 +207,7 @@ function ManageAccessModal(props) {
                       if (fullName()) setShowSuggestions(true);
                     }}
                     placeholder="Contoh: Gregorius Denmas"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    class="input-field"
                   />
 
                   {/* DROPDOWN SUGGESTIONS */}
@@ -336,7 +336,7 @@ function ManageAccessModal(props) {
                 <button
                   type="submit"
                   disabled={isSubmitting()}
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center gap-2"
+                  class="btn-primary flex items-center gap-2 disabled:opacity-50"
                 >
                   {isSubmitting() ? "Memproses..." : "Beri Akses"}
                 </button>

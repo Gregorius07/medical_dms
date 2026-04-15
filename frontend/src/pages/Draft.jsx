@@ -256,25 +256,25 @@ function Draft() {
   // TAMPILAN (VIEW)
   // ==========================================
   return (
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <div class="card p-6">
       {/* STATS CARDS */}
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-gray-400">
-          <p class="text-gray-500 text-sm mb-2 font-medium">My Drafts</p>
+        <div class="card p-5 border-l-4 border-l-gray-400">
+          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">My Drafts</p>
           <h3 class="text-3xl font-bold text-gray-800">
             {stats().totalDrafts || 0}
           </h3>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-400">
-          <p class="text-gray-500 text-sm mb-2 font-medium">Under Review</p>
+        <div class="card p-5 border-l-4 border-l-amber-400">
+          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">Under Review</p>
           <h3 class="text-3xl font-bold text-gray-800">
             {stats().underReview || 0}
           </h3>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-400">
-          <p class="text-gray-500 text-sm mb-2 font-medium">
+        <div class="card p-5 border-l-4 border-l-blue-400">
+          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">
             New (Last 7 Days)
           </p>
           <h3 class="text-3xl font-bold text-gray-800">
@@ -282,11 +282,11 @@ function Draft() {
           </h3>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500">
-          <p class="text-gray-500 text-sm mb-2 font-medium">
-            Action Required (Approve)
+        <div class="card p-5 border-l-4 border-l-primary-500">
+          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">
+            Action Required
           </p>
-          <h3 class="text-3xl font-bold text-blue-600">
+          <h3 class="text-3xl font-bold text-primary-600">
             {stats().pendingApprovals || 0}
           </h3>
         </div>
@@ -356,7 +356,7 @@ function Draft() {
         <div class="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setIsFolderModalOpen(true)}
-            class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition flex gap-2"
+            class="btn-outline flex items-center gap-2"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -376,7 +376,7 @@ function Draft() {
           </button>
           <button
             onClick={() => setIsUploadOpen(true)}
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex gap-2"
+            class="btn-primary flex items-center gap-2"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

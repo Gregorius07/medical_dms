@@ -106,7 +106,7 @@ const DocumentController = {
           console.error("Gagal mengekstrak judul otomatis:", err.message);
         }
 
-        // 3. Tentukan Judul Final (Prioritas: Input User -> Hasil Ekstraksi -> Nama File)        
+        // 3. Tentukan Judul Final (Prioritas: Input User -> Hasil Ekstraksi -> Nama File)
         // const finalTitle = req.body.title || autoTitle || filename;
         // simpan ke Elasticsearch
         await elasticClient.index({
@@ -292,7 +292,7 @@ const DocumentController = {
         const dataBuffer = fs.readFileSync(req.file.path);
         const parsedPdf = await pdf(dataBuffer); // menggunakan const pdf = require('pdf-parse')
         const cleanText = parsedPdf.text.replace(/\s+/g, " ").trim();
-        
+
         // Ekstrak OTOMATIS TITLE berdasarkan ukuran font (menggunakan pdf2json)
         let autoTitle = null;
         try {
@@ -344,7 +344,11 @@ const DocumentController = {
   searchDocuments: async (req, res) => {
     try {
       const userId = req.userId;
+      const fullname = req.name;
       const { q, type } = req.query; // q = keyword, type = 'metadata' atau 'fulltext'
+      const { location } = req.query;
+      console.log("location:", location);
+      let allowedIds = [];
 
       if (!q || q.trim() === "") {
         return res
@@ -354,10 +358,7 @@ const DocumentController = {
 
       if (type === "fulltext") {
         try {
-          const { location } = req.query;
-          console.log("location:", location);
-          let allowedIds = [];
-          
+
           //nanti masih harus diperbaiki (belum keambil semua dokumennya)
           if (location === "home") {
             const accessibleDocs = await DocumentModel.getAccessibleDocuments(
@@ -368,10 +369,14 @@ const DocumentController = {
             allowedIds = accessibleDocs.map((doc) => doc.id_document);
             console.log(`Isi allowedIds: ${allowedIds}`);
           } else {
-            const draftId = await FolderModel.getDraftFolderByUserId(userId);
-            const accessibleDocs = await DocumentModel.getDocumentsInFolder(
-              draftId.id_folder,
-            );
+            const draftId =
+              await FolderModel.getDraftFolderByFullname(fullname);
+            console.log("Draft id :", draftId);
+
+            const accessibleDocs =
+              await DocumentModel.getAllDocumentsInFolderRecursive(
+                draftId.id_folder,
+              );
             allowedIds = accessibleDocs.map((doc) => doc.id_document);
             console.log(`Isi allowedIds: ${allowedIds}`);
           }
@@ -469,7 +474,29 @@ const DocumentController = {
         }
       } else {
         // Pencarian Metadata Default (MELALUI MODEL)
-        const metadataResults = await DocumentModel.searchMetadata(userId, q);
+        if (location === "home") {
+            const accessibleDocs = await DocumentModel.getAccessibleDocuments(
+              userId,
+              req.name,
+            );
+            // console.log(`Isi getaccesibledocs: ${accessibleDocs}`);
+            allowedIds = accessibleDocs.map((doc) => doc.id_document);
+            console.log(`Isi allowedIds: ${allowedIds}`);
+          } else {
+            
+            const draftId = await FolderModel.getDraftFolderByFullname(fullname);
+            // console.log("Draft id :", draftId);
+            
+            const accessibleDocs = await DocumentModel.getAllDocumentsInFolderRecursive(
+              draftId.id_folder,
+            );
+            allowedIds = accessibleDocs.map((doc) => doc.id_document);
+            console.log(`Isi allowedIds: ${allowedIds}`);
+          }
+        let metadataResults = await DocumentModel.searchMetadata(userId, q);
+        metadataResults = metadataResults.filter(doc=>allowedIds.includes(doc.id_document));
+        console.log("Metadata Result :", Object.values(metadataResults));
+        
         return res.json({ data: metadataResults });
       }
     } catch (error) {
@@ -511,12 +538,10 @@ const DocumentController = {
       const isAdmin = userRole === "admin" || req.isAdmin === true;
 
       if (!isOwner && !isAdmin) {
-        return res
-          .status(403)
-          .json({
-            message:
-              "Anda tidak memiliki izin untuk melakukan rollback dokumen ini.",
-          });
+        return res.status(403).json({
+          message:
+            "Anda tidak memiliki izin untuk melakukan rollback dokumen ini.",
+        });
       }
 
       // 2. Lakukan Rollback di Database PostgreSQL
@@ -595,11 +620,9 @@ const DocumentController = {
       );
 
       if (!updatedVersion) {
-        return res
-          .status(404)
-          .json({
-            message: "Gagal memperbarui. Tidak ada versi dokumen yang aktif.",
-          });
+        return res.status(404).json({
+          message: "Gagal memperbarui. Tidak ada versi dokumen yang aktif.",
+        });
       }
 
       // 4. Kembalikan respons sukses ke Frontend
@@ -609,11 +632,9 @@ const DocumentController = {
       });
     } catch (error) {
       console.error("Error update metadata:", error);
-      res
-        .status(500)
-        .json({
-          message: "Terjadi kesalahan pada server saat memperbarui metadata.",
-        });
+      res.status(500).json({
+        message: "Terjadi kesalahan pada server saat memperbarui metadata.",
+      });
     }
   },
 };

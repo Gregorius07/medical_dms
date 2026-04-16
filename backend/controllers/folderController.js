@@ -69,7 +69,7 @@ const getFolderBreadcrumbs = async (req, res) => {
 
 const getDraftFolderByUserId = async (req, res) => {
   try {
-    const result = await FolderModel.getDraftFolderByUserId(req.userId);
+    const result = await FolderModel.getDraftFolderByFullname(req.name);
     // console.log("result di controller", result);
 
     res.json(result);

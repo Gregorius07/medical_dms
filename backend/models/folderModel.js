@@ -91,20 +91,19 @@ class FolderModel {
     return rows[0]; // Mengembalikan data folder yang baru dibuat (termasuk id_folder-nya)
   }
 
-  static async getDraftFolderByUserId(userId) {
+  static async getDraftFolderByFullname(fullname) {
     const query = `
             SELECT f.* FROM folder f
             JOIN permission p ON f.id_folder = p.id_folder
-            WHERE p.id_user = $1 
-              AND p.resource_type = 'FOLDER' 
+            WHERE p.resource_type = 'FOLDER' 
               AND f.parent_folder IS NULL
-              AND f.folder_name LIKE 'Draft - %'
+              AND f.folder_name LIKE 'Draft - ' || $1
             LIMIT 1;
         `;
 
     try {
       // $1 akan digantikan dengan nilai idUser
-      const { rows } = await pool.query(query, [userId]);
+      const { rows } = await pool.query(query, [fullname]);
 
       // Mengembalikan baris pertama (objek folder) jika ada, jika tidak kembalikan null
       return rows.length > 0 ? rows[0] : null;

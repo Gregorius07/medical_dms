@@ -195,7 +195,8 @@ const DocumentModel = {
                 ORDER BY dv.created_at DESC
             `;
     let params = [];
-
+  
+    
     if (parentId) {
       query = `
                     SELECT d.id_document, dv.file_name, dv.file_size, dv.created_at, dv.created_by, dv.approval_status
@@ -205,6 +206,69 @@ const DocumentModel = {
                     ORDER BY dv.created_at DESC
                 `;
       params = [parentId];
+    }
+
+    const { rows } = await pool.query(query, params);
+    return rows;
+  },
+
+  /**
+   * Mengambil SEMUA dokumen yang berada di dalam folder
+   */
+  getAllDocumentsInFolderRecursive: async (parentId) => {
+    let query = '';
+    let params = [];
+    
+    if (parentId) {
+      // Menggunakan RECURSIVE CTE untuk menelusuri pohon folder ke bawah
+      query = `
+        WITH RECURSIVE folder_tree AS (
+            -- 1. Base Case: Ambil folder induk tempat kita mulai (Folder X)
+            SELECT id_folder
+            FROM folder
+            WHERE id_folder = $1
+            
+            UNION ALL
+            
+            -- 2. Recursive Step: Ambil semua folder yang parent-nya ada di dalam hasil sebelumnya (Folder Y, Z, dst)
+            SELECT f.id_folder
+            FROM folder f
+            INNER JOIN folder_tree ft ON f.parent_folder = ft.id_folder
+        )
+        -- 3. Main Query: Ambil dokumen yang id_folder-nya ada di dalam daftar folder_tree tadi
+        SELECT 
+            d.id_document, 
+            dv.file_name, 
+            dv.file_size, 
+            dv.created_at, 
+            dv.created_by, 
+            dv.approval_status,
+            d.id_folder -- Opsional: Untuk mengetahui dokumen ini aslinya ada di folder mana
+        FROM document d
+        JOIN document_version dv ON d.id_document = dv.id_document
+        WHERE d.id_folder IN (SELECT id_folder FROM folder_tree)
+          AND dv.is_active = true 
+          AND d.is_deleted = false
+        ORDER BY dv.created_at DESC
+      `;
+      params = [parentId];
+    } else {
+      // Jika parentId null (berada di Root utama), ambil dokumen yang tidak masuk folder manapun
+      query = `
+        SELECT 
+            d.id_document, 
+            dv.file_name, 
+            dv.file_size, 
+            dv.created_at, 
+            dv.created_by, 
+            dv.approval_status
+        FROM document d
+        JOIN document_version dv ON d.id_document = dv.id_document
+        WHERE d.id_folder IS NULL 
+          AND dv.is_active = true 
+          AND d.is_deleted = false
+        ORDER BY dv.created_at DESC
+      `;
     }
 
     const { rows } = await pool.query(query, params);

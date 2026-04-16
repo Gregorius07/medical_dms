@@ -55,9 +55,9 @@ function Draft() {
 
   const loadUserDraft = async () => {
     try {
-      const draftFolder = await api.post("/folders/getdraft", {
-        userId: currentUser().id,
-      });
+      const draftFolder = await api.get("/folders/getdraft");
+      console.log("draftFolder:", Object.values(draftFolder));
+      
       // console.log("CurrentUser().id", currentUser().id);
 
       // console.log("isi variabel Draft Folder",draftFolder);

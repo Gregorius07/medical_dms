@@ -177,7 +177,6 @@ function Draft() {
   // HANDLERS (UPLOAD, DELETE, DOWNLOAD)
   // ==========================================
 
-  
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Hapus dokumen?",
@@ -210,7 +209,6 @@ function Draft() {
       });
     }
   };
-
 
   const handleDeleteFolder = async (folderId) => {
     const result = await Swal.fire({
@@ -260,14 +258,18 @@ function Draft() {
       {/* STATS CARDS */}
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div class="card p-5 border-l-4 border-l-gray-400">
-          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">My Drafts</p>
+          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">
+            My Drafts
+          </p>
           <h3 class="text-3xl font-bold text-gray-800">
             {stats().totalDrafts || 0}
           </h3>
         </div>
 
         <div class="card p-5 border-l-4 border-l-amber-400">
-          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">Under Review</p>
+          <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">
+            Under Review
+          </p>
           <h3 class="text-3xl font-bold text-gray-800">
             {stats().underReview || 0}
           </h3>
@@ -294,17 +296,19 @@ function Draft() {
 
       {/* HEADER MY DRAFT */}
       <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b pb-4">
-        <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">
+        {/* WRAPPER BREADCRUMB & TOMBOL BACK */}
+        <div class="flex items-center gap-3 mb-4">
+          
           {/* TOMBOL BACK DRAFT (Tampil jika BUKAN di root draft) */}
-          <Show when={currentFolderId() && currentFolderId() !== draftId()}>
+          <Show when={currentFolderId() !== draftId()}>
             <button
               onClick={handleBack}
-              class="p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-full transition mr-2"
+              class="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition shadow-sm shrink-0"
               title="Kembali ke folder sebelumnya"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
+                class="h-4 w-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -319,38 +323,44 @@ function Draft() {
             </button>
           </Show>
 
-          <button
-            onClick={() => navigateToFolder(draftId())}
-            class="text-blue-600 hover:underline font-bold flex items-center gap-1"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
+          {/* BREADCRUMB UI CONTAINER */}
+          <nav class="flex items-center text-sm font-medium text-gray-600 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex-1 overflow-x-auto hide-scrollbar">
+            
+            {/* Tombol Root Draft ("My Personal Documents") */}
+            <button
+              onClick={() => navigateToFolder(draftId())}
+              class={`hover:text-blue-600 flex items-center gap-1.5 transition whitespace-nowrap ${
+                currentFolderId() === draftId() ? "text-blue-700 font-bold pointer-events-none" : ""
+              }`}
             >
-              <path
-                fill="currentColor"
-                d="M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m-4-4v-3.075l5.525-5.5q.225-.225.5-.325t.55-.1q.3 0 .575.113t.5.337l.925.925q.2.225.313.5t.112.55t-.1.563t-.325.512l-5.5 5.5zm6.575-5.6l.925-.975l-.925-.925l-.95.95z"
-              />
-            </svg>{" "}
-            My Draft
-          </button>
+              {/* Ikon Draft Asli Milik Anda */}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"><path fill="currentColor" d="M5 19V5v4.475V9zm3-6h3.525q.425 0 .713-.288t.287-.712t-.288-.712t-.712-.288H8q-.425 0-.712.288T7 12t.288.713T8 13m0 4h3.525q.425 0 .713-.288t.287-.712t-.288-.712t-.712-.288H8q-.425 0-.712.288T7 16t.288.713T8 17m0-8h8q.425 0 .713-.288T17 8t-.288-.712T16 7H8q-.425 0-.712.288T7 8t.288.713T8 9M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v4.45q0 .425-.288.713T20 10.45t-.712-.287T19 9.45V5H5v14h4q.425 0 .713.288T10 20t-.288.713T9 21zm10.225-5.725Q14.5 14.55 14.5 13.5t.725-1.775T17 11t1.775.725t.725 1.775t-.725 1.775T17 16t-1.775-.725M17 17q.975 0 1.938.188t1.862.562q.575.225.888.738T22 19.6v.4q0 .425-.288.713T21 21h-8q-.425 0-.712-.288T12 20v-.4q0-.6.313-1.112t.887-.738q.9-.375 1.863-.562T17 17"/></svg>
+              My Personal Documents
+            </button>
 
-          <For each={breadcrumbs()}>
-            {(crumb) => (
-              // Sembunyikan crumb pertama jika itu adalah root draft agar tidak dobel nama
-              <Show when={crumb.id_folder !== draftId()}>
-                <span class="text-gray-400">/</span>
-                <button
-                  onClick={() => navigateToFolder(crumb.id_folder)}
-                  class={`hover:underline ${currentFolderId() === crumb.id_folder ? "text-gray-800 font-bold" : "text-blue-600"}`}
-                >
-                  {crumb.folder_name}
-                </button>
-              </Show>
-            )}
-          </For>
+            {/* Looping State Breadcrumb */}
+            <For each={breadcrumbs()}>
+              {(crumb) => (
+                <Show when={crumb.id_folder !== draftId()}>
+                  <div class="flex items-center shrink-0">
+                    {/* Ikon Pemisah Chevron */}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <button
+                      onClick={() => navigateToFolder(crumb.id_folder)}
+                      class={`hover:text-blue-600 truncate max-w-[150px] transition ${
+                        currentFolderId() === crumb.id_folder ? "text-blue-700 font-bold pointer-events-none" : ""
+                      }`}
+                      title={crumb.folder_name}
+                    >
+                      {crumb.folder_name}
+                    </button>
+                  </div>
+                </Show>
+              )}
+            </For>
+          </nav>
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
@@ -441,7 +451,15 @@ function Draft() {
                       </span>
                     </td>
                     <td class="py-3 px-4 truncate">{folder.created_by}</td>
-                    <td class="py-3 px-4 text-gray-400">—</td>
+                    <td class="py-3 px-4 text-gray-400">
+                      {folder.created_at
+                        ? new Date(folder.created_at).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "-"}
+                    </td>
                     <td class="py-3 px-4 text-gray-400">—</td>
                     {/* Tampilkan tombol HANYA jika user adalah Admin atau Pembuat Folder */}
                     <Show

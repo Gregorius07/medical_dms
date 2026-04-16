@@ -17,6 +17,9 @@ function Folder() {
   const [uploadLoading, setUploadLoading] = createSignal(false);
 
   const [currentFolderId, setCurrentFolderId] = createSignal(null);
+  const [currentFolderPermission, setCurrentFolderPermission] = createSignal(
+    {},
+  );
   const [folders, setFolders] = createSignal([]);
   const [documents, setDocuments] = createSignal([]);
   const [breadcrumbs, setBreadcrumbs] = createSignal([]);
@@ -44,9 +47,12 @@ function Folder() {
       });
 
       setFolders(res.data.folders);
-      console.log(res.data.folders);
-
       setDocuments(res.data.documents);
+      setCurrentFolderPermission(res.data.currentFolderPermission);
+      console.log(
+        "current folder permission:",
+        JSON.stringify(res.data.currentFolderPermission),
+      );
 
       const activeFolderId = res.data.currentFolderId;
       setCurrentFolderId(activeFolderId);
@@ -63,25 +69,14 @@ function Folder() {
 
       setCustomMetadata({}); // Reset isian form setiap kali pindah folder
 
-      // Jika sedang berada di dalam sebuah folder, ambil jalur breadcrumbs-nya
-      if (activeFolderId) {
-        loadBreadcrumbs(activeFolderId);
-      } else {
-        setBreadcrumbs([]); // Kosongkan jika berada di Root (Home)
-      }
+      // // Jika sedang berada di dalam sebuah folder, ambil jalur breadcrumbs-nya
+      // if (activeFolderId) {
+      //   loadBreadcrumbs(activeFolderId);
+      // } else {
+      //   setBreadcrumbs([]); // Kosongkan jika berada di Root (Home)
+      // }
     } catch (error) {
       console.error("Gagal memuat isi folder:", error);
-    }
-  };
-
-  const loadBreadcrumbs = async (folderId) => {
-    try {
-      const res = await api.post(`/folders/${folderId}/breadcrumbs`, {
-        userId: currentUser().id,
-      });
-      setBreadcrumbs(res.data);
-    } catch (err) {
-      console.error("Gagal memuat breadcrumbs", err);
     }
   };
 
@@ -97,13 +92,21 @@ function Folder() {
   };
 
   const handleBack = () => {
-    const crumbs = breadcrumbs();
-    // Jika ada lebih dari 1 crumb (berarti ada parent), mundur 1 langkah
-    if (crumbs.length > 1) {
-      navigateToFolder(crumbs[crumbs.length - 2].id_folder);
+    const currentPath = breadcrumbs();
+    
+    // Jika array kosong (sudah di Root), tombol tidak melakukan apa-apa
+    if (currentPath.length === 0) return; 
+
+    // Jika hanya ada 1 folder di breadcrumb, "Back" berarti kembali ke Root
+    if (currentPath.length === 1) {
+      handleGoToRoot();
     } else {
-      // Jika hanya ada 1 crumb, berarti parent-nya adalah Root
-      navigateToFolder(null);
+      // Jika masuk cukup dalam, "Back" berarti kembali ke folder urutan ke-2 dari belakang
+      const targetIndex = currentPath.length - 2;
+      const targetFolderId = currentPath[targetIndex].id;
+      
+      // Kita manfaatkan fungsi klik breadcrumb yang sudah ada
+      handleBreadcrumbClick(targetFolderId, targetIndex);
     }
   };
 
@@ -196,9 +199,9 @@ function Folder() {
 
       setFolders([]);
       setDocuments(res.data.data);
-      setBreadcrumbs([
-        { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
-      ]);
+      // setBreadcrumbs([
+      //   { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
+      // ]);
     } catch (err) {
       alert(err.response?.data?.message || "Gagal melakukan pencarian");
     } finally {
@@ -211,6 +214,33 @@ function Folder() {
     loadFolderContents(null); // Kembali ke Root Home
   };
 
+  const handleEnterFolder = (folderObj) => {
+    // Tambahkan folder yang diklik ke ujung array breadcrumb
+    setBreadcrumbs([
+      ...breadcrumbs(),
+      { id: folderObj.id_folder, name: folderObj.folder_name },
+    ]);
+    // Load isi foldernya
+    loadFolderContents(folderObj.id_folder);
+  };
+
+  // 2. Saat User mengklik salah satu teks di tengah-tengah breadcrumb
+  const handleBreadcrumbClick = (folderId, index) => {
+    // Potong array breadcrumb sampai ke titik yang diklik
+    const newBreadcrumbs = breadcrumbs().slice(0, index + 1);
+    setBreadcrumbs(newBreadcrumbs);
+    // Load isi foldernya
+    loadFolderContents(folderId);
+  };
+
+  // 3. Saat User mengklik tombol "Home" atau "Root" di awal breadcrumb
+  const handleGoToRoot = () => {
+    // Kosongkan array breadcrumb
+    setBreadcrumbs([]);
+    // Load folder root utama
+    loadFolderContents(null);
+  };
+
   // ==========================================
   // TAMPILAN (VIEW)
   // ==========================================
@@ -220,66 +250,57 @@ function Folder() {
       <div class="card p-6">
         {/* HEADER AREA */}
         <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8 border-b pb-4">
-          <div class="flex items-center gap-2 text-sm overflow-x-auto whitespace-nowrap">
-            {/* TOMBOL BACK HOME (Tampil jika ada di dalam folder) */}
-            <Show when={currentFolderId()}>
-              <button
-                onClick={handleBack}
-                class="p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-full transition mr-2"
-                title="Kembali ke folder sebelumnya"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                  />
-                </svg>
-              </button>
-            </Show>
+          {/* WRAPPER BREADCRUMB & TOMBOL BACK */}
+        <div class="flex items-center gap-3 mb-4">
+          
+          {/* TOMBOL BACK (NAIK 1 TINGKAT) */}
+          <button
+            onClick={handleBack}
+            disabled={breadcrumbs().length === 0}
+            class="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed transition shadow-sm shrink-0"
+            title="Kembali ke Folder Sebelumnya"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
 
-            <button
-              onClick={() => navigateToFolder(null)}
-              class="text-blue-600 hover:underline font-medium flex items-center gap-1"
+          {/* BREADCRUMB UI (Yang sudah Anda buat sebelumnya) */}
+          <nav class="flex items-center text-sm font-medium text-gray-600 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex-1 overflow-x-auto hide-scrollbar">
+            
+            {/* Tombol Root / Home */}
+            <button 
+              onClick={handleGoToRoot}
+              class={`hover:text-blue-600 flex items-center gap-1.5 transition whitespace-nowrap ${breadcrumbs().length === 0 ? 'text-blue-700 font-bold pointer-events-none' : ''}`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              Home
+              My Documents
             </button>
 
+            {/* Looping State Lokal Breadcrumb */}
             <For each={breadcrumbs()}>
-              {(crumb) => (
-                <>
-                  <span class="text-gray-400">/</span>
+              {(bc, index) => (
+                <div class="flex items-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
                   <button
-                    onClick={() => navigateToFolder(crumb.id_folder)}
-                    class={`hover:underline ${currentFolderId() === crumb.id_folder ? "text-gray-800 font-bold" : "text-blue-600"}`}
+                    onClick={() => handleBreadcrumbClick(bc.id, index())}
+                    class={`hover:text-blue-600 truncate max-w-[150px] transition ${
+                      index() === breadcrumbs().length - 1 ? "text-blue-700 font-bold pointer-events-none" : ""
+                    }`}
+                    title={bc.name}
                   >
-                    {crumb.folder_name}
+                    {bc.name}
                   </button>
-                </>
+                </div>
               )}
             </For>
-          </div>
+          </nav>
+
+        </div>
 
           <div class="flex items-center gap-2 shrink-0">
             <Show when={currentUser()?.role === "admin"}>
@@ -304,26 +325,34 @@ function Folder() {
                 New Folder
               </button>
             </Show>
-            <button
-              onClick={() => setIsUploadOpen(true)}
-              class="btn-primary flex items-center gap-2"
+
+            <Show
+              when={
+                currentFolderPermission()?.upload ||
+                currentUser()?.role === "admin"
+              }
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                class="btn-primary flex items-center gap-2"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-              Upload Document
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+                Upload Document
+              </button>
+            </Show>
           </div>
         </div>
 
@@ -351,7 +380,7 @@ function Folder() {
                 <For each={folders()}>
                   {(folder) => (
                     <tr
-                      onClick={() => navigateToFolder(folder.id_folder)}
+                      onClick={() => handleEnterFolder(folder)}
                       class="border-b border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group"
                     >
                       <td class="py-3 px-4 flex items-center gap-3">

@@ -11,6 +11,7 @@ const getFolderContents = async (req, res) => {
     let folders = [];
     let documents = [];
     let parentFolderDetail = {};
+    let currentFolderPermission = {};
     // KONDISI 1: User di halaman depan (Root)
     if (!parentId) {
       // Ambil semua folder dan dokumen yang dizinkan dari tabel permission
@@ -24,6 +25,7 @@ const getFolderContents = async (req, res) => {
         documents = await DocumentModel.getAccessibleDocuments(userId, name);
         // console.log('Isi variabel documents:',documents);
         parentFolderDetail = await FolderModel.getFolderDetail(parentId);
+        currentFolderPermission = await PermissionModel.getAllPermissionsForFolder(userId, parentId);
       }
     }
     // KONDISI 2: User sedang menelusuri isi di dalam sebuah folder
@@ -33,12 +35,14 @@ const getFolderContents = async (req, res) => {
       folders = await FolderModel.getSubFolders(parentId);
       documents = await DocumentModel.getDocumentsInFolder(parentId);
       parentFolderDetail = await FolderModel.getFolderDetail(parentId);
+      currentFolderPermission = await PermissionModel.getAllPermissionsForFolder(userId, parentId);
     }
 
     
     res.json({
       currentFolderId: parentId,
       currentFolderMetadata : parentFolderDetail? parentFolderDetail.metadata_schema : [], 
+      currentFolderPermission : currentFolderPermission? currentFolderPermission : {},
       folders: folders,
       documents: documents,
     });

@@ -130,7 +130,7 @@ class FolderModel {
                 FROM folder f
                 INNER JOIN user_draft_tree dt ON f.parent_folder = dt.id_folder
             )
-            SELECT f.id_folder, f.folder_name, f.parent_folder, f.created_by, f.metadata_schema, f.created_at
+            SELECT f.id_folder, f.folder_name, f.parent_folder, f.created_by, f.metadata_schema, f.created_at,
                    p.preview, p.upload, p.download, p.edit_metadata
             FROM folder f
             JOIN permission p ON f.id_folder = p.id_folder

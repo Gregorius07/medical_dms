@@ -150,6 +150,68 @@ class PermissionModel {
         };
   }
 
+
+  /**
+   * Mengambil SEMUA status permission untuk satu dokumen spesifik bagi seorang user
+   * dengan menerapkan logika pewarisan (Inheritance) dari folder induk.
+   */
+  static async getAllPermissionsForDocument(idUser, idDocument) {
+    const query = `
+            SELECT 
+                COALESCE(p_doc.preview, p_folder.preview, FALSE) as preview, --cek nilai null di parameter
+                COALESCE(p_doc.download, p_folder.download, FALSE) as download,
+                COALESCE(p_doc.upload, p_folder.upload, FALSE) as upload,
+                COALESCE(p_doc.edit_metadata, p_folder.edit_metadata, FALSE) as edit_metadata
+            FROM document d
+            -- Cek izin langsung di dokumen
+            LEFT JOIN permission p_doc ON p_doc.id_document = d.id_document AND p_doc.id_user = $1
+            -- Cek izin dari folder tempat dokumen ini berada
+            LEFT JOIN permission p_folder ON p_folder.id_folder = d.id_folder AND p_folder.id_user = $1
+            WHERE d.id_document = $2;   
+        `;
+    const { rows } = await pool.query(query, [idUser, idDocument]);
+
+    // Jika dokumen tidak ditemukan, kembalikan false untuk semuanya
+    return rows.length > 0
+      ? rows[0]
+      : {
+          preview: false,
+          download: false,
+          upload: false,
+          edit_metadata: false,
+        };
+  }
+
+
+  /**
+   * Mengambil SEMUA status permission untuk satu folder spesifik bagi seorang user
+   */
+  static async getAllPermissionsForFolder(idUser, idFolder) {
+    const query = `
+            SELECT 
+                COALESCE(p.preview, FALSE) as preview, 
+                COALESCE(p.download, FALSE) as download,
+                COALESCE(p.upload, FALSE) as upload,
+                COALESCE(p.edit_metadata, FALSE) as edit_metadata
+            
+            FROM folder f
+            -- Cek izin dari folder
+            LEFT JOIN permission p ON p.id_folder = f.id_folder AND p.id_user = $1
+            WHERE f.id_folder = $2;   
+        `;
+    const { rows } = await pool.query(query, [idUser, idFolder]);
+
+    // Jika tidak ditemukan, kembalikan false untuk semuanya
+    return rows.length > 0
+      ? rows[0]
+      : {
+          preview: false,
+          download: false,
+          upload: false,
+          edit_metadata: false,
+        };
+  }
+
   /**
    * Mengambil daftar user yang memiliki akses eksplisit ke suatu resource
    */

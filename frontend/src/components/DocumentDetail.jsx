@@ -8,7 +8,7 @@ import Swal from "sweetalert2";
 import * as pdfjsLib from "pdfjs-dist";
 // Trik Vite: Tambahkan ?url di akhir agar Vite mengambilkan URL statis dari file worker
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
-
+import EditMetadataDoc from "./EditMetadataDoc";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 function DocumentDetail() {
@@ -52,8 +52,8 @@ function DocumentDetail() {
 
   // STATE UNTUK EDIT METADATA
   const [isEditMetadataOpen, setIsEditMetadataOpen] = createSignal(false);
-  const [editMetadataForm, setEditMetadataForm] = createSignal({});
-  const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
+  // const [editMetadataForm, setEditMetadataForm] = createSignal({});
+  // const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
 
   // Fungsi untuk menggambar halaman PDF ke Canvas
   const renderPage = (num, pdfDocument) => {
@@ -78,7 +78,10 @@ function DocumentDetail() {
   // Efek reaktif: Load PDF dari backend ketika doc() dan permission preview sudah tersedia
   createEffect(() => {
     const currentDoc = doc();
-    if (currentDoc?.file_path && (permissions().preview || currentUser()?.role === "admin") ) {
+    if (
+      currentDoc?.file_path &&
+      (permissions().preview || currentUser()?.role === "admin")
+    ) {
       // PENTING: File harus bisa diakses secara publik atau via auth header yang diizinkan CORS
       const url = `http://localhost:5000/${currentDoc.file_path}`;
 
@@ -195,48 +198,6 @@ function DocumentDetail() {
         title: "Akses Ditolak",
         text: "Gagal mengunduh dokumen. Pastikan Anda memiliki izin.",
       });
-    }
-  };
-
-  // Membuka modal dan mengisi form dengan metadata saat ini
-  const handleEditMetadata = () => {
-    // Ambil custom_metadata dari dokumen saat ini. Jika null, gunakan object kosong {}
-    const currentMetadata = doc()?.custom_metadata || {};
-    setEditMetadataForm({ ...currentMetadata });
-    setIsEditMetadataOpen(true);
-  };
-
-  // Handler untuk menyimpan perubahan metadata ke backend
-  const submitEditMetadata = async (e) => {
-    e.preventDefault();
-    setEditMetadataLoading(true);
-
-    try {
-      // Endpoint untuk update metadata (Pastikan backend Anda merespons endpoint ini)
-      await api.put(`/documents/${documentId}/metadata`, {
-        custom_metadata: editMetadataForm(),
-      });
-
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil!",
-        text: "Metadata dokumen berhasil diperbarui.",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      setIsEditMetadataOpen(false);
-      fetchDocumentDetail(); // Refresh data di layar
-    } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Gagal Menyimpan",
-        text:
-          err.response?.data?.message ||
-          "Terjadi kesalahan saat menyimpan metadata.",
-      });
-    } finally {
-      setEditMetadataLoading(false);
     }
   };
 
@@ -604,7 +565,9 @@ function DocumentDetail() {
                 </button>
               </Show>
 
-              <Show when={permissions().download || currentUser()?.role === "admin"}>
+              <Show
+                when={permissions().download || currentUser()?.role === "admin"}
+              >
                 <button
                   onClick={handleDownload}
                   class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
@@ -627,9 +590,13 @@ function DocumentDetail() {
                 </button>
               </Show>
 
-              <Show when={permissions().edit_metadata || currentUser()?.role === "admin"}>
+              <Show
+                when={
+                  permissions().edit_metadata || currentUser()?.role === "admin"
+                }
+              >
                 <button
-                  onClick={handleEditMetadata}
+                  onClick={() => setIsEditMetadataOpen(true)}
                   class="w-full py-2.5 bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 font-semibold rounded-lg text-sm flex items-center justify-center gap-2 transition shadow-sm"
                 >
                   <svg
@@ -650,7 +617,9 @@ function DocumentDetail() {
                 </button>
               </Show>
 
-              <Show when={permissions().upload || currentUser()?.role === "admin"}>
+              <Show
+                when={permissions().upload || currentUser()?.role === "admin"}
+              >
                 <button
                   onClick={handleUploadRevision}
                   // 1. Matikan fungsi klik jika statusnya UNDER REVIEW atau APPROVED
@@ -1672,77 +1641,14 @@ function DocumentDetail() {
 
       {/* MODAL EDIT METADATA */}
       <Show when={isEditMetadataOpen()}>
-        <div class="modal-overlay">
-          <div class="modal-card w-[420px] max-h-[90vh] overflow-y-auto">
-            <div class="modal-header">
-              <h3 class="text-base font-bold text-gray-800">Edit Metadata</h3>
-            </div>
-
-            <Show
-              when={Object.keys(editMetadataForm()).length > 0}
-              fallback={
-                <div class="text-sm text-gray-500 italic mb-6 text-center py-4 bg-gray-50 rounded border border-dashed">
-                  Dokumen ini tidak memiliki skema metadata.
-                </div>
-              }
-            >
-              <form onSubmit={submitEditMetadata} class="modal-body space-y-4">
-                <For each={Object.keys(editMetadataForm())}>
-                  {(key) => (
-                    <div>
-                      <label class="input-label">
-                        {key.replace(/_/g, " ")}
-                      </label>
-                      <input
-                        type="text"
-                        class="input-field"
-                        value={editMetadataForm()[key] || ""}
-                        onInput={(e) =>
-                          setEditMetadataForm({
-                            ...editMetadataForm(),
-                            [key]: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  )}
-                </For>
-
-                <div class="modal-footer">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditMetadataOpen(false)}
-                    class="btn-ghost"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={editMetadataLoading()}
-                    class="btn-primary flex items-center gap-2"
-                  >
-                    {editMetadataLoading()
-                      ? "Menyimpan..."
-                      : "Simpan Perubahan"}
-                  </button>
-                </div>
-              </form>
-            </Show>
-
-            {/* Tombol Tutup jika fallback (kosong) muncul */}
-            <Show when={Object.keys(editMetadataForm()).length === 0}>
-              <div class="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsEditMetadataOpen(false)}
-                  class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
-                >
-                  Tutup
-                </button>
-              </div>
-            </Show>
-          </div>
-        </div>
+        
+        <EditMetadataDoc
+          documentId={documentId}               
+          custom_metadata={doc()?.custom_metadata}
+          onClose={() => setIsEditMetadataOpen(false)}
+          onSuccess={() => fetchDocumentDetail()}
+        >
+        </EditMetadataDoc>
       </Show>
     </div>
   );

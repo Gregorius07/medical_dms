@@ -3,11 +3,14 @@ import api from "../api";
 import Swal from "sweetalert2";
 
 function EditMetadataDoc(props) {
-  // 1. Tidak perlu state isEditMetadataOpen di sini. 
+  // 1. Tidak perlu state isEditMetadataOpen di sini.
   // Induk yang mengontrol kapan komponen ini muncul/hilang.
 
   // 2. Langsung inisialisasi form menggunakan data dari props saat komponen dirender.
-  const [editMetadataForm, setEditMetadataForm] = createSignal({ ...(props.custom_metadata || {}) });
+  const [editMetadataForm, setEditMetadataForm] = createSignal({
+    ...(props.custom_metadata || {}),
+  });
+  const [fileName, setFileName] = createSignal(props.title || "");
   const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
 
   // Handler untuk menyimpan perubahan metadata ke backend
@@ -19,6 +22,7 @@ function EditMetadataDoc(props) {
       // 3. Gunakan props.documentId sesuai nama variabel yang dikirim dari parent
       await api.put(`/documents/${props.documentId}/metadata`, {
         custom_metadata: editMetadataForm(),
+        file_name: fileName(),
       });
 
       Swal.fire({
@@ -30,8 +34,8 @@ function EditMetadataDoc(props) {
       });
 
       // 4. Panggil fungsi dari props untuk refresh data dan menutup modal
-      props.onSuccess(); 
-      props.onClose();   
+      props.onSuccess();
+      props.onClose();
     } catch (err) {
       Swal.fire({
         icon: "error",
@@ -54,7 +58,7 @@ function EditMetadataDoc(props) {
         </div>
 
         <Show
-          when={Object.keys(editMetadataForm()).length > 0}
+          when={Object.keys(editMetadataForm()).length > 0 || fileName()}
           fallback={
             <div class="p-6">
               <div class="text-sm text-gray-500 italic text-center py-4 bg-gray-50 rounded border border-dashed">
@@ -64,6 +68,17 @@ function EditMetadataDoc(props) {
           }
         >
           <form onSubmit={submitEditMetadata} class="p-6 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                Title
+              </label>
+              <input
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition"
+                value={fileName() || ""}
+                onInput={(e) => setFileName(e.target.value)}
+              />
+            </div>
             <For each={Object.keys(editMetadataForm())}>
               {(key) => (
                 <div>
@@ -106,7 +121,7 @@ function EditMetadataDoc(props) {
         </Show>
 
         {/* Tombol Tutup jika fallback (kosong) muncul */}
-        <Show when={Object.keys(editMetadataForm()).length === 0}>
+        <Show when={Object.keys(editMetadataForm()).length === 0 && !fileName()}>
           <div class="flex justify-end p-6 pt-0 mt-4">
             <button
               type="button"

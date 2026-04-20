@@ -148,6 +148,7 @@ function DocumentDetail() {
       setPermissions(res.data.permissions);
       setLogs(res.data.logs || []);
       setActiveApproval(res.data.activeApproval); // Tangkap data approval
+      console.log("Detail dokumen:", res.data.document);
       fetchVersions();
     } catch (err) {
       console.error("Gagal mengambil detail dokumen", err);
@@ -1643,7 +1644,8 @@ function DocumentDetail() {
       <Show when={isEditMetadataOpen()}>
         
         <EditMetadataDoc
-          documentId={documentId}               
+          documentId={documentId}
+          title={doc()?.file_name}               
           custom_metadata={doc()?.custom_metadata}
           onClose={() => setIsEditMetadataOpen(false)}
           onSuccess={() => fetchDocumentDetail()}

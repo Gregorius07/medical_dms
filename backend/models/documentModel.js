@@ -550,7 +550,7 @@ const DocumentModel = {
     }
   },
 
-  updateCustomMetadata: async (documentId, customMetadata) => {
+  updateCustomMetadata: async (documentId, customMetadata, filename) => {
     // Kita ubah object javascript menjadi JSON string agar diterima oleh kolom JSONB PostgreSQL
     const metadataString = customMetadata
       ? JSON.stringify(customMetadata)
@@ -558,12 +558,12 @@ const DocumentModel = {
 
     const query = `
       UPDATE document_version
-      SET custom_metadata = $1
+      SET custom_metadata = $1, file_name = $3
       WHERE id_document = $2 AND is_active = TRUE
       RETURNING *;
     `;
 
-    const values = [metadataString, documentId];
+    const values = [metadataString, documentId, filename];
     const result = await pool.query(query, values);
 
     return result.rows[0]; // Mengembalikan data versi yang berhasil diupdate

@@ -594,7 +594,7 @@ const DocumentController = {
   updateMetadata: async (req, res) => {
     try {
       const { id } = req.params;
-      const { custom_metadata } = req.body;
+      const { custom_metadata, file_name} = req.body;
       const userId = req.userId;
       const userRole = req.userRole; // Asumsi dari middleware auth
 
@@ -609,7 +609,11 @@ const DocumentController = {
       const updatedVersion = await DocumentModel.updateCustomMetadata(
         id,
         custom_metadata,
+        file_name,
       );
+
+      console.log("updated version", updatedVersion);
+      
       await AuditModel.log(
         "EDIT",
         "DOCUMENT",

@@ -270,6 +270,30 @@ class FolderModel {
     const { rows } = await pool.query(query, params);
     return rows[0];
   }
+
+  static async getFolderMetadata(idFolder){
+    const query = `SELECT folder_name, metadata_schema FROM folder WHERE id_folder = $1`;
+    const { rows } = await pool.query(query, [idFolder]);
+    return rows[0] ? rows[0] : null;
+  }
+
+  static async updateFolderMetadata(idFolder, folderName, metadataSchema) {
+    const query = `
+      UPDATE folder
+      SET folder_name = $1,
+          metadata_schema = $2
+      WHERE id_folder = $3
+      RETURNING id_folder, folder_name, metadata_schema;
+    `;
+
+    const { rows } = await pool.query(query, [
+      folderName,
+      metadataSchema ? JSON.stringify(metadataSchema) : null,
+      idFolder,
+    ]);
+
+    return rows[0] ? rows[0] : null;
+  }
 }
 
 module.exports = FolderModel;

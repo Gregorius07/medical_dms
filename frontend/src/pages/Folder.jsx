@@ -7,7 +7,12 @@ import Swal from "sweetalert2";
 import SearchBar from "../components/SearchBar";
 import NewFolderModal from "../components/NewFolderModal";
 import UploadDocumentModal from "../components/UploadDocumentModal";
-import { DropdownMenu, DropdownItem, DropdownDivider } from "../components/DropdownMenu";
+import EditMetadataFolder from "../components/EditMetadataFolder";
+import {
+  DropdownMenu,
+  DropdownItem,
+  DropdownDivider,
+} from "../components/DropdownMenu";
 
 function Folder() {
   // ==========================================
@@ -33,6 +38,11 @@ function Folder() {
     createSignal(false);
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
+  //state untuk edit metadata folder
+  const [isEditMetadataFolderOpen, setIsEditMetadataFolderOpen] = createSignal(false);
+  const [selectedFolderName, setSelectedFolderName] = createSignal("");
+  const [selectedFolderSchema, setSelectedFolderSchema] = createSignal([]);
+
   // --- STATE UNTUK CUSTOM METADATA ---
   // Menyimpan skema dari folder yang sedang dibuka (contoh: ["nama_pasien", "ruangan"])
   const [currentFolderSchema, setCurrentFolderSchema] = createSignal([]);
@@ -50,10 +60,10 @@ function Folder() {
       setFolders(res.data.folders);
       setDocuments(res.data.documents);
       setCurrentFolderPermission(res.data.currentFolderPermission);
-      console.log(
-        "current folder permission:",
-        JSON.stringify(res.data.currentFolderPermission),
-      );
+      // console.log(
+      //   "current folder permission:",
+      //   JSON.stringify(res.data.currentFolderPermission),
+      // );
 
       const activeFolderId = res.data.currentFolderId;
       setCurrentFolderId(activeFolderId);
@@ -69,17 +79,23 @@ function Folder() {
       }
 
       setCustomMetadata({}); // Reset isian form setiap kali pindah folder
-
-      // // Jika sedang berada di dalam sebuah folder, ambil jalur breadcrumbs-nya
-      // if (activeFolderId) {
-      //   loadBreadcrumbs(activeFolderId);
-      // } else {
-      //   setBreadcrumbs([]); // Kosongkan jika berada di Root (Home)
-      // }
     } catch (error) {
       console.error("Gagal memuat isi folder:", error);
     }
   };
+
+  // Fungsi untuk fetch metadata schema folder tertentu
+  const fetchFolderMetadataSchema = async (folderId) => {
+    try {
+      const res = await api.get(`/folders/${folderId}/metadata`);
+      setSelectedFolderName(res.data.folder_name);
+      setSelectedFolderSchema(res.data.metadata_schema);
+      return res.data;
+    } catch (error) {
+      console.error("Gagal mengambil metadata schema folder:", error);
+      return [];
+    }
+  }
 
   // ==========================================
   // LIFECYCLE & NAVIGASI
@@ -94,9 +110,9 @@ function Folder() {
 
   const handleBack = () => {
     const currentPath = breadcrumbs();
-    
+
     // Jika array kosong (sudah di Root), tombol tidak melakukan apa-apa
-    if (currentPath.length === 0) return; 
+    if (currentPath.length === 0) return;
 
     // Jika hanya ada 1 folder di breadcrumb, "Back" berarti kembali ke Root
     if (currentPath.length === 1) {
@@ -105,7 +121,7 @@ function Folder() {
       // Jika masuk cukup dalam, "Back" berarti kembali ke folder urutan ke-2 dari belakang
       const targetIndex = currentPath.length - 2;
       const targetFolderId = currentPath[targetIndex].id;
-      
+
       // Kita manfaatkan fungsi klik breadcrumb yang sudah ada
       handleBreadcrumbClick(targetFolderId, targetIndex);
     }
@@ -252,56 +268,88 @@ function Folder() {
         {/* HEADER AREA */}
         <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8 border-b pb-4">
           {/* WRAPPER BREADCRUMB & TOMBOL BACK */}
-        <div class="flex items-center gap-3 mb-4">
-          
-          {/* TOMBOL BACK (NAIK 1 TINGKAT) */}
-          <button
-            onClick={handleBack}
-            disabled={breadcrumbs().length === 0}
-            class="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed transition shadow-sm shrink-0"
-            title="Kembali ke Folder Sebelumnya"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
-
-          {/* BREADCRUMB UI (Yang sudah Anda buat sebelumnya) */}
-          <nav class="flex items-center text-sm font-medium text-gray-600 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex-1 overflow-x-auto hide-scrollbar">
-            
-            {/* Tombol Root / Home */}
-            <button 
-              onClick={handleGoToRoot}
-              class={`hover:text-blue-600 flex items-center gap-1.5 transition whitespace-nowrap ${breadcrumbs().length === 0 ? 'text-blue-700 font-bold pointer-events-none' : ''}`}
+          <div class="flex items-center gap-3 mb-4">
+            {/* TOMBOL BACK (NAIK 1 TINGKAT) */}
+            <button
+              onClick={handleBack}
+              disabled={breadcrumbs().length === 0}
+              class="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed transition shadow-sm shrink-0"
+              title="Kembali ke Folder Sebelumnya"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
-              My Documents
             </button>
 
-            {/* Looping State Lokal Breadcrumb */}
-            <For each={breadcrumbs()}>
-              {(bc, index) => (
-                <div class="flex items-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                  <button
-                    onClick={() => handleBreadcrumbClick(bc.id, index())}
-                    class={`hover:text-blue-600 truncate max-w-[150px] transition ${
-                      index() === breadcrumbs().length - 1 ? "text-blue-700 font-bold pointer-events-none" : ""
-                    }`}
-                    title={bc.name}
-                  >
-                    {bc.name}
-                  </button>
-                </div>
-              )}
-            </For>
-          </nav>
+            {/* BREADCRUMB UI (Yang sudah Anda buat sebelumnya) */}
+            <nav class="flex items-center text-sm font-medium text-gray-600 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex-1 overflow-x-auto hide-scrollbar">
+              {/* Tombol Root / Home */}
+              <button
+                onClick={handleGoToRoot}
+                class={`hover:text-blue-600 flex items-center gap-1.5 transition whitespace-nowrap ${breadcrumbs().length === 0 ? "text-blue-700 font-bold pointer-events-none" : ""}`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+                My Documents
+              </button>
 
-        </div>
+              {/* Looping State Lokal Breadcrumb */}
+              <For each={breadcrumbs()}>
+                {(bc, index) => (
+                  <div class="flex items-center shrink-0">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 mx-2 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                    <button
+                      onClick={() => handleBreadcrumbClick(bc.id, index())}
+                      class={`hover:text-blue-600 truncate max-w-[150px] transition ${
+                        index() === breadcrumbs().length - 1
+                          ? "text-blue-700 font-bold pointer-events-none"
+                          : ""
+                      }`}
+                      title={bc.name}
+                    >
+                      {bc.name}
+                    </button>
+                  </div>
+                )}
+              </For>
+            </nav>
+          </div>
 
           <div class="flex items-center gap-2 shrink-0">
             <Show when={currentUser()?.role === "admin"}>
@@ -485,8 +533,19 @@ function Folder() {
                             <DropdownItem
                               label="Kelola Akses"
                               icon={
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                                  />
                                 </svg>
                               }
                               onClick={() => {
@@ -494,7 +553,35 @@ function Folder() {
                                 setIsFolderAccessModalOpen(true);
                               }}
                             />
-                            
+
+                            {/* Garis Pemisah */}
+                            <DropdownDivider />
+                            {/* Opsi: Edit Metadata */}
+                            <DropdownItem
+                              label="Edit Metadata"
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                              }
+                              onClick={() => {
+                                setSelectedFolderId(folder.id_folder);
+                                setIsEditMetadataFolderOpen(true);
+                                fetchFolderMetadataSchema(folder.id_folder);
+                              }}
+                            />
+
                             {/* Garis Pemisah */}
                             <DropdownDivider />
 
@@ -503,11 +590,24 @@ function Folder() {
                               label="Hapus Folder"
                               danger={true}
                               icon={
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
                                 </svg>
                               }
-                              onClick={() => handleDeleteFolder(folder.id_folder)}
+                              onClick={() =>
+                                handleDeleteFolder(folder.id_folder)
+                              }
                             />
                           </DropdownMenu>
                         </Show>
@@ -684,16 +784,32 @@ function Folder() {
       </Show>
 
       {/* MODAL MANAGE ACCESS UNTUK FOLDER */}
-      <Show when={isFolderAccessModalOpen()}>
-        <ManageAccessModal
-          resourceId={selectedFolderId()}
-          resourceType="FOLDER"
-          onClose={() => {
-            setIsFolderAccessModalOpen(false);
+        <Show when={isFolderAccessModalOpen()}>
+          <ManageAccessModal
+            resourceId={selectedFolderId()}
+            resourceType="FOLDER"
+            onClose={() => {
+              setIsFolderAccessModalOpen(false);
+              setSelectedFolderId(null);
+            }}
+          />
+        </Show>
+
+      {/* MODAL EDIT METADATA FOLDER */}
+      <Show when={isEditMetadataFolderOpen()}>
+        <EditMetadataFolder
+          onClose={() => setIsEditMetadataFolderOpen(false)}
+          folderId={selectedFolderId()}
+          folder_name={selectedFolderName()}
+          metadata_schema={selectedFolderSchema()}
+          onSuccess={() => {
+            setIsEditMetadataFolderOpen(false);
             setSelectedFolderId(null);
+            loadFolderContents(currentFolderId());
           }}
         />
       </Show>
+
     </div>
   );
 }

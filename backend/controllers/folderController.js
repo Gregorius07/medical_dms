@@ -135,6 +135,56 @@ const deleteFolder = async (req, res) => {
         res.status(500).json({ message: "Gagal menghapus folder." });
     }
 };
+
+const getFolderMetadata = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const metadata = await FolderModel.getFolderMetadata(id);
+    res.json(metadata);
+  } catch (error) {
+    console.error("Error getFolderMetadata:", error);
+    res.status(500).json({ message: "Gagal mengambil metadata folder" });
+  }
+}
+
+const updateFolderMetadata = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { folder_name, metadata_schema } = req.body;
+
+    if (!folder_name || !folder_name.trim()) {
+      return res.status(400).json({ message: "Nama folder tidak boleh kosong" });
+    }
+
+    if (
+      metadata_schema !== null &&
+      metadata_schema !== undefined &&
+      typeof metadata_schema !== "object"
+    ) {
+      return res.status(400).json({
+        message: "metadata_schema harus berupa object atau null",
+      });
+    }
+
+    const updatedFolder = await FolderModel.updateFolderMetadata(
+      id,
+      folder_name.trim(),
+      metadata_schema ?? null,
+    );
+
+    if (!updatedFolder) {
+      return res.status(404).json({ message: "Folder tidak ditemukan" });
+    }
+
+    res.status(200).json({
+      message: "Metadata folder berhasil diperbarui",
+      data: updatedFolder,
+    });
+  } catch (error) {
+    console.error("Error updateFolderMetadata:", error);
+    res.status(500).json({ message: "Gagal memperbarui metadata folder" });
+  }
+};
 // Jangan lupa export dan daftarkan di folderRoutes.js (router.delete('/:id', ...))
 
 module.exports = {
@@ -143,5 +193,7 @@ module.exports = {
   getDraftFolderByUserId,
   getAccessibleFoldersId,
   createFolder,
+  getFolderMetadata,
+  updateFolderMetadata,
   deleteFolder,
 };

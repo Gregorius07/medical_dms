@@ -10,5 +10,8 @@ router.post('/:id/breadcrumbs', verifyToken, requirePermission('preview', 'FOLDE
 router.get('/getdraft',verifyToken,folderController.getDraftFolderByUserId);
 router.get('/getaccesiblefolders', verifyToken, folderController.getAccessibleFoldersId);
 router.post('/create', verifyToken, folderController.createFolder);
-router.delete('/:id', verifyToken, folderController.deleteFolder)
+router.delete('/:id', verifyToken, folderController.deleteFolder);
+router.get('/:id/metadata', verifyToken, folderController.getFolderMetadata);
+router.put('/:id/metadata', verifyToken, requirePermission('edit_metadata', 'FOLDER'), folderController.updateFolderMetadata);
+
 module.exports = router;

@@ -80,6 +80,9 @@ function EditMetadataDoc(props) {
               />
             </div>
             <For each={Object.keys(editMetadataForm())}>
+              <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
+                Tag
+              </label>
               {(key) => (
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
@@ -121,7 +124,9 @@ function EditMetadataDoc(props) {
         </Show>
 
         {/* Tombol Tutup jika fallback (kosong) muncul */}
-        <Show when={Object.keys(editMetadataForm()).length === 0 && !fileName()}>
+        <Show
+          when={Object.keys(editMetadataForm()).length === 0 && !fileName()}
+        >
           <div class="flex justify-end p-6 pt-0 mt-4">
             <button
               type="button"

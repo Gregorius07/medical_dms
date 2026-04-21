@@ -10,6 +10,7 @@ import UploadDocumentModal from "../components/UploadDocumentModal";
 import EditMetadataFolder from "../components/EditMetadataFolder";
 import EditMetadataDoc from "../components/EditMetadataDoc"; 
 import FolderDetailModal from "../components/FolderDetailModal";
+import DocumentInfoModal from "../components/DocumentInfoModal";
 import {
   DropdownMenu,
   DropdownItem,
@@ -59,6 +60,11 @@ function Folder() {
   // state untuk manage access document
   const [isDocumentAccessModalOpen, setIsDocumentAccessModalOpen] = createSignal(false);
   const [selectedDocumentId, setSelectedDocumentId] = createSignal(null);
+
+  const [isDocumentDetailModalOpen, setIsDocumentDetailModalOpen] =
+    createSignal(false);
+  const [selectedDocumentDetail, setSelectedDocumentDetail] =
+    createSignal(null);
 
   //state untuk edit metadata document
   const [isEditMetadataDocumentOpen, setIsEditMetadataDocumentOpen] = createSignal(false);
@@ -120,15 +126,25 @@ function Folder() {
   //fungsi untuk fetch metadatadocument tertentu
   const fetchDocumentMetadata = async (documentId) => {
     try {
-      const res = await api.get(`/documents/${documentId}`);
-      setSelectedDocumentTitle(res.data.document.file_name);
-      setSelectedDocumentSchema(res.data.document.custom_metadata || {});
+      const res = await api.get(`/documents/${documentId}/metadata`);
+      const docMetadata = res.data?.document || {};
+      setSelectedDocumentTitle(docMetadata.file_name || "");
+      setSelectedDocumentSchema(docMetadata.custom_metadata || {});
+      setSelectedDocumentDetail(docMetadata);
       return res.data;
     } catch (error) {
       console.error("Gagal mengambil metadata document:", error);
-      return [];
+      return null;
     }
   }
+
+  const openDocumentDetail = async (documentId) => {
+    const detail = await fetchDocumentMetadata(documentId);
+    if (detail) {
+      setSelectedDocumentId(documentId);
+      setIsDocumentDetailModalOpen(true);
+    }
+  };
 
 
 
@@ -811,6 +827,30 @@ function Folder() {
 
                           {/* Garis Pemisah */}
                           <DropdownDivider />
+
+                          <DropdownItem
+                            label="Detail Dokumen"
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                            }
+                            onClick={() => openDocumentDetail(doc.id_document)}
+                          />
+
+                          <DropdownDivider />
+
                           {/* Opsi: Edit Metadata */}
                           <DropdownItem
                             label="Edit Metadata"
@@ -965,6 +1005,17 @@ function Folder() {
           onClose={() => {
             setIsDocumentAccessModalOpen(false);
             setSelectedDocumentId(null);
+          }}
+        />
+      </Show>
+
+      {/* MODAL DETAIL DOKUMEN */}
+      <Show when={isDocumentDetailModalOpen()}>
+        <DocumentInfoModal
+          document={selectedDocumentDetail()}
+          onClose={() => {
+            setIsDocumentDetailModalOpen(false);
+            setSelectedDocumentDetail(null);
           }}
         />
       </Show>

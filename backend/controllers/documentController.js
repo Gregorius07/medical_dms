@@ -641,6 +641,24 @@ const DocumentController = {
       });
     }
   },
+
+  getDocumentMetadata: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const metadata = await DocumentModel.getDocumentMetadata(id);
+
+      if (!metadata) {
+        return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+      }
+
+      res.status(200).json({ document: metadata });
+    } catch (error) {
+      console.error("Error getDocumentMetadata:", error);
+      res.status(500).json({
+        message: "Terjadi kesalahan pada server saat mengambil metadata dokumen.",
+      });
+    }
+  },
 };
 
 module.exports = DocumentController;

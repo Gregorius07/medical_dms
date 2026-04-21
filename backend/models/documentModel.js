@@ -568,6 +568,67 @@ const DocumentModel = {
 
     return result.rows[0]; // Mengembalikan data versi yang berhasil diupdate
   },
+
+  getDocumentMetadata: async (documentId) => {
+    const query = `
+      SELECT
+        d.id_document,
+        d.id_folder,
+        av.file_name,
+        av.file_size,
+        av.version_number,
+        av.custom_metadata,
+        av.approval_status,
+        COALESCE(creator.created_by, av.created_by) AS created_by,
+        COALESCE(creator.created_at, av.created_at) AS created_at,
+        COALESCE(last_update.updated_by, av.created_by) AS updated_by,
+        COALESCE(last_update.updated_at, av.created_at) AS updated_at,
+        COALESCE(f.folder_name, 'Root') AS folder_location
+      FROM document d
+      JOIN LATERAL (
+        SELECT
+          dv.file_name,
+          dv.file_size,
+          dv.version_number,
+          dv.custom_metadata,
+          dv.approval_status,
+          dv.created_by,
+          dv.created_at
+        FROM document_version dv
+        WHERE dv.id_document = d.id_document
+          AND dv.is_active = TRUE
+        ORDER BY dv.version_number DESC
+        LIMIT 1
+      ) av ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT
+          dv.created_by,
+          dv.created_at
+        FROM document_version dv
+        WHERE dv.id_document = d.id_document
+        ORDER BY dv.created_at ASC, dv.version_number ASC
+        LIMIT 1
+      ) creator ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT
+          a.timestamp AS updated_at,
+          u.full_name AS updated_by
+        FROM audit_log a
+        LEFT JOIN "user" u ON u.id_user = a.id_user
+        WHERE a.resource_type = 'DOCUMENT'
+          AND a.id_document = d.id_document
+          AND a.action IN ('UPLOAD', 'EDIT', 'UPDATE', 'ROLLBACK')
+        ORDER BY a.timestamp DESC, a.id_log DESC
+        LIMIT 1
+      ) last_update ON TRUE
+      LEFT JOIN folder f ON f.id_folder = d.id_folder
+      WHERE d.id_document = $1
+        AND d.is_deleted = false;
+    `;
+
+    const { rows } = await pool.query(query, [documentId]);
+    return rows[0] ? rows[0] : null;
+  },
 };
 
 module.exports = DocumentModel;

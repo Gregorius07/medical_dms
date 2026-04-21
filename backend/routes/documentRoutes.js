@@ -41,4 +41,5 @@ router.post('/:id/revisions', verifyToken, requirePermission('upload', 'DOCUMENT
 router.post('/:id/request-approval',verifyToken, ApprovalController.requestApproval);
 router.post('/:id/respond-approval',verifyToken, ApprovalController.respondApproval);
 router.put('/:id/metadata', verifyToken, requirePermission('edit_metadata', 'DOCUMENT'), DocumentController.updateMetadata);
+router.get('/:id/metadata', verifyToken, DocumentController.getDocumentMetadata);
 module.exports = router;

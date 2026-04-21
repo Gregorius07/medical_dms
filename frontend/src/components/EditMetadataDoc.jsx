@@ -1,4 +1,4 @@
-import { createSignal, Show, For } from "solid-js";
+import { createSignal, Show, For, createEffect } from "solid-js";
 import api from "../api";
 import Swal from "sweetalert2";
 
@@ -12,6 +12,14 @@ function EditMetadataDoc(props) {
   });
   const [fileName, setFileName] = createSignal(props.title || "");
   const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
+
+  createEffect(() => {
+    // Setiap kali props.custom_metadata atau props.title berubah, update form.
+    setEditMetadataForm({
+      ...(props.custom_metadata || {}),
+    });
+    setFileName(props.title || "");
+  });
 
   // Handler untuk menyimpan perubahan metadata ke backend
   const submitEditMetadata = async (e) => {
@@ -79,10 +87,12 @@ function EditMetadataDoc(props) {
                 onInput={(e) => setFileName(e.target.value)}
               />
             </div>
-            <For each={Object.keys(editMetadataForm())}>
+            <Show when={Object.keys(editMetadataForm()).length > 0}>
               <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">
                 Tag
               </label>
+            </Show>
+            <For each={Object.keys(editMetadataForm())}>
               {(key) => (
                 <div>
                   <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">

@@ -1,4 +1,4 @@
-import { createSignal, Show, For } from "solid-js";
+import { createSignal, Show, For, createEffect } from "solid-js";
 import api from "../api";
 import Swal from "sweetalert2";
 
@@ -21,6 +21,17 @@ function EditMetadataFolder(props) {
   );
   const [newFieldName, setNewFieldName] = createSignal("");
   const [newFieldType, setNewFieldType] = createSignal("text");
+
+  createEffect(() => {
+    props.folderId;
+    const incomingFolderName = props.folder_name || "";
+    const incomingSchema = props.metadata_schema;
+
+    setFolderName(incomingFolderName);
+    setCustomFields(toFieldList(incomingSchema));
+    setNewFieldName("");
+    setNewFieldType("text");
+  });
 
   const sanitizeFieldName = (name) =>
     name.trim().toLowerCase().replace(/\s+/g, "_");
@@ -162,6 +173,17 @@ function EditMetadataFolder(props) {
         <div class="px-6 py-4 border-b border-gray-100">
           <h3 class="text-base font-bold text-gray-800">Edit Metadata</h3>
         </div>
+
+        <Show
+          when={Object.keys(customFields()).length > 0 || folderName()}
+          fallback={
+            <div class="p-6">
+              <div class="text-sm text-gray-500 italic text-center py-4 bg-gray-50 rounded border border-dashed">
+                Folder ini tidak memiliki skema metadata.
+              </div>
+            </div>
+          }
+        ></Show>
 
         <Show when={customFields().length > 0 || folderName()}>
           <form onSubmit={submitEditMetadata} class="p-6 space-y-4">

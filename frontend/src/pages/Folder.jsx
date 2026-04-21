@@ -8,6 +8,7 @@ import SearchBar from "../components/SearchBar";
 import NewFolderModal from "../components/NewFolderModal";
 import UploadDocumentModal from "../components/UploadDocumentModal";
 import EditMetadataFolder from "../components/EditMetadataFolder";
+import EditMetadataDoc from "../components/EditMetadataDoc"; 
 import {
   DropdownMenu,
   DropdownItem,
@@ -39,7 +40,8 @@ function Folder() {
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
   //state untuk edit metadata folder
-  const [isEditMetadataFolderOpen, setIsEditMetadataFolderOpen] = createSignal(false);
+  const [isEditMetadataFolderOpen, setIsEditMetadataFolderOpen] =
+    createSignal(false);
   const [selectedFolderName, setSelectedFolderName] = createSignal("");
   const [selectedFolderSchema, setSelectedFolderSchema] = createSignal([]);
 
@@ -48,6 +50,15 @@ function Folder() {
   const [currentFolderSchema, setCurrentFolderSchema] = createSignal([]);
   // Menyimpan hasil ketikan user (contoh: { nama_pasien: "John Doe", ruangan: "ICU" })
   const [customMetadata, setCustomMetadata] = createSignal({});
+
+  // state untuk manage access document
+  const [isDocumentAccessModalOpen, setIsDocumentAccessModalOpen] = createSignal(false);
+  const [selectedDocumentId, setSelectedDocumentId] = createSignal(null);
+
+  //state untuk edit metadata document
+  const [isEditMetadataDocumentOpen, setIsEditMetadataDocumentOpen] = createSignal(false);
+  const [selectedDocumentTitle, setSelectedDocumentTitle] = createSignal("");
+  const [selectedDocumentSchema, setSelectedDocumentSchema] = createSignal({});
 
   const loadFolderContents = async (folderId = null) => {
     try {
@@ -60,10 +71,6 @@ function Folder() {
       setFolders(res.data.folders);
       setDocuments(res.data.documents);
       setCurrentFolderPermission(res.data.currentFolderPermission);
-      // console.log(
-      //   "current folder permission:",
-      //   JSON.stringify(res.data.currentFolderPermission),
-      // );
 
       const activeFolderId = res.data.currentFolderId;
       setCurrentFolderId(activeFolderId);
@@ -95,7 +102,22 @@ function Folder() {
       console.error("Gagal mengambil metadata schema folder:", error);
       return [];
     }
+  };
+
+  //fungsi untuk fetch metadatadocument tertentu
+  const fetchDocumentMetadata = async (documentId) => {
+    try {
+      const res = await api.get(`/documents/${documentId}`);
+      setSelectedDocumentTitle(res.data.document.file_name);
+      setSelectedDocumentSchema(res.data.document.custom_metadata || {});
+      return res.data;
+    } catch (error) {
+      console.error("Gagal mengambil metadata document:", error);
+      return [];
+    }
   }
+
+
 
   // ==========================================
   // LIFECYCLE & NAVIGASI
@@ -171,7 +193,7 @@ function Folder() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDeleteDocument = async (id) => {
     const result = await Swal.fire({
       title: "Hapus dokumen?",
       text: "Anda tidak akan bisa mengembalikan dokumen ini!",
@@ -577,8 +599,8 @@ function Folder() {
                               }
                               onClick={() => {
                                 setSelectedFolderId(folder.id_folder);
-                                setIsEditMetadataFolderOpen(true);
                                 fetchFolderMetadataSchema(folder.id_folder);
+                                setIsEditMetadataFolderOpen(true);
                               }}
                             />
 
@@ -705,7 +727,7 @@ function Folder() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(doc.id_document);
+                              handleDeleteDocument(doc.id_document);
                             }}
                             class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                             title="Hapus Dokumen"
@@ -726,6 +748,87 @@ function Folder() {
                             </svg>
                           </button>
                         </Show>
+
+                        <DropdownMenu>
+                          {/* Opsi: Manage Access */}
+                          <DropdownItem
+                            label="Kelola Akses"
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                                />
+                              </svg>
+                            }
+                            onClick={() => {
+                              setSelectedDocumentId(doc.id_document);
+                              setIsDocumentAccessModalOpen(true);
+                            }}
+                          />
+
+                          {/* Garis Pemisah */}
+                          <DropdownDivider />
+                          {/* Opsi: Edit Metadata */}
+                          <DropdownItem
+                            label="Edit Metadata"
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            }
+                            onClick={() => {
+                              setSelectedDocumentId(doc.id_document);
+                              fetchDocumentMetadata(doc.id_document);
+                              setIsEditMetadataDocumentOpen(true);
+                            }}
+                          />
+
+                          {/* Garis Pemisah */}
+                          <DropdownDivider />
+
+                          {/* Opsi: Hapus (Menggunakan warna merah) */}
+                          <DropdownItem
+                            label="Hapus Dokumen"
+                            danger={true}
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            }
+                            onClick={() => handleDeleteDocument(doc.id_document)}
+                          />
+                        </DropdownMenu>
                       </td>
                     </tr>
                   )}
@@ -760,7 +863,7 @@ function Folder() {
         </Show>
       </div>
 
-      {/* MODAL UPLOAD KHUSUS HOME */}
+      {/* MODAL UPLOAD */}
       <Show when={isUploadOpen()}>
         <UploadDocumentModal
           isOpen={isUploadOpen()}
@@ -771,9 +874,7 @@ function Folder() {
         />
       </Show>
 
-      {/* ========================================== */}
       {/* MODAL CREATE NEW FOLDER */}
-      {/* ========================================== */}
       <Show when={isFolderModalOpen()}>
         <NewFolderModal
           isOpen={isFolderModalOpen()}
@@ -784,16 +885,16 @@ function Folder() {
       </Show>
 
       {/* MODAL MANAGE ACCESS UNTUK FOLDER */}
-        <Show when={isFolderAccessModalOpen()}>
-          <ManageAccessModal
-            resourceId={selectedFolderId()}
-            resourceType="FOLDER"
-            onClose={() => {
-              setIsFolderAccessModalOpen(false);
-              setSelectedFolderId(null);
-            }}
-          />
-        </Show>
+      <Show when={isFolderAccessModalOpen()}>
+        <ManageAccessModal
+          resourceId={selectedFolderId()}
+          resourceType="FOLDER"
+          onClose={() => {
+            setIsFolderAccessModalOpen(false);
+            setSelectedFolderId(null);
+          }}
+        />
+      </Show>
 
       {/* MODAL EDIT METADATA FOLDER */}
       <Show when={isEditMetadataFolderOpen()}>
@@ -808,6 +909,34 @@ function Folder() {
             loadFolderContents(currentFolderId());
           }}
         />
+      </Show>
+
+      {/* MODAL MANAGE ACCESS DOKUMEN */}
+      <Show when={isDocumentAccessModalOpen()}>
+        <ManageAccessModal
+          resourceId={selectedDocumentId()}
+          resourceType="DOCUMENT"
+          onClose={() => {
+            setIsDocumentAccessModalOpen(false);
+            setSelectedDocumentId(null);
+          }}
+        />
+      </Show>
+
+      {/* MODAL EDIT METADATA DOKUMEN */}
+      <Show when={isEditMetadataDocumentOpen()}>
+        <EditMetadataDoc
+          onClose={() => setIsEditMetadataDocumentOpen(false)}
+          documentId={selectedDocumentId()}
+          title={selectedDocumentTitle()}
+          custom_metadata={selectedDocumentSchema()}
+          onSuccess={() => {
+            setIsEditMetadataDocumentOpen(false);
+            setSelectedDocumentId(null);
+            loadFolderContents(currentFolderId());
+          }}
+        />
+
       </Show>
 
     </div>

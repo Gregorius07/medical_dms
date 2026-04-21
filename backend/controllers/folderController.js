@@ -1,6 +1,7 @@
 const FolderModel = require("../models/folderModel");
 const DocumentModel = require("../models/documentModel");
 const PermissionModel = require("../models/permissionModel");
+const AuditModel = require("../models/auditModel");
 const pool = require("../config/db");
 
 const getFolderContents = async (req, res) => {
@@ -175,6 +176,15 @@ const updateFolderMetadata = async (req, res) => {
     if (!updatedFolder) {
       return res.status(404).json({ message: "Folder tidak ditemukan" });
     }
+
+    await AuditModel.log(
+      "UPDATE",
+      "FOLDER",
+      req.userId,
+      id,
+      null,
+      `Updated folder metadata: ${folder_name.trim()}`,
+    );
 
     res.status(200).json({
       message: "Metadata folder berhasil diperbarui",

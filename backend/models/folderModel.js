@@ -272,7 +272,37 @@ class FolderModel {
   }
 
   static async getFolderMetadata(idFolder){
-    const query = `SELECT folder_name, metadata_schema FROM folder WHERE id_folder = $1`;
+    const query = `
+      SELECT
+        f.folder_name,
+        f.metadata_schema,
+        f.created_by,
+        f.created_at,
+        COALESCE(doc_stats.total_documents, 0) AS total_documents,
+        COALESCE(last_update.actor_name, f.created_by) AS updated_by,
+        COALESCE(last_update.updated_at, f.created_at) AS updated_at
+      FROM folder f
+      LEFT JOIN (
+        SELECT id_folder, COUNT(*)::int AS total_documents
+        FROM document
+        WHERE id_folder = $1 AND is_deleted = false
+        GROUP BY id_folder
+      ) doc_stats ON doc_stats.id_folder = f.id_folder
+      LEFT JOIN LATERAL (
+        SELECT
+          a.timestamp AS updated_at,
+          u.full_name AS actor_name
+        FROM audit_log a
+        LEFT JOIN "user" u ON u.id_user = a.id_user
+        WHERE a.resource_type = 'FOLDER'
+          AND a.id_folder = f.id_folder
+          AND a.action IN ('UPDATE', 'EDIT')
+        ORDER BY a.timestamp DESC, a.id_log DESC
+        LIMIT 1
+      ) last_update ON TRUE
+      WHERE f.id_folder = $1;
+    `;
+
     const { rows } = await pool.query(query, [idFolder]);
     return rows[0] ? rows[0] : null;
   }

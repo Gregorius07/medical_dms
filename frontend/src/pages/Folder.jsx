@@ -9,6 +9,7 @@ import NewFolderModal from "../components/NewFolderModal";
 import UploadDocumentModal from "../components/UploadDocumentModal";
 import EditMetadataFolder from "../components/EditMetadataFolder";
 import EditMetadataDoc from "../components/EditMetadataDoc"; 
+import FolderDetailModal from "../components/FolderDetailModal";
 import {
   DropdownMenu,
   DropdownItem,
@@ -38,6 +39,10 @@ function Folder() {
   const [isFolderAccessModalOpen, setIsFolderAccessModalOpen] =
     createSignal(false);
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
+
+  const [isFolderDetailModalOpen, setIsFolderDetailModalOpen] =
+    createSignal(false);
+  const [selectedFolderDetail, setSelectedFolderDetail] = createSignal(null);
 
   //state untuk edit metadata folder
   const [isEditMetadataFolderOpen, setIsEditMetadataFolderOpen] =
@@ -96,11 +101,19 @@ function Folder() {
     try {
       const res = await api.get(`/folders/${folderId}/metadata`);
       setSelectedFolderName(res.data.folder_name);
-      setSelectedFolderSchema(res.data.metadata_schema);
+      setSelectedFolderSchema(res.data.metadata_schema || {});
+      setSelectedFolderDetail(res.data);
       return res.data;
     } catch (error) {
       console.error("Gagal mengambil metadata schema folder:", error);
-      return [];
+      return null;
+    }
+  };
+
+  const openFolderDetail = async (folderId) => {
+    const detail = await fetchFolderMetadataSchema(folderId);
+    if (detail) {
+      setIsFolderDetailModalOpen(true);
     }
   };
 
@@ -576,6 +589,27 @@ function Folder() {
                               }}
                             />
 
+                            <DropdownItem
+                              label="Detail Folder"
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                              }
+                              onClick={() => openFolderDetail(folder.id_folder)}
+                            />
+
                             {/* Garis Pemisah */}
                             <DropdownDivider />
                             {/* Opsi: Edit Metadata */}
@@ -907,6 +941,18 @@ function Folder() {
             setIsEditMetadataFolderOpen(false);
             setSelectedFolderId(null);
             loadFolderContents(currentFolderId());
+          }}
+        />
+      </Show>
+
+      {/* MODAL DETAIL FOLDER */}
+      <Show when={isFolderDetailModalOpen()}>
+        <FolderDetailModal
+          folder={selectedFolderDetail()}
+          onClose={() => {
+            setIsFolderDetailModalOpen(false);
+            setSelectedFolderDetail(null);
+            setSelectedFolderId(null);
           }}
         />
       </Show>

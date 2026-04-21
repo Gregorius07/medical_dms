@@ -167,7 +167,7 @@ function DocumentDetail() {
       console.error("Gagal mengambil riwayat versi", err);
     }
   };
-
+  
   onMount(() => {
     fetchDocumentDetail();
   });

@@ -1,4 +1,4 @@
-import { createSignal, onMount } from "solid-js";
+import { createSignal, onMount, Show } from "solid-js";
 import { A, useNavigate, useLocation } from "@solidjs/router";
 import { currentUser, setCurrentUser } from "../store/authStore";
 import api from "../api";
@@ -140,6 +140,24 @@ function MainLayout(props) {
               />
             </svg>
             Approval
+          </A>
+
+          <A href="/recycle-bin" class={navLinkClass("/recycle-bin")}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-[18px] w-[18px] shrink-0 opacity-70"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19 7L5 7m2 0l1 12a2 2 0 002 2h4a2 2 0 002-2l1-12M10 11v6m4-6v6M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"
+              />
+            </svg>
+            Recycle Bin
           </A>
 
           <Show when={currentUser()?.role === "admin"}>

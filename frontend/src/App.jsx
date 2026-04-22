@@ -10,6 +10,7 @@ import { onMount, Show } from "solid-js";
 import Draft from "./pages/Draft";
 import Folder from "./pages/Folder";
 import DocumentDetail from "./components/DocumentDetail";
+import RecycleBin from "./pages/RecycleBin";
 function App() {
   onMount(() => {
     checkSession();
@@ -37,6 +38,7 @@ function App() {
           <Route path="/approvals" component={Approval} />
           <Route path="/draft" component={Draft} />
           <Route path="/folders" component={Folder} />
+          <Route path="/recycle-bin" component={RecycleBin} />
           <Route path="/document/:id" component={DocumentDetail} />
         </Route>
       </Router>

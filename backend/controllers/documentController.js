@@ -168,6 +168,68 @@ const DocumentController = {
     }
   },
 
+  getRecycleBin: async (req, res) => {
+    try {
+      const deletedDocuments =
+        req.role === "admin"
+          ? await DocumentModel.getDeletedDocumentsForAdmin()
+          : await DocumentModel.getDeletedDocumentsForUser(req.userId);
+
+      res.status(200).json({
+        success: true,
+        data: deletedDocuments,
+      });
+    } catch (error) {
+      console.error("Error getRecycleBin:", error);
+      res
+        .status(500)
+        .json({ message: "Gagal mengambil daftar dokumen di recycle bin." });
+    }
+  },
+
+  restoreDocument: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const deletedDoc = await DocumentModel.getDeletedDocumentById(id);
+      if (!deletedDoc) {
+        return res
+          .status(404)
+          .json({ message: "Dokumen tidak ditemukan di recycle bin." });
+      }
+
+      if (req.role !== "admin" && deletedDoc.created_by !== req.name) {
+        return res.status(403).json({
+          message: "Akses ditolak. Anda bukan pemilik dokumen ini.",
+        });
+      }
+
+      const restored = await DocumentModel.restoreSoftDeletedDocument(id);
+      if (!restored) {
+        return res
+          .status(400)
+          .json({ message: "Dokumen gagal direstore dari recycle bin." });
+      }
+
+      await AuditModel.log(
+        "UPDATE",
+        "DOCUMENT",
+        req.userId,
+        restored.id_folder,
+        id,
+        `${req.name} melakukan restore dokumen dari recycle bin`,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Dokumen berhasil direstore.",
+      });
+    } catch (error) {
+      console.error("Error restoreDocument:", error);
+      res.status(500).json({ message: "Gagal melakukan restore dokumen." });
+    }
+  },
+
   getAccessibleDocumentsId: async (req, res) => {
     try {
       const result = await DocumentModel.getAccessibleDocuments(

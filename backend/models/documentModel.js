@@ -152,6 +152,93 @@ const DocumentModel = {
     );
   },
 
+  getDeletedDocumentsForAdmin: async () => {
+    const query = `
+      SELECT
+        d.id_document,
+        d.id_folder,
+        f.folder_name,
+        dv.file_name,
+        dv.file_size,
+        dv.created_at,
+        dv.created_by,
+        dv.approval_status
+      FROM document d
+      JOIN document_version dv ON dv.id_document = d.id_document
+      LEFT JOIN folder f ON f.id_folder = d.id_folder
+      WHERE d.is_deleted = true
+        AND dv.is_active = true
+      ORDER BY dv.created_at DESC;
+    `;
+
+    const { rows } = await pool.query(query);
+    return rows;
+  },
+
+  getDeletedDocumentsForUser: async (userId) => {
+    const query = `
+      SELECT DISTINCT
+        d.id_document,
+        d.id_folder,
+        f.folder_name,
+        dv.file_name,
+        dv.file_size,
+        dv.created_at,
+        dv.created_by,
+        dv.approval_status
+      FROM document d
+      JOIN document_version dv
+        ON dv.id_document = d.id_document
+       AND dv.is_active = true
+      LEFT JOIN folder f ON f.id_folder = d.id_folder
+      LEFT JOIN permission p_doc
+        ON p_doc.id_document = d.id_document
+       AND p_doc.id_user = $1
+      LEFT JOIN permission p_folder
+        ON p_folder.id_folder = d.id_folder
+       AND p_folder.id_user = $1
+      WHERE d.is_deleted = true
+        AND (p_doc.preview = true OR p_folder.preview = true)
+      ORDER BY dv.created_at DESC;
+    `;
+
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  },
+
+  getDeletedDocumentById: async (idDocument) => {
+    const query = `
+      SELECT
+        d.id_document,
+        d.id_folder,
+        d.is_deleted,
+        dv.file_name,
+        dv.created_by,
+        dv.approval_status
+      FROM document d
+      JOIN document_version dv ON dv.id_document = d.id_document
+      WHERE d.id_document = $1
+        AND d.is_deleted = true
+        AND dv.is_active = true;
+    `;
+
+    const { rows } = await pool.query(query, [idDocument]);
+    return rows[0];
+  },
+
+  restoreSoftDeletedDocument: async (idDocument) => {
+    const query = `
+      UPDATE document
+      SET is_deleted = false
+      WHERE id_document = $1
+        AND is_deleted = true
+      RETURNING id_document, id_folder, is_deleted;
+    `;
+
+    const { rows } = await pool.query(query, [idDocument]);
+    return rows[0] || null;
+  },
+
   // 2. Ambil SEMUA dokumen yang user punya hak akses SECARA LANGSUNG KECUALI DRAFT miliknya sendiri
   getAccessibleDocuments: async (userId, name) => {
     const query = `

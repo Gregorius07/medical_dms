@@ -28,6 +28,8 @@ router.post('/',verifyToken, upload.single('file'), DocumentController.upload);
 router.get('/stats',verifyToken,DocumentController.getStats)
 router.get('/getaccesibledocs',verifyToken, DocumentController.getAccessibleDocumentsId);
 router.get('/search', verifyToken, DocumentController.searchDocuments);
+router.get('/recycle-bin', verifyToken, DocumentController.getRecycleBin);
+router.patch('/:id/restore', verifyToken, DocumentController.restoreDocument);
 router.delete('/:id', verifyToken,DocumentController.delete);
 router.get('/:id', verifyToken, requirePermission('preview', 'DOCUMENT'), DocumentController.getDocumentDetail);
 router.get('/:id/versions', verifyToken, DocumentController.getVersions);

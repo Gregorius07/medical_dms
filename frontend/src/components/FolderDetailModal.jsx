@@ -16,7 +16,7 @@ const formatDateTime = (value) => {
   })}`;
 };
 
-function FolderDetailModal(props) {
+function FolderInfoModal(props) {
   const folder = () => props.folder || null;
   const metadataSchema = () => folder()?.metadata_schema || {};
   const schemaEntries = () => Object.entries(metadataSchema());
@@ -155,4 +155,4 @@ function FolderDetailModal(props) {
   );
 }
 
-export default FolderDetailModal;
+export default FolderInfoModal;

@@ -369,14 +369,14 @@ function DocumentDetail() {
                   ? "bg-green-50 border-green-200 text-green-700"
                   : doc()?.approval_status === "DRAFT"
                     ? "bg-gray-100 border-gray-200 text-gray-600"
-                    : doc()?.approval_status === "UNDER REVIEW"
+                    : doc()?.approval_status === "PENDING"
                       ? "bg-amber-50 border-amber-200 text-amber-700"
                       : "bg-red-50 border-red-200 text-red-700"
               }`}
             >
               {/* Dot Indicator */}
               <span
-                class={`w-1.5 h-1.5 rounded-full mr-2 ${doc()?.approval_status === "APPROVED" ? "bg-green-500" : doc()?.approval_status === "DRAFT" ? "bg-gray-400" : doc()?.approval_status === "UNDER REVIEW" ? "bg-amber-500" : "bg-red-500"}`}
+                class={`w-1.5 h-1.5 rounded-full mr-2 ${doc()?.approval_status === "APPROVED" ? "bg-green-500" : doc()?.approval_status === "DRAFT" ? "bg-gray-400" : doc()?.approval_status === "PENDING" ? "bg-amber-500" : "bg-red-500"}`}
               ></span>
               {doc()?.approval_status || "UNKNOWN"}
             </span>
@@ -623,9 +623,9 @@ function DocumentDetail() {
               >
                 <button
                   onClick={handleUploadRevision}
-                  // 1. Matikan fungsi klik jika statusnya UNDER REVIEW atau APPROVED
+                  // 1. Matikan fungsi klik jika statusnya PENDING atau APPROVED
                   disabled={
-                    doc()?.approval_status === "UNDER REVIEW" ||
+                    doc()?.approval_status === "PENDING" ||
                     doc()?.approval_status === "APPROVED"
                   }
                   // 2. Tambahkan class disabled: untuk mengatur tampilan saat tombol mati
@@ -844,7 +844,7 @@ function DocumentDetail() {
               {/* KONDISI 2: DOKUMEN PENDING -> MENUNGGU APPROVAL (Untuk Peminta) */}
               <Show
                 when={
-                  doc()?.approval_status === "UNDER REVIEW" &&
+                  doc()?.approval_status === "PENDING" &&
                   currentUser()?.id !== activeApproval()?.id_approver
                 }
               >
@@ -890,7 +890,7 @@ function DocumentDetail() {
               {/* KONDISI 3: DOKUMEN PENDING -> PANEL AKSI UNTUK SANG APPROVER */}
               <Show
                 when={
-                  doc()?.approval_status === "UNDER REVIEW" &&
+                  doc()?.approval_status === "PENDING" &&
                   currentUser()?.id === activeApproval()?.id_approver
                 }
               >
@@ -1027,7 +1027,7 @@ function DocumentDetail() {
                     ((doc()?.approval_status === "DRAFT" ||
                       doc()?.approval_status === "REJECTED") &&
                       permissions().upload) ||
-                    doc()?.approval_status === "UNDER REVIEW"
+                    doc()?.approval_status === "PENDING"
                   )
                 }
               >
@@ -1555,7 +1555,7 @@ function DocumentDetail() {
                             !v.is_active &&
                             (currentUser()?.role === "admin" ||
                               currentUser()?.name === doc()?.created_by) &&
-                            doc()?.approval_status !== "UNDER REVIEW" &&
+                            doc()?.approval_status !== "PENDING" &&
                             doc()?.approval_status !== "APPROVED"
                           }
                         >

@@ -143,7 +143,7 @@ INSERT INTO document_version
 (version_number, file_name, file_path, file_format, file_size, custom_metadata, approval_status, created_by, is_active, id_document, id_folder, created_at)
 VALUES
 (1, 'patient_registration_001_v1.pdf', 'uploads/patient_registration_001_v1.pdf', 'PDF', 245, '{"patient_name":"John Doe"}', 'APPROVED', 'andi.pratama', TRUE, 1, 1, NOW()),
-(1, 'lab_result_hemoglobin_2025_v1.pdf', 'uploads/lab_result_hemoglobin_2025_v1.pdf', 'PDF', 300, '{"hemoglobin": "13.5"}', 'UNDER REVIEW', 'siti.rahma', TRUE, 2, 2, NOW()),
+(1, 'lab_result_hemoglobin_2025_v1.pdf', 'uploads/lab_result_hemoglobin_2025_v1.pdf', 'PDF', 300, '{"hemoglobin": "13.5"}', 'PENDING', 'siti.rahma', TRUE, 2, 2, NOW()),
 (1, 'radiology_ctscan_7781_v1.pdf', 'uploads/radiology_ctscan_7781_v1.pdf', 'PDF', 512, '{"scan_type": "CT-Scan"}', 'APPROVED', 'budi.s', TRUE, 3, 3, NOW()),
 (1, 'inpatient_record_22431_v1.pdf', 'uploads/inpatient_record_22431_v1.pdf', 'PDF', 600, '{"ward": "ICU"}', 'DRAFT', 'maria.k', TRUE, 4, 4, NOW()),
 (1, 'pharmacy_dispense_5501_v1.pdf', 'uploads/pharmacy_dispense_5501_v1.pdf', 'PDF', 150, '{"drug_name": "Amoxicillin"}', 'APPROVED', 'andi.pratama', TRUE, 5, 5, NOW());

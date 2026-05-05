@@ -80,7 +80,7 @@ function DocumentInfoModal(props) {
                     ? "bg-green-100 text-green-700"
                     : doc()?.approval_status === "DRAFT"
                       ? "bg-gray-100 text-gray-700"
-                      : doc()?.approval_status === "UNDER REVIEW" ||
+                      : doc()?.approval_status === "PENDING" ||
                           doc()?.approval_status === "PENDING"
                         ? "bg-yellow-100 text-yellow-700"
                         : doc()?.approval_status === "REJECTED"

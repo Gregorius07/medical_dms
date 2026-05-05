@@ -338,7 +338,7 @@ function Draft() {
 
         <div class="card p-5 border-l-4 border-l-amber-400">
           <p class="text-gray-500 text-xs mb-1.5 font-semibold uppercase tracking-wide">
-            Under Review
+            PENDING
           </p>
           <h3 class="text-3xl font-bold text-gray-800">
             {stats().underReview || 0}
@@ -766,7 +766,7 @@ function Draft() {
                             ? "bg-green-100 text-green-700"
                             : doc.approval_status === "DRAFT"
                               ? "bg-gray-100 text-gray-600"
-                              : doc.approval_status === "UNDER REVIEW"
+                              : doc.approval_status === "PENDING"
                                 ? "bg-yellow-100 text-yellow-700"
                                 : "bg-gray-100 text-gray-500"
                         }`}

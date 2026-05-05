@@ -7,6 +7,15 @@ import Swal from "sweetalert2";
 import SearchBar from "../components/SearchBar";
 import NewFolderModal from "../components/NewFolderModal";
 import UploadDocumentModal from "../components/UploadDocumentModal";
+import EditMetadataFolder from "../components/EditMetadataFolder";
+import EditMetadataDoc from "../components/EditMetadataDoc";
+import FolderDetailModal from "../components/FolderDetailModal";
+import DocumentInfoModal from "../components/DocumentInfoModal";
+import {
+  DropdownMenu,
+  DropdownItem,
+  DropdownDivider,
+} from "../components/DropdownMenu";
 
 function Draft() {
   // State khusus untuk Draft (Sudah diisolasi, tidak ada bentrok dengan Home)
@@ -27,10 +36,29 @@ function Draft() {
     createSignal(false);
   const [selectedFolderId, setSelectedFolderId] = createSignal(null);
 
+  const [isFolderDetailModalOpen, setIsFolderDetailModalOpen] =
+    createSignal(false);
+  const [selectedFolderDetail, setSelectedFolderDetail] = createSignal(null);
+
+  const [isEditMetadataFolderOpen, setIsEditMetadataFolderOpen] =
+    createSignal(false);
+  const [selectedFolderName, setSelectedFolderName] = createSignal("");
+  const [selectedFolderSchema, setSelectedFolderSchema] = createSignal([]);
+
   // State untuk modal permission document
   const [isDocumentAccessModalOpen, setIsDocumentAccessModalOpen] =
     createSignal(false);
   const [selectedDocumentId, setSelectedDocumentId] = createSignal(null);
+
+  const [isDocumentDetailModalOpen, setIsDocumentDetailModalOpen] =
+    createSignal(false);
+  const [selectedDocumentDetail, setSelectedDocumentDetail] =
+    createSignal(null);
+
+  const [isEditMetadataDocumentOpen, setIsEditMetadataDocumentOpen] =
+    createSignal(false);
+  const [selectedDocumentTitle, setSelectedDocumentTitle] = createSignal("");
+  const [selectedDocumentSchema, setSelectedDocumentSchema] = createSignal({});
 
   // --- STATE UNTUK CUSTOM METADATA ---
   // Menyimpan skema dari folder yang sedang dibuka (contoh: ["nama_pasien", "ruangan"])
@@ -147,6 +175,48 @@ function Draft() {
   const clearSearch = () => {
     setIsSearching(false);
     loadFolderContents(null); // Kembali ke Root Home
+  };
+
+  const fetchFolderMetadataSchema = async (folderId) => {
+    try {
+      const res = await api.get(`/folders/${folderId}/metadata`);
+      setSelectedFolderName(res.data.folder_name);
+      setSelectedFolderSchema(res.data.metadata_schema || {});
+      setSelectedFolderDetail(res.data);
+      return res.data;
+    } catch (error) {
+      console.error("Gagal mengambil metadata schema folder:", error);
+      return null;
+    }
+  };
+
+  const openFolderDetail = async (folderId) => {
+    const detail = await fetchFolderMetadataSchema(folderId);
+    if (detail) {
+      setIsFolderDetailModalOpen(true);
+    }
+  };
+
+  const fetchDocumentMetadata = async (documentId) => {
+    try {
+      const res = await api.get(`/documents/${documentId}/metadata`);
+      const docMetadata = res.data?.document || {};
+      setSelectedDocumentTitle(docMetadata.file_name || "");
+      setSelectedDocumentSchema(docMetadata.custom_metadata || {});
+      setSelectedDocumentDetail(docMetadata);
+      return res.data;
+    } catch (error) {
+      console.error("Gagal mengambil metadata document:", error);
+      return null;
+    }
+  };
+
+  const openDocumentDetail = async (documentId) => {
+    const detail = await fetchDocumentMetadata(documentId);
+    if (detail) {
+      setSelectedDocumentId(documentId);
+      setIsDocumentDetailModalOpen(true);
+    }
   };
 
   // ==========================================
@@ -525,6 +595,104 @@ function Draft() {
                         </svg>
                       </button>
                     </Show>
+
+                    <DropdownMenu>
+                      <DropdownItem
+                        label="Kelola Akses"
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                            />
+                          </svg>
+                        }
+                        onClick={() => {
+                          setSelectedFolderId(folder.id_folder);
+                          setIsFolderAccessModalOpen(true);
+                        }}
+                      />
+
+                      <DropdownItem
+                        label="Detail Folder"
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                        }
+                        onClick={() => openFolderDetail(folder.id_folder)}
+                      />
+
+                      <DropdownDivider />
+
+                      <DropdownItem
+                        label="Edit Metadata"
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                        }
+                        onClick={() => {
+                          setSelectedFolderId(folder.id_folder);
+                          fetchFolderMetadataSchema(folder.id_folder);
+                          setIsEditMetadataFolderOpen(true);
+                        }}
+                      />
+
+                      <DropdownDivider />
+
+                      <DropdownItem
+                        label="Hapus Folder"
+                        danger={true}
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        }
+                        onClick={() => handleDeleteFolder(folder.id_folder)}
+                      />
+                    </DropdownMenu>
                   </tr>
                 )}
               </For>
@@ -642,6 +810,106 @@ function Draft() {
                           </svg>
                         </button>
                       </Show>
+
+                      <DropdownMenu>
+                        <DropdownItem
+                          label="Kelola Akses"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                              />
+                            </svg>
+                          }
+                          onClick={() => {
+                            setSelectedDocumentId(doc.id_document);
+                            setIsDocumentAccessModalOpen(true);
+                          }}
+                        />
+
+                        <DropdownDivider />
+
+                        <DropdownItem
+                          label="Detail Dokumen"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                          }
+                          onClick={() => openDocumentDetail(doc.id_document)}
+                        />
+
+                        <DropdownDivider />
+
+                        <DropdownItem
+                          label="Edit Metadata"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          }
+                          onClick={() => {
+                            setSelectedDocumentId(doc.id_document);
+                            fetchDocumentMetadata(doc.id_document);
+                            setIsEditMetadataDocumentOpen(true);
+                          }}
+                        />
+
+                        <DropdownDivider />
+
+                        <DropdownItem
+                          label="Hapus Dokumen"
+                          danger={true}
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          }
+                          onClick={() => handleDelete(doc.id_document)}
+                        />
+                      </DropdownMenu>
                     </td>
                   </tr>
                 )}
@@ -703,6 +971,52 @@ function Draft() {
             setIsDocumentAccessModalOpen(false);
             setSelectedDocumentId(null);
           }}
+        />
+      </Show>
+
+      <Show when={isFolderDetailModalOpen()}>
+        <FolderDetailModal
+          folder={selectedFolderDetail()}
+          onClose={() => {
+            setIsFolderDetailModalOpen(false);
+            setSelectedFolderDetail(null);
+          }}
+        />
+      </Show>
+
+      <Show when={isDocumentDetailModalOpen()}>
+        <DocumentInfoModal
+          document={selectedDocumentDetail()}
+          onClose={() => {
+            setIsDocumentDetailModalOpen(false);
+            setSelectedDocumentDetail(null);
+          }}
+        />
+      </Show>
+
+      <Show when={isEditMetadataFolderOpen()}>
+        <EditMetadataFolder
+          folderId={selectedFolderId()}
+          folder_name={selectedFolderName()}
+          metadata_schema={selectedFolderSchema()}
+          onClose={() => {
+            setIsEditMetadataFolderOpen(false);
+            setSelectedFolderId(null);
+          }}
+          onSuccess={() => loadFolderContents(currentFolderId() || draftId())}
+        />
+      </Show>
+
+      <Show when={isEditMetadataDocumentOpen()}>
+        <EditMetadataDoc
+          documentId={selectedDocumentId()}
+          title={selectedDocumentTitle()}
+          custom_metadata={selectedDocumentSchema()}
+          onClose={() => {
+            setIsEditMetadataDocumentOpen(false);
+            setSelectedDocumentId(null);
+          }}
+          onSuccess={() => loadFolderContents(currentFolderId() || draftId())}
         />
       </Show>
     </div>

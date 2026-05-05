@@ -27,7 +27,7 @@ class ApprovalModel {
             // 3. Ubah status dokumen menjadi PENDING
             await client.query(`
                 UPDATE document_version 
-                SET approval_status = 'UNDER REVIEW' 
+                SET approval_status = 'PENDING' 
                 WHERE id_document = $1 AND is_active = TRUE;
             `, [idDocument]);
 

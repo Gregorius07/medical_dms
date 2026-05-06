@@ -815,6 +815,38 @@ function Folder() {
                       <td class="py-3 px-4 align-top pt-3 text-right">
                         <Show
                           when={
+                            currentUser()?.role === "admin" ||
+                            currentUser()?.name === doc.created_by
+                          }
+                        >
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDocumentId(doc.id_document);
+                              setIsDocumentAccessModalOpen(true);
+                            }}
+                            class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition mr-1"
+                            title="Manage Access"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                              />
+                            </svg>
+                          </button>
+                        </Show>
+
+                        <Show
+                          when={
                             !isSearching() && // Sembunyikan tombol hapus saat sedang mode pencarian agar aman
                             (currentUser()?.role === "admin" ||
                               (currentUser()?.name === doc.created_by &&
@@ -852,38 +884,6 @@ function Folder() {
                             fetchDocumentPermission(doc.id_document)
                           }
                         >
-                          <Show
-                            when={
-                              currentUser()?.role === "admin" ||
-                              currentUser()?.name === doc.created_by
-                            }
-                          >
-                            {/* Opsi: Manage Access */}
-                            <DropdownItem
-                              label="Kelola Akses"
-                              icon={
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  class="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                                  />
-                                </svg>
-                              }
-                              onClick={() => {
-                                setSelectedDocumentId(doc.id_document);
-                                setIsDocumentAccessModalOpen(true);
-                              }}
-                            />
-                          </Show>
-
                           {/* Garis Pemisah */}
                           <DropdownDivider />
 

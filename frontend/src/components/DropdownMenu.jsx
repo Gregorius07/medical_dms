@@ -46,7 +46,7 @@ export function DropdownMenu(props) {
       <button
         ref={buttonRef} // Pasang referensi di sini
         type="button"
-        onClick={toggleMenu}
+        onClick={e => {toggleMenu(e); props.onClick?.(e);}} // Panggil toggleMenu dan props.onClick jika ada
         class="p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 rounded-full transition outline-none focus:ring-2 focus:ring-blue-100"
         title="Opsi lainnya"
       >
@@ -95,7 +95,6 @@ export function DropdownItem(props) {
     <button
       type="button"
       onClick={(e) => {
-        // HAPUS e.stopPropagation() di sini! Biarkan event naik ke kotak menu.
         if (props.onClick) props.onClick(e);
       }}
       class={`w-full text-left px-4 py-2.5 text-[13px] font-medium flex items-center justify-between transition-colors ${

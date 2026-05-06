@@ -195,7 +195,17 @@ const updateFolderMetadata = async (req, res) => {
     res.status(500).json({ message: "Gagal memperbarui metadata folder" });
   }
 };
-// Jangan lupa export dan daftarkan di folderRoutes.js (router.delete('/:id', ...))
+
+const getFolderPermission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const permissions = await FolderModel.getFolderPermission(id, req.userId);
+    res.json({permissions});
+  } catch (error) {
+    console.error("Error getFolderPermission:", error);
+    res.status(500).json({ message: "Gagal mengambil permission folder" });
+  }
+};
 
 module.exports = {
   getFolderContents,
@@ -206,4 +216,5 @@ module.exports = {
   getFolderMetadata,
   updateFolderMetadata,
   deleteFolder,
+  getFolderPermission,
 };

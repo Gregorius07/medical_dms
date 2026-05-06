@@ -158,10 +158,8 @@ class FolderModel {
     client,
   ) {
     try {
-
       console.log("metadataSchema di model", metadataSchema);
-      
-     
+
       // 1. Insert ke tabel folder
       const insertFolderQuery = `
                 INSERT INTO folder (folder_name, parent_folder, created_by, metadata_schema, created_at)
@@ -186,9 +184,9 @@ class FolderModel {
     } catch (error) {
       console.log("error di model", error);
       throw error;
-    } 
+    }
   }
-  
+
   /**
    * Menghapus folder (HANYA JIKA KOSONG)
    */
@@ -258,7 +256,7 @@ class FolderModel {
     }
   }
 
-  static async getFolderDetail(idFolder){
+  static async getFolderDetail(idFolder) {
     let query = `SELECT * FROM folder WHERE id_folder IS NULL ORDER BY folder_name ASC`;
     let params = [];
 
@@ -271,7 +269,7 @@ class FolderModel {
     return rows[0];
   }
 
-  static async getFolderMetadata(idFolder){
+  static async getFolderMetadata(idFolder) {
     const query = `
       SELECT
         f.folder_name,
@@ -323,6 +321,32 @@ class FolderModel {
     ]);
 
     return rows[0] ? rows[0] : null;
+  }
+
+  static async getFolderPermission(idFolder, idUser) {
+    const query = `
+      SELECT 
+        p.id_permission,
+        p.id_user,
+        u.full_name,
+        p.preview,
+        p.upload,
+        p.download,
+        p.edit_metadata
+      FROM permission p
+      JOIN "user" u ON p.id_user = u.id_user
+      WHERE p.id_folder = $1 AND p.resource_type = 'FOLDER' AND p.id_user = $2
+    `;
+
+    const { rows } = await pool.query(query, [idFolder, idUser]);
+    return rows.length > 0
+      ? rows[0]
+      : {
+          preview: false,
+          download: false,
+          upload: false,
+          edit_metadata: false,
+        };
   }
 }
 

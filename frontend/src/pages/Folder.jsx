@@ -8,7 +8,7 @@ import SearchBar from "../components/SearchBar";
 import NewFolderModal from "../components/NewFolderModal";
 import UploadDocumentModal from "../components/UploadDocumentModal";
 import EditMetadataFolder from "../components/EditMetadataFolder";
-import EditMetadataDoc from "../components/EditMetadataDoc"; 
+import EditMetadataDoc from "../components/EditMetadataDoc";
 import FolderDetailModal from "../components/FolderDetailModal";
 import DocumentInfoModal from "../components/DocumentInfoModal";
 import {
@@ -58,7 +58,8 @@ function Folder() {
   const [customMetadata, setCustomMetadata] = createSignal({});
 
   // state untuk manage access document
-  const [isDocumentAccessModalOpen, setIsDocumentAccessModalOpen] = createSignal(false);
+  const [isDocumentAccessModalOpen, setIsDocumentAccessModalOpen] =
+    createSignal(false);
   const [selectedDocumentId, setSelectedDocumentId] = createSignal(null);
 
   const [isDocumentDetailModalOpen, setIsDocumentDetailModalOpen] =
@@ -67,9 +68,17 @@ function Folder() {
     createSignal(null);
 
   //state untuk edit metadata document
-  const [isEditMetadataDocumentOpen, setIsEditMetadataDocumentOpen] = createSignal(false);
+  const [isEditMetadataDocumentOpen, setIsEditMetadataDocumentOpen] =
+    createSignal(false);
   const [selectedDocumentTitle, setSelectedDocumentTitle] = createSignal("");
   const [selectedDocumentSchema, setSelectedDocumentSchema] = createSignal({});
+  const [selectedDocumentPermission, setSelectedDocumentPermission] =
+    createSignal({});
+
+  //state untuk kondisional edit metadata folder
+  const [selectedFolderPermission, setSelectedFolderPermission] = createSignal(
+    {},
+  );
 
   const loadFolderContents = async (folderId = null) => {
     try {
@@ -136,7 +145,33 @@ function Folder() {
       console.error("Gagal mengambil metadata document:", error);
       return null;
     }
-  }
+  };
+
+  //fungsi untuk fetch permission document tertentu
+  const fetchDocumentPermission = async (documentId) => {
+    try {
+      const res = await api.get(`/documents/${documentId}/permissions`);
+      setSelectedDocumentPermission(res.data.permissions || {});
+      // console.log("Permissions for document", documentId, res.data.permissions);
+      return res.data;
+    } catch (error) {
+      console.error("Gagal mengambil permission document:", error);
+      return null;
+    }
+  };
+
+  //fungsi untuk fetch permission folder tertentu
+  const fetchFolderPermission = async (folderId) => {
+    try {
+      const res = await api.get(`/folders/${folderId}/permissions`);
+      setSelectedFolderPermission(res.data.permissions || {});
+      console.log("Permissions for folder", folderId, res.data.permissions);
+      return res.data;
+    } catch (error) {
+      console.error("Gagal mengambil permission folder:", error);
+      return null;
+    }
+  };
 
   const openDocumentDetail = async (documentId) => {
     const detail = await fetchDocumentMetadata(documentId);
@@ -145,8 +180,6 @@ function Folder() {
       setIsDocumentDetailModalOpen(true);
     }
   };
-
-
 
   // ==========================================
   // LIFECYCLE & NAVIGASI
@@ -309,9 +342,6 @@ function Folder() {
     loadFolderContents(null);
   };
 
-  // ==========================================
-  // TAMPILAN (VIEW)
-  // ==========================================
   return (
     <div class="space-y-6">
       {/* SECTION EXPLORER: HOME */}
@@ -573,13 +603,18 @@ function Folder() {
                             </svg>
                           </button>
                         </Show>
-                        <Show
-                          when={
-                            currentUser()?.role === "admin" ||
-                            currentUser()?.name === folder.created_by
+
+                        <DropdownMenu
+                          onClick={() =>
+                            fetchFolderPermission(folder.id_folder)
                           }
                         >
-                          <DropdownMenu>
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
+                              currentUser()?.name === folder.created_by
+                            }
+                          >
                             {/* Opsi: Manage Access */}
                             <DropdownItem
                               label="Kelola Akses"
@@ -604,30 +639,38 @@ function Folder() {
                                 setIsFolderAccessModalOpen(true);
                               }}
                             />
+                          </Show>
 
-                            <DropdownItem
-                              label="Detail Folder"
-                              icon={
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  class="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                              }
-                              onClick={() => openFolderDetail(folder.id_folder)}
-                            />
+                          <DropdownItem
+                            label="Detail Folder"
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                            }
+                            onClick={() => openFolderDetail(folder.id_folder)}
+                          />
 
-                            {/* Garis Pemisah */}
-                            <DropdownDivider />
+                          {/* Garis Pemisah */}
+                          <DropdownDivider />
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
+                              currentUser()?.name === folder.created_by ||
+                              currentFolderPermission()?.edit_metadata
+                            }
+                          >
                             {/* Opsi: Edit Metadata */}
                             <DropdownItem
                               label="Edit Metadata"
@@ -653,10 +696,15 @@ function Folder() {
                                 setIsEditMetadataFolderOpen(true);
                               }}
                             />
-
-                            {/* Garis Pemisah */}
-                            <DropdownDivider />
-
+                          </Show>
+                          {/* Garis Pemisah */}
+                          <DropdownDivider />
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
+                              currentUser()?.name === folder.created_by
+                            }
+                          >
                             {/* Opsi: Hapus (Menggunakan warna merah) */}
                             <DropdownItem
                               label="Hapus Folder"
@@ -681,8 +729,8 @@ function Folder() {
                                 handleDeleteFolder(folder.id_folder)
                               }
                             />
-                          </DropdownMenu>
-                        </Show>
+                          </Show>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   )}
@@ -799,31 +847,42 @@ function Folder() {
                           </button>
                         </Show>
 
-                        <DropdownMenu>
-                          {/* Opsi: Manage Access */}
-                          <DropdownItem
-                            label="Kelola Akses"
-                            icon={
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                                />
-                              </svg>
+                        <DropdownMenu
+                          onClick={() =>
+                            fetchDocumentPermission(doc.id_document)
+                          }
+                        >
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
+                              currentUser()?.name === doc.created_by
                             }
-                            onClick={() => {
-                              setSelectedDocumentId(doc.id_document);
-                              setIsDocumentAccessModalOpen(true);
-                            }}
-                          />
+                          >
+                            {/* Opsi: Manage Access */}
+                            <DropdownItem
+                              label="Kelola Akses"
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                                  />
+                                </svg>
+                              }
+                              onClick={() => {
+                                setSelectedDocumentId(doc.id_document);
+                                setIsDocumentAccessModalOpen(true);
+                              }}
+                            />
+                          </Show>
 
                           {/* Garis Pemisah */}
                           <DropdownDivider />
@@ -851,57 +910,76 @@ function Folder() {
 
                           <DropdownDivider />
 
-                          {/* Opsi: Edit Metadata */}
-                          <DropdownItem
-                            label="Edit Metadata"
-                            icon={
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
-                              </svg>
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
+                              currentUser()?.name === doc.created_by ||
+                              selectedDocumentPermission()?.edit_metadata
                             }
-                            onClick={() => {
-                              setSelectedDocumentId(doc.id_document);
-                              fetchDocumentMetadata(doc.id_document);
-                              setIsEditMetadataDocumentOpen(true);
-                            }}
-                          />
+                          >
+                            {/* Opsi: Edit Metadata */}
+                            <DropdownItem
+                              label="Edit Metadata"
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                              }
+                              onClick={() => {
+                                setSelectedDocumentId(doc.id_document);
+                                fetchDocumentMetadata(doc.id_document);
+                                setIsEditMetadataDocumentOpen(true);
+                              }}
+                            />
+                          </Show>
 
                           {/* Garis Pemisah */}
                           <DropdownDivider />
-
-                          {/* Opsi: Hapus (Menggunakan warna merah) */}
-                          <DropdownItem
-                            label="Hapus Dokumen"
-                            danger={true}
-                            icon={
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
+                          <Show
+                            when={
+                              !isSearching() && // Sembunyikan tombol hapus saat sedang mode pencarian agar aman
+                              (currentUser()?.role === "admin" ||
+                                (currentUser()?.name === doc.created_by &&
+                                  (doc.approval_status === "DRAFT" ||
+                                    doc.approval_status === "REJECT")))
                             }
-                            onClick={() => handleDeleteDocument(doc.id_document)}
-                          />
+                          >
+                            {/* Opsi: Hapus (Menggunakan warna merah) */}
+                            <DropdownItem
+                              label="Hapus Dokumen"
+                              danger={true}
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              }
+                              onClick={() =>
+                                handleDeleteDocument(doc.id_document)
+                              }
+                            />
+                          </Show>
                         </DropdownMenu>
                       </td>
                     </tr>
@@ -1033,9 +1111,7 @@ function Folder() {
             loadFolderContents(currentFolderId());
           }}
         />
-
       </Show>
-
     </div>
   );
 }

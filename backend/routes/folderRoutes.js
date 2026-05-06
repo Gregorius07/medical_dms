@@ -13,5 +13,6 @@ router.post('/create', verifyToken, folderController.createFolder);
 router.delete('/:id', verifyToken, folderController.deleteFolder);
 router.get('/:id/metadata', verifyToken, folderController.getFolderMetadata);
 router.put('/:id/metadata', verifyToken, requirePermission('edit_metadata', 'FOLDER'), folderController.updateFolderMetadata);
+router.get('/:id/permissions', verifyToken, folderController.getFolderPermission);
 
 module.exports = router;

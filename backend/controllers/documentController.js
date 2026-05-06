@@ -9,6 +9,7 @@ const pdf = require("pdf-parse");
 const elasticClient = require("../config/elastic");
 const FolderModel = require("../models/folderModel");
 const extractTitleFromPdf = require("../utils/pdfTitleExtractor");
+const { get } = require("http");
 
 const DocumentController = {
   getStats: async (req, res) => {
@@ -721,6 +722,22 @@ const DocumentController = {
       });
     }
   },
+
+  getDocumentPermissions: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const permissions = await PermissionModel.getAllPermissionsForDocument(
+        req.userId,
+        id,
+      );
+      res.status(200).json({ permissions });
+    } catch (error) {
+      console.error("Error getDocumentPermissions:", error);
+      res.status(500).json({
+        message: "Terjadi kesalahan pada server saat mengambil izin dokumen.",
+      });
+    }
+  }
 };
 
 module.exports = DocumentController;

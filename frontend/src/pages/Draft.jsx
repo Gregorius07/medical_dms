@@ -85,7 +85,7 @@ function Draft() {
     try {
       const draftFolder = await api.get("/folders/getdraft");
       console.log("draftFolder:", Object.values(draftFolder));
-      
+
       // console.log("CurrentUser().id", currentUser().id);
 
       // console.log("isi variabel Draft Folder",draftFolder);
@@ -368,7 +368,6 @@ function Draft() {
       <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b pb-4">
         {/* WRAPPER BREADCRUMB & TOMBOL BACK */}
         <div class="flex items-center gap-3 mb-4">
-          
           {/* TOMBOL BACK DRAFT (Tampil jika BUKAN di root draft) */}
           <Show when={currentFolderId() !== draftId()}>
             <button
@@ -395,16 +394,26 @@ function Draft() {
 
           {/* BREADCRUMB UI CONTAINER */}
           <nav class="flex items-center text-sm font-medium text-gray-600 bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex-1 overflow-x-auto hide-scrollbar">
-            
             {/* Tombol Root Draft ("My Personal Documents") */}
             <button
               onClick={() => navigateToFolder(draftId())}
               class={`hover:text-blue-600 flex items-center gap-1.5 transition whitespace-nowrap ${
-                currentFolderId() === draftId() ? "text-blue-700 font-bold pointer-events-none" : ""
+                currentFolderId() === draftId()
+                  ? "text-blue-700 font-bold pointer-events-none"
+                  : ""
               }`}
             >
               {/* Ikon Draft Asli Milik Anda */}
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"><path fill="currentColor" d="M5 19V5v4.475V9zm3-6h3.525q.425 0 .713-.288t.287-.712t-.288-.712t-.712-.288H8q-.425 0-.712.288T7 12t.288.713T8 13m0 4h3.525q.425 0 .713-.288t.287-.712t-.288-.712t-.712-.288H8q-.425 0-.712.288T7 16t.288.713T8 17m0-8h8q.425 0 .713-.288T17 8t-.288-.712T16 7H8q-.425 0-.712.288T7 8t.288.713T8 9M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v4.45q0 .425-.288.713T20 10.45t-.712-.287T19 9.45V5H5v14h4q.425 0 .713.288T10 20t-.288.713T9 21zm10.225-5.725Q14.5 14.55 14.5 13.5t.725-1.775T17 11t1.775.725t.725 1.775t-.725 1.775T17 16t-1.775-.725M17 17q.975 0 1.938.188t1.862.562q.575.225.888.738T22 19.6v.4q0 .425-.288.713T21 21h-8q-.425 0-.712-.288T12 20v-.4q0-.6.313-1.112t.887-.738q.9-.375 1.863-.562T17 17"/></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  fill="currentColor"
+                  d="M5 19V5v4.475V9zm3-6h3.525q.425 0 .713-.288t.287-.712t-.288-.712t-.712-.288H8q-.425 0-.712.288T7 12t.288.713T8 13m0 4h3.525q.425 0 .713-.288t.287-.712t-.288-.712t-.712-.288H8q-.425 0-.712.288T7 16t.288.713T8 17m0-8h8q.425 0 .713-.288T17 8t-.288-.712T16 7H8q-.425 0-.712.288T7 8t.288.713T8 9M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v4.45q0 .425-.288.713T20 10.45t-.712-.287T19 9.45V5H5v14h4q.425 0 .713.288T10 20t-.288.713T9 21zm10.225-5.725Q14.5 14.55 14.5 13.5t.725-1.775T17 11t1.775.725t.725 1.775t-.725 1.775T17 16t-1.775-.725M17 17q.975 0 1.938.188t1.862.562q.575.225.888.738T22 19.6v.4q0 .425-.288.713T21 21h-8q-.425 0-.712-.288T12 20v-.4q0-.6.313-1.112t.887-.738q.9-.375 1.863-.562T17 17"
+                />
+              </svg>
               My Personal Documents
             </button>
 
@@ -414,13 +423,26 @@ function Draft() {
                 <Show when={crumb.id_folder !== draftId()}>
                   <div class="flex items-center shrink-0">
                     {/* Ikon Pemisah Chevron */}
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 mx-2 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5l7 7-7 7"
+                      />
                     </svg>
                     <button
                       onClick={() => navigateToFolder(crumb.id_folder)}
                       class={`hover:text-blue-600 truncate max-w-[150px] transition ${
-                        currentFolderId() === crumb.id_folder ? "text-blue-700 font-bold pointer-events-none" : ""
+                        currentFolderId() === crumb.id_folder
+                          ? "text-blue-700 font-bold pointer-events-none"
+                          : ""
                       }`}
                       title={crumb.folder_name}
                     >
@@ -521,88 +543,39 @@ function Draft() {
                       </span>
                     </td>
                     <td class="py-3 px-4 truncate">{folder.created_by}</td>
-                    <td class="py-3 px-4 text-gray-400">
+                    <td class="py-3 px-4 text-gray-800">
                       {folder.created_at
-                        ? new Date(folder.created_at).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })
+                        ? new Date(folder.created_at).toLocaleDateString(
+                            "id-ID",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )
                         : "-"}
                     </td>
-                    <td class="py-3 px-4 text-gray-400">—</td>
+                    <td class="py-3 px-4 text-gray-800">—</td>
                     {/* Tampilkan tombol HANYA jika user adalah Admin atau Pembuat Folder */}
-                    <Show
-                      when={
-                        currentUser()?.role === "admin" ||
-                        currentUser()?.name === folder.created_by
-                      }
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
-                          setSelectedFolderId(folder.id_folder);
-                          setIsFolderAccessModalOpen(true);
-                        }}
-                        class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
-                        title="Manage Access"
+                    <td class="py-3 px-4 flex justify-end">
+                      <Show
+                        when={
+                          currentUser()?.role === "admin" ||
+                          currentUser()?.name === folder.created_by
+                        }
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // MENCEGAH MASUK KE DALAM FOLDER
+                            setSelectedFolderId(folder.id_folder);
+                            setIsFolderAccessModalOpen(true);
+                          }}
+                          class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                          title="Manage Access"
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                          />
-                        </svg>
-                      </button>
-                    </Show>
-
-                    {/* TOMBOL DELETE FOLDER */}
-                    <Show
-                      when={
-                        currentUser()?.role === "admin" ||
-                        currentUser()?.name === folder.created_by
-                      }
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation(); // SANGAT PENTING: Agar klik tombol tidak memicu masuk ke dalam folder
-                          handleDeleteFolder(folder.id_folder);
-                        }}
-                        class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition ml-1"
-                        title="Hapus Folder"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                    </Show>
-
-                    <DropdownMenu>
-                      <DropdownItem
-                        label="Kelola Akses"
-                        icon={
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            class="h-4 w-4"
+                            class="h-5 w-5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -614,70 +587,27 @@ function Draft() {
                               d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                             />
                           </svg>
-                        }
-                        onClick={() => {
-                          setSelectedFolderId(folder.id_folder);
-                          setIsFolderAccessModalOpen(true);
-                        }}
-                      />
+                        </button>
+                      </Show>
 
-                      <DropdownItem
-                        label="Detail Folder"
-                        icon={
+                      {/* TOMBOL DELETE FOLDER */}
+                      <Show
+                        when={
+                          currentUser()?.role === "admin" ||
+                          currentUser()?.name === folder.created_by
+                        }
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // SANGAT PENTING: Agar klik tombol tidak memicu masuk ke dalam folder
+                            handleDeleteFolder(folder.id_folder);
+                          }}
+                          class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition ml-1"
+                          title="Hapus Folder"
+                        >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            class="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        }
-                        onClick={() => openFolderDetail(folder.id_folder)}
-                      />
-
-                      <DropdownDivider />
-
-                      <DropdownItem
-                        label="Edit Metadata"
-                        icon={
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        }
-                        onClick={() => {
-                          setSelectedFolderId(folder.id_folder);
-                          fetchFolderMetadataSchema(folder.id_folder);
-                          setIsEditMetadataFolderOpen(true);
-                        }}
-                      />
-
-                      <DropdownDivider />
-
-                      <DropdownItem
-                        label="Hapus Folder"
-                        danger={true}
-                        icon={
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-4 w-4"
+                            class="h-5 w-5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -689,10 +619,107 @@ function Draft() {
                               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                             />
                           </svg>
-                        }
-                        onClick={() => handleDeleteFolder(folder.id_folder)}
-                      />
-                    </DropdownMenu>
+                        </button>
+                      </Show>
+
+                      <DropdownMenu>
+                        <DropdownItem
+                          label="Kelola Akses"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                              />
+                            </svg>
+                          }
+                          onClick={() => {
+                            setSelectedFolderId(folder.id_folder);
+                            setIsFolderAccessModalOpen(true);
+                          }}
+                        />
+
+                        <DropdownItem
+                          label="Detail Folder"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                          }
+                          onClick={() => openFolderDetail(folder.id_folder)}
+                        />
+
+                        <DropdownDivider />
+
+                        <DropdownItem
+                          label="Edit Metadata"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          }
+                          onClick={() => {
+                            setSelectedFolderId(folder.id_folder);
+                            fetchFolderMetadataSchema(folder.id_folder);
+                            setIsEditMetadataFolderOpen(true);
+                          }}
+                        />
+
+                        <DropdownDivider />
+
+                        <DropdownItem
+                          label="Hapus Folder"
+                          danger={true}
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          }
+                          onClick={() => handleDeleteFolder(folder.id_folder)}
+                        />
+                      </DropdownMenu>
+                    </td>
                   </tr>
                 )}
               </For>

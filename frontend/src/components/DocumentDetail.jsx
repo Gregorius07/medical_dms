@@ -1,4 +1,4 @@
-import { createSignal, onMount, Show, createEffect } from "solid-js";
+import { createSignal, onMount, Show, createEffect, For } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import api from "../api";
 import { currentUser } from "../store/authStore";
@@ -30,6 +30,12 @@ function DocumentDetail() {
   const [approverFullName, setApproverFullName] = createSignal("");
   const [approvalNotes, setApprovalNotes] = createSignal("");
   const [isProcessing, setIsProcessing] = createSignal(false);
+
+  // Signal untuk automatic approval
+  const [isAutoApproval, setIsAutoApproval] = createSignal(false);
+  const [targetFolderId, setTargetFolderId] = createSignal(null);
+  const [accessibleFolders, setAccessibleFolders] = createSignal([]);
+  const [isLoadingFolders, setIsLoadingFolders] = createSignal(false);
 
   // State untuk filter riwayat (Audit Log)
   const [logFilter, setLogFilter] = createSignal("ALL");
@@ -148,7 +154,7 @@ function DocumentDetail() {
       setPermissions(res.data.permissions);
       setLogs(res.data.logs || []);
       setActiveApproval(res.data.activeApproval); // Tangkap data approval
-      console.log("Detail dokumen:", res.data.document);
+      console.log("Detail active approval:", res.data.activeApproval);
       fetchVersions();
     } catch (err) {
       console.error("Gagal mengambil detail dokumen", err);
@@ -167,9 +173,25 @@ function DocumentDetail() {
       console.error("Gagal mengambil riwayat versi", err);
     }
   };
+
+  const fetchAccessibleFolders = async () => {
+    try {
+      setIsLoadingFolders(true);
+      const res = await api.get(`/folders/accessible/dropdown`);
+      setAccessibleFolders(res.data);
+    } catch (err) {
+      console.error("Gagal mengambil daftar folder", err);
+    } finally {
+      setIsLoadingFolders(false);
+    }
+  };
+
+  const currentUserId = () => Number(currentUser()?.id);
+  const activeApproverId = () => Number(activeApproval()?.id_approver);
   
   onMount(() => {
     fetchDocumentDetail();
+    fetchAccessibleFolders();
   });
 
   // --- HANDLERS ---
@@ -794,19 +816,111 @@ function DocumentDetail() {
                     </Show>
                   </div>
 
+                  {/* TOGGLE BUTTON: APPROVAL OTOMATIS */}
+                  <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div class="flex items-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 text-gray-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      <label class="text-sm font-semibold text-gray-700 cursor-pointer">
+                        Approval Otomatis
+                      </label>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsAutoApproval(!isAutoApproval());
+                        if (!isAutoApproval()) {
+                          // Jika diaktifkan dan belum load folders, fetch sekarang
+                          if (accessibleFolders().length === 0) {
+                            fetchAccessibleFolders();
+                          }
+                        } else {
+                          // Jika dimatikan, clear folder selection
+                          setTargetFolderId(null);
+                        }
+                      }}
+                      class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        isAutoApproval()
+                          ? "bg-blue-600 focus:ring-blue-500"
+                          : "bg-gray-300 focus:ring-gray-500"
+                      }`}
+                    >
+                      <span
+                        class={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          isAutoApproval() ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      ></span>
+                    </button>
+                  </div>
+
+                  {/* DROPDOWN FOLDER TUJUAN (CONDITIONAL) */}
+                  <Show when={isAutoApproval()}>
+                    <div class="space-y-2">
+                      <label class="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Pilih Folder Tujuan
+                      </label>
+                      <select
+                        value={targetFolderId() || ""}
+                        onChange={(e) => setTargetFolderId(e.target.value ? parseInt(e.target.value) : null)}
+                        disabled={isLoadingFolders()}
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                      >
+                        <option value="">
+                          {isLoadingFolders() ? "Memuat folder..." : "-- Pilih folder tujuan --"}
+                        </option>
+                        <For each={accessibleFolders()}>
+                          {(folder) => (
+                            <option value={folder.id_folder}>
+                              {folder.folder_name}
+                            </option>
+                          )}
+                        </For>
+                      </select>
+                      <p class="text-xs text-gray-500 italic">
+                        Dokumen akan otomatis berpindah ke folder ini jika disetujui.
+                      </p>
+                    </div>
+                  </Show>
+
+                  {/* TOMBOL SUBMIT */}
                   <button
                     onClick={async () => {
                       if (!approverFullName())
-                        Swal.fire({
+                        return Swal.fire({
                           icon: "warning",
                           title: "Peringatan",
                           text: "Isi nama approver terlebih dahulu!",
                         });
+                      
+                      if (isAutoApproval() && !targetFolderId())
+                        return Swal.fire({
+                          icon: "warning",
+                          title: "Peringatan",
+                          text: "Pilih folder tujuan untuk approval otomatis!",
+                        });
+                      
                       setIsProcessing(true);
                       try {
+                        const payload = {
+                          approverFullName: approverFullName(),
+                          isAutomatic: isAutoApproval(),
+                          idTargetFolder: isAutoApproval() ? targetFolderId() : null,
+                        };
+                        
                         await api.post(
                           `/documents/${documentId}/request-approval`,
-                          { approverFullName: approverFullName() },
+                          payload,
                         );
 
                         Swal.fire({
@@ -820,6 +934,8 @@ function DocumentDetail() {
                         // Bersihkan form setelah sukses
                         setApproverFullName("");
                         setShowSuggestions(false);
+                        setIsAutoApproval(false);
+                        setTargetFolderId(null);
                         fetchDocumentDetail(); // Refresh halaman
                       } catch (err) {
                         Swal.fire({
@@ -845,7 +961,7 @@ function DocumentDetail() {
               <Show
                 when={
                   doc()?.approval_status === "PENDING" &&
-                  currentUser()?.id !== activeApproval()?.id_approver
+                  currentUserId() !== activeApproverId()
                 }
               >
                 <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-sm flex items-start gap-3">
@@ -882,6 +998,34 @@ function DocumentDetail() {
                           {activeApproval()?.approver_name}
                         </span>
                       </p>
+                      {/* TAMPILKAN INFO APPROVAL TYPE DAN TARGET FOLDER */}
+                      <Show when={activeApproval()?.id_target_folder}>
+                        <div class="pt-2 border-t border-amber-300 space-y-1">
+                          <p class="text-xs text-amber-700 font-semibold flex items-center gap-2">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-3.5 w-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                              />
+                            </svg>
+                            Approval Otomatis
+                          </p>
+                          <p class="text-xs text-amber-800 flex justify-between gap-2">
+                            <span class="opacity-75">Target Folder:</span>
+                            <span class="font-semibold">
+                              {activeApproval()?.target_folder_name || "Folder tidak ditemukan"}
+                            </span>
+                          </p>
+                        </div>
+                      </Show>
                     </div>
                   </div>
                 </div>
@@ -891,7 +1035,7 @@ function DocumentDetail() {
               <Show
                 when={
                   doc()?.approval_status === "PENDING" &&
-                  currentUser()?.id === activeApproval()?.id_approver
+                  currentUserId() === activeApproverId()
                 }
               >
                 <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm space-y-4">
@@ -919,6 +1063,36 @@ function DocumentDetail() {
                       meminta Anda mereview dokumen ini.
                     </p>
                   </div>
+
+                  {/* TAMPILKAN INFO APPROVAL TYPE DAN TARGET FOLDER UNTUK APPROVER */}
+                  <Show when={activeApproval()?.id_target_folder}>
+                    <div class="bg-blue-100 border-l-4 border-blue-600 p-3 rounded">
+                      <p class="text-xs text-blue-700 font-bold flex items-center gap-2 mb-1">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        Approval Otomatis
+                      </p>
+                      <p class="text-xs text-blue-600">
+                        Dokumen ini akan otomatis berpindah ke folder{" "}
+                        <span class="font-semibold">
+                          "{activeApproval()?.target_folder_name}"
+                        </span>{" "}
+                        jika Anda menyetujuinya.
+                      </p>
+                    </div>
+                  </Show>
 
                   <textarea
                     placeholder="Tulis catatan review di sini (Opsional)..."

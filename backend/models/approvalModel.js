@@ -5,7 +5,7 @@ class ApprovalModel {
     /**
      * Mengajukan permintaan approval baru
      */
-    static async createRequest(idDocument, idRequester, approverFullname) {
+    static async createRequest(idDocument, idRequester, approverFullname, isAutomatic = false, idTargetFolder = null) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
@@ -16,15 +16,20 @@ class ApprovalModel {
             if (userResult.rows.length === 0) throw new Error("Approver tidak ditemukan.");
             const idApprover = userResult.rows[0].id_user;
 
-            // 2. Insert ke tabel approval_request
+            // 2. Validasi: Jika isAutomatic=true, maka idTargetFolder harus ada
+            if (isAutomatic && !idTargetFolder) {
+                throw new Error("Target folder harus dipilih untuk approval otomatis.");
+            }
+
+            // 3. Insert ke tabel approval_request
             const insertQuery = `
                 INSERT INTO approval_request 
-                (status, created_at, updated_at, id_requester, id_approver, id_document)
-                VALUES ('PENDING', NOW(), NOW(), $1, $2, $3) RETURNING id_approval;
+                (status, created_at, updated_at, id_requester, id_approver, id_document, id_target_folder)
+                VALUES ('PENDING', NOW(), NOW(), $1, $2, $3, $4) RETURNING id_approval;
             `;
-            await client.query(insertQuery, [idRequester, idApprover, idDocument]);
+            await client.query(insertQuery, [idRequester, idApprover, idDocument, isAutomatic ? idTargetFolder : null]);
 
-            // 3. Ubah status dokumen menjadi PENDING
+            // 4. Ubah status dokumen menjadi PENDING
             await client.query(`
                 UPDATE document_version 
                 SET approval_status = 'PENDING' 
@@ -50,13 +55,14 @@ class ApprovalModel {
 
             // 1. Cari request PENDING yang ditujukan untuk user ini pada dokumen ini
             const checkQuery = `
-                SELECT id_approval FROM approval_request 
+                SELECT id_approval, id_target_folder FROM approval_request 
                 WHERE id_document = $1 AND id_approver = $2 AND status = 'PENDING' 
                 ORDER BY created_at DESC LIMIT 1;
             `;
             const checkRes = await client.query(checkQuery, [idDocument, idApprover]);
             if (checkRes.rows.length === 0) throw new Error("Tidak ada permintaan approval yang valid untuk Anda.");
             const idApproval = checkRes.rows[0].id_approval;
+            const idTargetFolder = checkRes.rows[0].id_target_folder;
 
             // 2. Update status di tabel approval_request
             const updateApproval = `
@@ -72,6 +78,23 @@ class ApprovalModel {
                 SET approval_status = $1 
                 WHERE id_document = $2 AND is_active = TRUE;
             `, [responseStatus, idDocument]);
+
+            // 4. JIKA APPROVED DAN ADA TARGET FOLDER: Pindahkan dokumen
+            if (responseStatus === 'APPROVED' && idTargetFolder) {
+                // Pindahkan dokumen (document) ke folder target
+                await client.query(`
+                    UPDATE document 
+                    SET id_folder = $1 
+                    WHERE id_document = $2;
+                `, [idTargetFolder, idDocument]);
+
+                // Pindahkan semua document_version ke folder target
+                await client.query(`
+                    UPDATE document_version 
+                    SET id_folder = $1 
+                    WHERE id_document = $2;
+                `, [idTargetFolder, idDocument]);
+            }
 
             await client.query('COMMIT');
         } catch (error) {
@@ -93,12 +116,16 @@ class ApprovalModel {
                 u_approver.full_name as approver_name,
                 a.id_requester,
                 u_requester.full_name as requester_name,
-                a.notes
+                a.notes,
+                a.id_target_folder,
+                f.folder_name as target_folder_name
             FROM approval_request a
             -- Join pertama untuk mengambil data Approver
             JOIN "user" u_approver ON a.id_approver = u_approver.id_user
             -- Join kedua untuk mengambil data Requester
             JOIN "user" u_requester ON a.id_requester = u_requester.id_user
+            -- Left join untuk folder target (optional)
+            LEFT JOIN folder f ON a.id_target_folder = f.id_folder
             WHERE a.id_document = $1
             ORDER BY a.created_at DESC LIMIT 1;
         `;

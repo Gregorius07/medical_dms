@@ -5,17 +5,22 @@ const PermissionModel = require("../models/permissionModel");
 
 const requestApproval = async (req, res) => {
   try {
-    const { approverFullName } = req.body;
+    const { approverFullName, isAutomatic, idTargetFolder } = req.body;
     const docId = req.params.id;
 
-    await ApprovalModel.createRequest(docId, req.userId, approverFullName);
+    await ApprovalModel.createRequest(docId, req.userId, approverFullName, isAutomatic || false, idTargetFolder || null);
+    
+    const logMessage = isAutomatic && idTargetFolder
+      ? `Mengajukan approval ke: ${approverFullName} (Otomatis ke folder target)`
+      : `Mengajukan approval ke: ${approverFullName}`;
+    
     AuditModel.log(
       "REQUEST_APPROVAL",
       "DOCUMENT",
       req.userId,
       null,
       docId,
-      `Mengajukan approval ke: ${approverFullName}`,
+      logMessage,
     );
     await PermissionModel.grantAccess(
       approverFullName,
@@ -35,15 +40,25 @@ const respondApproval = async (req, res) => {
     const { status, notes } = req.body; // 'APPROVED' atau 'REJECTED'
     const docId = req.params.id;
 
+    // Get approval info sebelum update untuk logging
+    const approvalInfoBefore = await ApprovalModel.getActiveApprovalInfo(docId);
+
     await ApprovalModel.respondRequest(docId, req.userId, status, notes);
+    
     if (status === "APPROVED") {
+      // Jika approval otomatis (ada target folder), tambahkan info folder ke log
+      let logMessage = `Menyetujui pengajuan approval`;
+      if (approvalInfoBefore?.id_target_folder && approvalInfoBefore?.target_folder_name) {
+        logMessage += ` - Dokumen otomatis berpindah ke folder: ${approvalInfoBefore.target_folder_name}`;
+      }
+      
       AuditModel.log(
         "APPROVE",
         "DOCUMENT",
         req.userId,
         null,
         docId,
-        `Menyetujui pengajuan approval`,
+        logMessage,
       );
     }
     else{

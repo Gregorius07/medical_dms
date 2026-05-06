@@ -22,9 +22,7 @@ const getFolderContents = async (req, res) => {
         documents = await DocumentModel.getDocumentsInRootForAdmin();
       } else {
         folders = await FolderModel.getAccessibleFolders(userId, name);
-        // console.log("Isi variabel folders:", folders);
         documents = await DocumentModel.getAccessibleDocuments(userId, name);
-        // console.log('Isi variabel documents:',documents);
         parentFolderDetail = await FolderModel.getFolderDetail(parentId);
         currentFolderPermission = await PermissionModel.getAllPermissionsForFolder(userId, parentId);
       }
@@ -207,6 +205,26 @@ const getFolderPermission = async (req, res) => {
   }
 };
 
+const getAccessibleFoldersForDropdown = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const name = req.name;
+    const folders = await FolderModel.getAccessibleFolders(userId, name);
+    
+    // Format response untuk dropdown: return hanya id_folder dan folder_name
+    const formattedFolders = folders.map(folder => ({
+      id_folder: folder.id_folder,
+      folder_name: folder.folder_name,
+      parent_folder: folder.parent_folder
+    }));
+    
+    res.json(formattedFolders);
+  } catch (error) {
+    console.error("Error getAccessibleFoldersForDropdown:", error);
+    res.status(500).json({ message: "Gagal mengambil daftar folder yang accessible" });
+  }
+};
+
 module.exports = {
   getFolderContents,
   getFolderBreadcrumbs,
@@ -217,4 +235,5 @@ module.exports = {
   updateFolderMetadata,
   deleteFolder,
   getFolderPermission,
+  getAccessibleFoldersForDropdown,
 };

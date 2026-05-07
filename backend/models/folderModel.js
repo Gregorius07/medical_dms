@@ -147,6 +147,35 @@ class FolderModel {
   }
 
   /**
+   * Mengambil semua folder yang user miliki hak upload di permission.
+   * Dipakai untuk dropdown pemindahan dokumen.
+   */
+  static async getUploadAccessibleFolders(userId) {
+    const query = `
+      SELECT DISTINCT
+        f.id_folder,
+        f.folder_name,
+        f.parent_folder,
+        f.created_by,
+        f.metadata_schema,
+        f.created_at,
+        p.preview,
+        p.upload,
+        p.download,
+        p.edit_metadata
+      FROM folder f
+      JOIN permission p ON p.id_folder = f.id_folder
+      WHERE p.id_user = $1
+        AND p.resource_type = 'FOLDER'
+        AND p.upload = TRUE
+      
+    `;
+
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  }
+
+  /**
    * Membuat folder baru dan otomatis memberikan permission penuh kepada pembuatnya
    */
   static async createFolder(

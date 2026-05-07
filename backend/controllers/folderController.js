@@ -207,18 +207,9 @@ const getFolderPermission = async (req, res) => {
 
 const getAccessibleFoldersForDropdown = async (req, res) => {
   try {
-    const userId = req.userId;
-    const name = req.name;
-    const folders = await FolderModel.getAccessibleFolders(userId, name);
-    
-    // Format response untuk dropdown: return hanya id_folder dan folder_name
-    const formattedFolders = folders.map(folder => ({
-      id_folder: folder.id_folder,
-      folder_name: folder.folder_name,
-      parent_folder: folder.parent_folder
-    }));
-    
-    res.json(formattedFolders);
+    const folders = await FolderModel.getUploadAccessibleFolders(req.userId);
+
+    res.json(folders);
   } catch (error) {
     console.error("Error getAccessibleFoldersForDropdown:", error);
     res.status(500).json({ message: "Gagal mengambil daftar folder yang accessible" });

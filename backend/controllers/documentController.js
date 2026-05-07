@@ -791,7 +791,7 @@ const DocumentController = {
 
       // 6. Log audit trail
       await AuditModel.log(
-        "MOVE",
+        "UPDATE",
         "DOCUMENT",
         userId,
         newFolderId,

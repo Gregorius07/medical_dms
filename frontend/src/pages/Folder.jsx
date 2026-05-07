@@ -348,7 +348,7 @@ function Folder() {
   };
 
   return (
-    <div class="space-y-6">
+    <div class="space-y-6 pb-[200px]">
       {/* SECTION EXPLORER: HOME */}
       <div class="card p-6">
         {/* HEADER AREA */}
@@ -500,7 +500,7 @@ function Folder() {
 
         {/* --- KONTEN AREA HOME (LIST VIEW) --- */}
         <Show when={folders().length > 0 || documents().length > 0}>
-          <div class="overflow-x-auto mt-4">
+          <div class="overflow-x-auto mt-4 pb-auto">
             <table class="w-full text-left border-collapse">
               <thead class="border-b border-gray-300 text-gray-600 text-sm">
                 <tr>
@@ -667,8 +667,8 @@ function Folder() {
                             onClick={() => openFolderDetail(folder.id_folder)}
                           />
 
-                          {/* Garis Pemisah */}
-                          <DropdownDivider />
+                          
+                          
                           <Show
                             when={
                               currentUser()?.role === "admin" ||
@@ -702,8 +702,8 @@ function Folder() {
                               }}
                             />
                           </Show>
-                          {/* Garis Pemisah */}
-                          <DropdownDivider />
+                          
+                          
                           <Show
                             when={
                               currentUser()?.role === "admin" ||
@@ -889,8 +889,8 @@ function Folder() {
                             fetchDocumentPermission(doc.id_document)
                           }
                         >
-                          {/* Garis Pemisah */}
-                          <DropdownDivider />
+                          
+                          
 
                           <DropdownItem
                             label="Detail Dokumen"
@@ -913,7 +913,7 @@ function Folder() {
                             onClick={() => openDocumentDetail(doc.id_document)}
                           />
 
-                          <DropdownDivider />
+                          
 
                           <Show
                             when={
@@ -949,7 +949,7 @@ function Folder() {
                             />
                           </Show>
 
-                          <DropdownDivider />
+                          
 
                           <DropdownItem
                             label="Pindahkan Dokumen"
@@ -975,8 +975,8 @@ function Folder() {
                             }}
                           />
 
-                          {/* Garis Pemisah */}
-                          <DropdownDivider />
+                          
+                          
                           <Show
                             when={
                               !isSearching() && // Sembunyikan tombol hapus saat sedang mode pencarian agar aman

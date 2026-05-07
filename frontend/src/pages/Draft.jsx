@@ -329,6 +329,7 @@ function Draft() {
   // TAMPILAN (VIEW)
   // ==========================================
   return (
+    <div class="space-y-6 pb-[200px]">
     <div class="card p-6">
       {/* STATS CARDS */}
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -516,7 +517,7 @@ function Draft() {
 
       {/* --- KONTEN AREA MY DRAFT (LIST VIEW GOOGLE DRIVE STYLE) --- */}
       <Show when={folders().length > 0 || documents().length > 0}>
-        <div class="overflow-x-auto mt-4">
+        <div class="overflow-x-auto mt-4[10">
           <table class="w-full text-left border-collapse">
             <thead class="border-b border-gray-300 text-gray-600 text-sm">
               <tr>
@@ -673,7 +674,7 @@ function Draft() {
                           onClick={() => openFolderDetail(folder.id_folder)}
                         />
 
-                        <DropdownDivider />
+                        
 
                         <DropdownItem
                           label="Edit Metadata"
@@ -700,7 +701,7 @@ function Draft() {
                           }}
                         />
 
-                        <DropdownDivider />
+                        
 
                         <DropdownItem
                           label="Hapus Folder"
@@ -900,7 +901,7 @@ function Draft() {
                           }}
                         />
 
-                        <DropdownDivider />
+                        
 
                         <DropdownItem
                           label="Detail Dokumen"
@@ -923,7 +924,7 @@ function Draft() {
                           onClick={() => openDocumentDetail(doc.id_document)}
                         />
 
-                        <DropdownDivider />
+                        
 
                         <DropdownItem
                           label="Edit Metadata"
@@ -950,7 +951,7 @@ function Draft() {
                           }}
                         />
 
-                        <DropdownDivider />
+                        
 
                         <DropdownItem
                           label="Pindahkan Dokumen"
@@ -976,7 +977,7 @@ function Draft() {
                           }}
                         />
 
-                        <DropdownDivider />
+                        
 
                         <DropdownItem
                           label="Hapus Dokumen"
@@ -1122,6 +1123,7 @@ function Draft() {
           onSuccess={() => loadFolderContents(currentFolderId() || draftId())}
         />
       </Show>
+    </div>
     </div>
   );
 }

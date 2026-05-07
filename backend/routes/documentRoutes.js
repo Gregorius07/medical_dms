@@ -41,4 +41,6 @@ router.post('/:id/respond-approval',verifyToken, ApprovalController.respondAppro
 router.put('/:id/metadata', verifyToken, requirePermission('edit_metadata', 'DOCUMENT'), DocumentController.updateMetadata);
 router.get('/:id/metadata', verifyToken, DocumentController.getDocumentMetadata);
 router.get('/:id/permissions', verifyToken, DocumentController.getDocumentPermissions);
+router.patch('/:id/move', verifyToken, DocumentController.moveDocument);
+
 module.exports = router;

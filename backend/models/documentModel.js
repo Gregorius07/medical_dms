@@ -716,6 +716,47 @@ const DocumentModel = {
     const { rows } = await pool.query(query, [documentId]);
     return rows[0] ? rows[0] : null;
   },
+
+  /**
+   * Memindahkan dokumen ke folder lain
+   * Update id_folder di tabel document dan semua versinya di document_version
+   */
+  moveDocument: async (documentId, newFolderId) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Update id_folder di tabel document
+      const docUpdateQuery = `
+        UPDATE document
+        SET id_folder = $1
+        WHERE id_document = $2
+        RETURNING id_document, id_folder;
+      `;
+      const docResult = await client.query(docUpdateQuery, [newFolderId || null, documentId]);
+
+      if (docResult.rows.length === 0) {
+        throw new Error("Dokumen tidak ditemukan");
+      }
+
+      // 2. Update id_folder di semua versi dokumen (document_version)
+      const versionUpdateQuery = `
+        UPDATE document_version
+        SET id_folder = $1
+        WHERE id_document = $2
+        RETURNING id_version;
+      `;
+      await client.query(versionUpdateQuery, [newFolderId || null, documentId]);
+
+      await client.query("COMMIT");
+      return docResult.rows[0]; // Return updated document info
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
 };
 
 module.exports = DocumentModel;

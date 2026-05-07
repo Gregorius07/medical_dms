@@ -737,7 +737,81 @@ const DocumentController = {
         message: "Terjadi kesalahan pada server saat mengambil izin dokumen.",
       });
     }
-  }
+  },
+
+  moveDocument: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { newFolderId } = req.body;
+      const userId = req.userId;
+      const userName = req.name;
+      const isAdmin = req.role === "admin";
+
+      // 1. Validasi: Check if document exists
+      const document = await DocumentModel.getDocumentById(id);
+      if (!document) {
+        return res.status(404).json({ message: "Dokumen tidak ditemukan." });
+      }
+
+      // 2. Validasi: Prevent moving to the same folder
+      if (document.id_folder === newFolderId) {
+        return res.status(400).json({
+          message: "Dokumen sudah berada di folder tersebut.",
+        });
+      }
+
+      // 3. Validasi: Check if target folder exists (if newFolderId is provided)
+      if (newFolderId) {
+        const targetFolder = await FolderModel.getFolderDetail(newFolderId);
+        if (!targetFolder) {
+          return res.status(404).json({
+            message: "Folder tujuan tidak ditemukan.",
+          });
+        }
+
+        // 4. PERMISSION CHECK: Verify user has 'upload' permission in target folder
+        // (Memanfaatkan PermissionModel seperti permission middleware)
+        if (!isAdmin) {
+          const hasUploadAccess = await PermissionModel.checkMultipleAccess(
+            userId,
+            [newFolderId],
+            "FOLDER",
+            "upload"
+          );
+          if (!hasUploadAccess) {
+            return res.status(403).json({
+              message: "Anda tidak memiliki izin upload di folder tujuan.",
+            });
+          }
+        }
+      }
+
+      // 5. Execute moveDocument
+      const movedDoc = await DocumentModel.moveDocument(id, newFolderId);
+
+      // 6. Log audit trail
+      await AuditModel.log(
+        "MOVE",
+        "DOCUMENT",
+        userId,
+        newFolderId,
+        id,
+        `${userName} memindahkan dokumen ke folder (ID: ${newFolderId || 'Root'})`,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Dokumen berhasil dipindahkan.",
+        data: movedDoc,
+      });
+    } catch (error) {
+      console.error("Error moveDocument:", error);
+      res.status(500).json({
+        message: "Gagal memindahkan dokumen.",
+        error: error.message,
+      });
+    }
+  },
 };
 
 module.exports = DocumentController;

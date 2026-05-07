@@ -11,6 +11,7 @@ import EditMetadataFolder from "../components/EditMetadataFolder";
 import EditMetadataDoc from "../components/EditMetadataDoc";
 import FolderDetailModal from "../components/FolderDetailModal";
 import DocumentInfoModal from "../components/DocumentInfoModal";
+import MoveDocumentModal from "../components/MoveDocumentModal";
 import {
   DropdownMenu,
   DropdownItem,
@@ -74,6 +75,10 @@ function Folder() {
   const [selectedDocumentSchema, setSelectedDocumentSchema] = createSignal({});
   const [selectedDocumentPermission, setSelectedDocumentPermission] =
     createSignal({});
+
+  // --- STATE UNTUK MOVE DOCUMENT MODAL ---
+  const [isMoveModalOpen, setIsMoveModalOpen] = createSignal(false);
+  const [selectedMoveDocumentId, setSelectedMoveDocumentId] = createSignal(null);
 
   //state untuk kondisional edit metadata folder
   const [selectedFolderPermission, setSelectedFolderPermission] = createSignal(
@@ -944,6 +949,32 @@ function Folder() {
                             />
                           </Show>
 
+                          <DropdownDivider />
+
+                          <DropdownItem
+                            label="Pindahkan Dokumen"
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                                />
+                              </svg>
+                            }
+                            onClick={() => {
+                              setSelectedMoveDocumentId(doc.id_document);
+                              setIsMoveModalOpen(true);
+                            }}
+                          />
+
                           {/* Garis Pemisah */}
                           <DropdownDivider />
                           <Show
@@ -1110,6 +1141,19 @@ function Folder() {
             setSelectedDocumentId(null);
             loadFolderContents(currentFolderId());
           }}
+        />
+      </Show>
+      {/* MODAL MOVE DOCUMENT */}
+      <Show when={isMoveModalOpen()}>
+        <MoveDocumentModal
+          isOpen={isMoveModalOpen()}
+          documentId={selectedMoveDocumentId()}
+          currentFolderId={currentFolderId()}
+          onClose={() => {
+            setIsMoveModalOpen(false);
+            setSelectedMoveDocumentId(null);
+          }}
+          onSuccess={() => loadFolderContents(currentFolderId())}
         />
       </Show>
     </div>

@@ -11,6 +11,7 @@ import EditMetadataFolder from "../components/EditMetadataFolder";
 import EditMetadataDoc from "../components/EditMetadataDoc";
 import FolderDetailModal from "../components/FolderDetailModal";
 import DocumentInfoModal from "../components/DocumentInfoModal";
+import MoveDocumentModal from "../components/MoveDocumentModal";
 import {
   DropdownMenu,
   DropdownItem,
@@ -59,6 +60,10 @@ function Draft() {
     createSignal(false);
   const [selectedDocumentTitle, setSelectedDocumentTitle] = createSignal("");
   const [selectedDocumentSchema, setSelectedDocumentSchema] = createSignal({});
+
+  // --- STATE UNTUK MOVE DOCUMENT MODAL ---
+  const [isMoveModalOpen, setIsMoveModalOpen] = createSignal(false);
+  const [selectedMoveDocumentId, setSelectedMoveDocumentId] = createSignal(null);
 
   // --- STATE UNTUK CUSTOM METADATA ---
   // Menyimpan skema dari folder yang sedang dibuka (contoh: ["nama_pasien", "ruangan"])
@@ -948,6 +953,32 @@ function Draft() {
                         <DropdownDivider />
 
                         <DropdownItem
+                          label="Pindahkan Dokumen"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                              />
+                            </svg>
+                          }
+                          onClick={() => {
+                            setSelectedMoveDocumentId(doc.id_document);
+                            setIsMoveModalOpen(true);
+                          }}
+                        />
+
+                        <DropdownDivider />
+
+                        <DropdownItem
                           label="Hapus Dokumen"
                           danger={true}
                           icon={
@@ -1074,6 +1105,19 @@ function Draft() {
           onClose={() => {
             setIsEditMetadataDocumentOpen(false);
             setSelectedDocumentId(null);
+          }}
+          onSuccess={() => loadFolderContents(currentFolderId() || draftId())}
+        />
+      </Show>
+
+      <Show when={isMoveModalOpen()}>
+        <MoveDocumentModal
+          isOpen={isMoveModalOpen()}
+          documentId={selectedMoveDocumentId()}
+          currentFolderId={currentFolderId()}
+          onClose={() => {
+            setIsMoveModalOpen(false);
+            setSelectedMoveDocumentId(null);
           }}
           onSuccess={() => loadFolderContents(currentFolderId() || draftId())}
         />

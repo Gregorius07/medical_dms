@@ -819,21 +819,7 @@ function DocumentDetail() {
                   {/* TOGGLE BUTTON: APPROVAL OTOMATIS */}
                   <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
                     <div class="flex items-center gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-4 w-4 text-gray-600"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                      </svg>
-                      <label class="text-sm font-semibold text-gray-700 cursor-pointer">
+                      <label class="text-[11px] font-bold text-black-400 uppercase cursor-pointer">
                         Approval Otomatis
                       </label>
                     </div>
@@ -867,7 +853,7 @@ function DocumentDetail() {
                   {/* DROPDOWN FOLDER TUJUAN (CONDITIONAL) */}
                   <Show when={isAutoApproval()}>
                     <div class="space-y-2">
-                      <label class="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <label class="text-[11px] font-bold text-black-400 uppercase tracking-wider">
                         Pilih Folder Tujuan
                       </label>
                       <select
@@ -1000,26 +986,12 @@ function DocumentDetail() {
                       </p>
                       {/* TAMPILKAN INFO APPROVAL TYPE DAN TARGET FOLDER */}
                       <Show when={activeApproval()?.id_target_folder}>
-                        <div class="pt-2 border-t border-amber-300 space-y-1">
-                          <p class="text-xs text-amber-700 font-semibold flex items-center gap-2">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-3.5 w-3.5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z"
-                              />
-                            </svg>
+                        <div class="pt-2  space-y-1">
+                          <p class="text-xs text-amber-700 font-bold flex items-center gap-2">
                             Approval Otomatis
                           </p>
                           <p class="text-xs text-amber-800 flex justify-between gap-2">
-                            <span class="opacity-75">Target Folder:</span>
+                            <span class="opacity-75">Folder Tujuan:</span>
                             <span class="font-semibold">
                               {activeApproval()?.target_folder_name || "Folder tidak ditemukan"}
                             </span>

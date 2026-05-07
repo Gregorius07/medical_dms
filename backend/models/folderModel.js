@@ -377,6 +377,21 @@ class FolderModel {
           edit_metadata: false,
         };
   }
-}
 
+  static async getAllFoldersForAdmin() {
+    const query = `
+      SELECT 
+        id_folder, 
+        folder_name, 
+        parent_folder, 
+        created_by,
+        metadata_schema,
+        created_at
+      FROM folder
+    `;
+
+    const { rows } = await pool.query(query);
+    return rows;
+  }
+}
 module.exports = FolderModel;

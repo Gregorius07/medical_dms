@@ -120,7 +120,3 @@ export function DropdownItem(props) {
   );
 }
 
-// Komponen untuk Garis Pemisah
-export function DropdownDivider() {
-  return <div class="h-px bg-gray-100 my-1.5 mx-2"></div>;
-}

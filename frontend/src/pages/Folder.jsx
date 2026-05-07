@@ -12,11 +12,7 @@ import EditMetadataDoc from "../components/EditMetadataDoc";
 import FolderDetailModal from "../components/FolderDetailModal";
 import DocumentInfoModal from "../components/DocumentInfoModal";
 import MoveDocumentModal from "../components/MoveDocumentModal";
-import {
-  DropdownMenu,
-  DropdownItem,
-  DropdownDivider,
-} from "../components/DropdownMenu";
+import { DropdownMenu, DropdownItem } from "../components/DropdownMenu";
 
 function Folder() {
   // ==========================================
@@ -78,7 +74,8 @@ function Folder() {
 
   // --- STATE UNTUK MOVE DOCUMENT MODAL ---
   const [isMoveModalOpen, setIsMoveModalOpen] = createSignal(false);
-  const [selectedMoveDocumentId, setSelectedMoveDocumentId] = createSignal(null);
+  const [selectedMoveDocumentId, setSelectedMoveDocumentId] =
+    createSignal(null);
 
   //state untuk kondisional edit metadata folder
   const [selectedFolderPermission, setSelectedFolderPermission] = createSignal(
@@ -667,8 +664,6 @@ function Folder() {
                             onClick={() => openFolderDetail(folder.id_folder)}
                           />
 
-                          
-                          
                           <Show
                             when={
                               currentUser()?.role === "admin" ||
@@ -702,8 +697,7 @@ function Folder() {
                               }}
                             />
                           </Show>
-                          
-                          
+
                           <Show
                             when={
                               currentUser()?.role === "admin" ||
@@ -889,9 +883,6 @@ function Folder() {
                             fetchDocumentPermission(doc.id_document)
                           }
                         >
-                          
-                          
-
                           <DropdownItem
                             label="Detail Dokumen"
                             icon={
@@ -912,8 +903,6 @@ function Folder() {
                             }
                             onClick={() => openDocumentDetail(doc.id_document)}
                           />
-
-                          
 
                           <Show
                             when={
@@ -949,34 +938,37 @@ function Folder() {
                             />
                           </Show>
 
-                          
-
-                          <DropdownItem
-                            label="Pindahkan Dokumen"
-                            icon={
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                                />
-                              </svg>
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
+                              currentUser()?.name === doc.created_by
                             }
-                            onClick={() => {
-                              setSelectedMoveDocumentId(doc.id_document);
-                              setIsMoveModalOpen(true);
-                            }}
-                          />
+                          >
+                            <DropdownItem
+                              label="Pindahkan Dokumen"
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                                  />
+                                </svg>
+                              }
+                              onClick={() => {
+                                setSelectedMoveDocumentId(doc.id_document);
+                                setIsMoveModalOpen(true);
+                              }}
+                            />
+                          </Show>
 
-                          
-                          
                           <Show
                             when={
                               !isSearching() && // Sembunyikan tombol hapus saat sedang mode pencarian agar aman

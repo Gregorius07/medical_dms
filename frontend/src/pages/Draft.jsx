@@ -14,8 +14,7 @@ import DocumentInfoModal from "../components/DocumentInfoModal";
 import MoveDocumentModal from "../components/MoveDocumentModal";
 import {
   DropdownMenu,
-  DropdownItem,
-  DropdownDivider,
+  DropdownItem
 } from "../components/DropdownMenu";
 
 function Draft() {

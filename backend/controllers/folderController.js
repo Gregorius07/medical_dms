@@ -207,6 +207,11 @@ const getFolderPermission = async (req, res) => {
 
 const getAccessibleFoldersForDropdown = async (req, res) => {
   try {
+    const role = req.role;
+    if (role === "admin") {
+      const allFolders = await FolderModel.getAllFoldersForAdmin();
+      return res.json(allFolders);
+    }
     const folders = await FolderModel.getUploadAccessibleFolders(req.userId);
 
     res.json(folders);

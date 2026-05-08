@@ -12,6 +12,7 @@ import EditMetadataDoc from "../components/EditMetadataDoc";
 import FolderDetailModal from "../components/FolderDetailModal";
 import DocumentInfoModal from "../components/DocumentInfoModal";
 import MoveDocumentModal from "../components/MoveDocumentModal";
+import MoveFolderModal from "../components/MoveFolderModal";
 import {
   DropdownMenu,
   DropdownItem
@@ -63,6 +64,9 @@ function Draft() {
   // --- STATE UNTUK MOVE DOCUMENT MODAL ---
   const [isMoveModalOpen, setIsMoveModalOpen] = createSignal(false);
   const [selectedMoveDocumentId, setSelectedMoveDocumentId] = createSignal(null);
+  // --- STATE UNTUK MOVE FOLDER MODAL ---
+  const [isMoveFolderModalOpen, setIsMoveFolderModalOpen] = createSignal(false);
+  const [selectedMoveFolderId, setSelectedMoveFolderId] = createSignal(null);
 
   // --- STATE UNTUK CUSTOM METADATA ---
   // Menyimpan skema dari folder yang sedang dibuka (contoh: ["nama_pasien", "ruangan"])
@@ -457,6 +461,19 @@ function Draft() {
                 </Show>
               )}
             </For>
+
+      {/* MODAL MOVE FOLDER */}
+      <Show when={isMoveFolderModalOpen()}>
+        <MoveFolderModal
+          isOpen={isMoveFolderModalOpen()}
+          folderId={selectedMoveFolderId()}
+          onClose={() => {
+            setIsMoveFolderModalOpen(false);
+            setSelectedMoveFolderId(null);
+          }}
+          onSuccess={() => loadFolderContents(draftId())}
+        />
+      </Show>
           </nav>
         </div>
 
@@ -697,6 +714,30 @@ function Draft() {
                             setSelectedFolderId(folder.id_folder);
                             fetchFolderMetadataSchema(folder.id_folder);
                             setIsEditMetadataFolderOpen(true);
+                          }}
+                        />
+
+                        <DropdownItem
+                          label="Pindahkan Folder"
+                          icon={
+                            <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                                  />
+                                </svg>
+                          }
+                          onClick={() => {
+                            setSelectedMoveFolderId(folder.id_folder);
+                            setIsMoveFolderModalOpen(true);
                           }}
                         />
 

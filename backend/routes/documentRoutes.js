@@ -41,6 +41,6 @@ router.post('/:id/respond-approval',verifyToken, ApprovalController.respondAppro
 router.put('/:id/metadata', verifyToken, requirePermission('edit_metadata', 'DOCUMENT'), DocumentController.updateMetadata);
 router.get('/:id/metadata', verifyToken, DocumentController.getDocumentMetadata);
 router.get('/:id/permissions', verifyToken, DocumentController.getDocumentPermissions);
-router.patch('/:id/move', verifyToken, DocumentController.moveDocument);
+router.patch('/:id/move', verifyToken, DocumentController.moveDocument); // ini harus cek permission di middleware, karena bisa pindah ke folder yang berbeda-beda
 
 module.exports = router;

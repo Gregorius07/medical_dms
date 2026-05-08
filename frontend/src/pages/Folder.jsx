@@ -12,6 +12,7 @@ import EditMetadataDoc from "../components/EditMetadataDoc";
 import FolderDetailModal from "../components/FolderDetailModal";
 import DocumentInfoModal from "../components/DocumentInfoModal";
 import MoveDocumentModal from "../components/MoveDocumentModal";
+import MoveFolderModal from "../components/MoveFolderModal";
 import { DropdownMenu, DropdownItem } from "../components/DropdownMenu";
 
 function Folder() {
@@ -76,6 +77,10 @@ function Folder() {
   const [isMoveModalOpen, setIsMoveModalOpen] = createSignal(false);
   const [selectedMoveDocumentId, setSelectedMoveDocumentId] =
     createSignal(null);
+
+  // --- STATE UNTUK MOVE FOLDER MODAL ---
+  const [isMoveFolderModalOpen, setIsMoveFolderModalOpen] = createSignal(false);
+  const [selectedMoveFolderId, setSelectedMoveFolderId] = createSignal(null);
 
   //state untuk kondisional edit metadata folder
   const [selectedFolderPermission, setSelectedFolderPermission] = createSignal(
@@ -667,6 +672,37 @@ function Folder() {
                           <Show
                             when={
                               currentUser()?.role === "admin" ||
+                              currentUser()?.name === folder.created_by
+                            }
+                          >
+                            <DropdownItem
+                              label="Pindahkan Folder"
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                                  />
+                                </svg>
+                              }
+                              onClick={() => {
+                                setSelectedMoveFolderId(folder.id_folder);
+                                setIsMoveFolderModalOpen(true);
+                              }}
+                            />
+                          </Show>
+
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
                               currentUser()?.name === folder.created_by ||
                               currentFolderPermission()?.edit_metadata
                             }
@@ -903,6 +939,36 @@ function Folder() {
                             }
                             onClick={() => openDocumentDetail(doc.id_document)}
                           />
+                          <Show
+                            when={
+                              currentUser()?.role === "admin" ||
+                              currentUser()?.name === doc.created_by
+                            }
+                          >
+                            <DropdownItem
+                              label="Kelola Akses"
+                              icon={
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                                  />
+                                </svg>
+                              }
+                              onClick={() => {
+                                setSelectedFolderId(folder.id_folder);
+                                setIsFolderAccessModalOpen(true);
+                              }}
+                            />
+                          </Show>
 
                           <Show
                             when={
@@ -1144,6 +1210,19 @@ function Folder() {
           onClose={() => {
             setIsMoveModalOpen(false);
             setSelectedMoveDocumentId(null);
+          }}
+          onSuccess={() => loadFolderContents(currentFolderId())}
+        />
+      </Show>
+
+      {/* MODAL MOVE FOLDER */}
+      <Show when={isMoveFolderModalOpen()}>
+        <MoveFolderModal
+          isOpen={isMoveFolderModalOpen()}
+          folderId={selectedMoveFolderId()}
+          onClose={() => {
+            setIsMoveFolderModalOpen(false);
+            setSelectedMoveFolderId(null);
           }}
           onSuccess={() => loadFolderContents(currentFolderId())}
         />

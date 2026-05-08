@@ -987,7 +987,7 @@ function DocumentDetail() {
                       {/* TAMPILKAN INFO APPROVAL TYPE DAN TARGET FOLDER */}
                       <Show when={activeApproval()?.id_target_folder}>
                         <div class="pt-2  space-y-1">
-                          <p class="text-xs text-amber-700 font-bold flex items-center gap-2">
+                          <p class="text-xs text-amber-900 font-bold flex items-center gap-2">
                             Approval Otomatis
                           </p>
                           <p class="text-xs text-amber-800 flex justify-between gap-2">

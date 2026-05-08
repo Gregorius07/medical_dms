@@ -205,6 +205,62 @@ const getFolderPermission = async (req, res) => {
   }
 };
 
+const moveFolder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newParentId } = req.body;
+    const userId = req.userId;
+    const userName = req.name;
+    const isAdmin = req.role === "admin";
+
+    // 1. Cek eksistensi folder
+    const folder = await FolderModel.getFolderDetail(id);
+    if (!folder) return res.status(404).json({ message: "Folder tidak ditemukan." });
+
+    // 2. Prevent moving to same parent
+    const currentParent = folder.parent_folder;
+    if ((currentParent || null) === (newParentId || null)) {
+      return res.status(400).json({ message: "Folder sudah berada pada parent yang sama." });
+    }
+
+    // 3. Jika target parent ada, cek eksistensi dan permission upload
+    if (newParentId) {
+      const target = await FolderModel.getFolderDetail(newParentId);
+      if (!target) return res.status(404).json({ message: "Folder tujuan tidak ditemukan." });
+
+      if (!isAdmin) {
+        const hasUpload = await PermissionModel.checkMultipleAccess(userId, [newParentId], "FOLDER", "upload");
+        if (!hasUpload) {
+          return res.status(403).json({ message: "Anda tidak memiliki izin upload di folder tujuan." });
+        }
+      }
+    }
+
+    // 4. Lakukan pemindahan (model akan memvalidasi siklus)
+    const moved = await FolderModel.moveFolder(id, newParentId);
+
+    await AuditModel.log(
+      "UPDATE",
+      "FOLDER",
+      userId,
+      moved.id_folder,
+      id,
+      `${userName} memindahkan parent folder ke (ID: ${newParentId || 'Root'})`,
+    );
+
+    res.status(200).json({ success: true, message: "Folder berhasil dipindahkan.", data: moved });
+  } catch (error) {
+    console.error("Error moveFolder:", error);
+    if (error.message && error.message.includes("siklus")) {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error.message && error.message.includes("tidak ditemukan")) {
+      return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Gagal memindahkan folder", error: error.message });
+  }
+};
+
 const getAccessibleFoldersForDropdown = async (req, res) => {
   try {
     const role = req.role;
@@ -232,4 +288,5 @@ module.exports = {
   deleteFolder,
   getFolderPermission,
   getAccessibleFoldersForDropdown,
+  moveFolder,
 };

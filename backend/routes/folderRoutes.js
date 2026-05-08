@@ -10,6 +10,7 @@ router.post('/:id/breadcrumbs', verifyToken, requirePermission('preview', 'FOLDE
 router.get('/getdraft',verifyToken,folderController.getDraftFolderByUserId);
 router.get('/getaccesiblefolders', verifyToken, folderController.getAccessibleFoldersId);
 router.get('/accessible/dropdown', verifyToken, folderController.getAccessibleFoldersForDropdown);
+router.patch('/:id/move', verifyToken, folderController.moveFolder);
 router.post('/create', verifyToken, folderController.createFolder);
 router.delete('/:id', verifyToken, folderController.deleteFolder);
 router.get('/:id/metadata', verifyToken, folderController.getFolderMetadata);

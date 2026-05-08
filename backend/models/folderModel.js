@@ -393,5 +393,61 @@ class FolderModel {
     const { rows } = await pool.query(query);
     return rows;
   }
+
+  /**
+   * Pindah parent folder (update parent_folder).
+   * Melakukan validasi agar tidak membuat siklus (tidak boleh memindahkan ke anaknya sendiri).
+   */
+  static async moveFolder(folderId, newParentId) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Cek eksistensi folder asal
+      const { rows: srcRows } = await client.query(
+        "SELECT id_folder FROM folder WHERE id_folder = $1",
+        [folderId],
+      );
+      if (srcRows.length === 0) {
+        throw new Error("Folder tidak ditemukan.");
+      }
+
+      // 2. Jika newParentId diberikan, cek eksistensi dan siklus
+      if (newParentId) {
+        const { rows: targetRows } = await client.query(
+          "SELECT id_folder FROM folder WHERE id_folder = $1",
+          [newParentId],
+        );
+        if (targetRows.length === 0) {
+          throw new Error("Folder tujuan tidak ditemukan.");
+        }
+
+        // 3. Cek apakah newParentId adalah anak (descendant) dari folderId — jika iya, tolak (mencegah siklus)
+        const descendantQuery = `
+          WITH RECURSIVE descendants AS (
+            SELECT id_folder, parent_folder FROM folder WHERE parent_folder = $1
+            UNION ALL
+            SELECT f.id_folder, f.parent_folder FROM folder f JOIN descendants d ON f.parent_folder = d.id_folder
+          ) SELECT id_folder FROM descendants WHERE id_folder = $2 LIMIT 1;
+        `;
+        const { rows: descRows } = await client.query(descendantQuery, [folderId, newParentId]);
+        if (descRows.length > 0) {
+          throw new Error("Folder tujuan berada di dalam struktur anak folder ini (menyebabkan siklus).");
+        }
+      }
+
+      // 4. Jika semua oke, lakukan update
+      const updateQuery = `UPDATE folder SET parent_folder = $1 WHERE id_folder = $2 RETURNING id_folder, folder_name, parent_folder;`;
+      const { rows: updated } = await client.query(updateQuery, [newParentId ?? null, folderId]);
+
+      await client.query("COMMIT");
+      return updated[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 module.exports = FolderModel;

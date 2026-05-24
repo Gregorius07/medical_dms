@@ -964,8 +964,8 @@ function Folder() {
                                 </svg>
                               }
                               onClick={() => {
-                                setSelectedFolderId(folder.id_folder);
-                                setIsFolderAccessModalOpen(true);
+                                setSelectedDocumentId(doc.id_document);
+                                setIsDocumentAccessModalOpen(true);
                               }}
                             />
                           </Show>

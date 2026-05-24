@@ -114,6 +114,7 @@ function ManageAccessModal(props) {
         title: "Berhasil",
         text: "Akses berhasil diberikan",
         icon: "success",
+        timer: 15000,
       });
       setfullName("");
       // Reset form ke default
@@ -138,16 +139,34 @@ function ManageAccessModal(props) {
   };
 
   const handleRevokeAccess = async (idPermission) => {
-    if (!confirm("Cabut akses pengguna ini?")) return;
+    const result = await Swal.fire({
+      title: "Hapus akses?",
+      text: "Hapus akses pengguna ini dari dokumen atau folder tersebut?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       await api.delete(`/permissions/revoke/${idPermission}`);
+      Swal.fire({
+        title: "Berhasil",
+        text: "Akses berhasil dihapus.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
       fetchAccessList(); // Refresh daftar
     } catch (err) {
       Swal.fire({
         title: "Gagal",
-        text: "Gagal mencabut akses" + err.response?.data?.message || err.message,
-        icon: "success",
+        text: err.response?.data?.message || "Gagal menghapus akses.",
+        icon: "error",
       });
     }
   };

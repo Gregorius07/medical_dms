@@ -168,6 +168,7 @@ function Draft() {
 
       setFolders([]);
       setDocuments(res.data.data);
+      console.log("Hasil pencarian:", res.data.data);
       setBreadcrumbs([
         { id_folder: "search", folder_name: `Hasil Pencarian: "${keyword}"` },
       ]);
@@ -180,7 +181,7 @@ function Draft() {
 
   const clearSearch = () => {
     setIsSearching(false);
-    loadFolderContents(null); // Kembali ke Root Home
+    loadFolderContents(currentFolderId() || draftId()); // Kembali ke konteks folder draft yang sedang dibuka
   };
 
   const fetchFolderMetadataSchema = async (folderId) => {
@@ -783,15 +784,13 @@ function Draft() {
                             <path d="M8 12h8v2H8zm0 4h5v2H8z" />
                           </svg>
                           <div class="min-w-0">
-                            <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate block">
-                              {/* Gunakan highlights title jika ada (dari Elasticsearch) */}
-                              {doc.highlights?.title ? (
-                                <span innerHTML={doc.highlights.title[0]} />
+                            <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate block">                              {/* Gunakan highlights title jika ada (dari Elasticsearch) */}
+                              {doc.file_name? (
+                                <span innerHTML={doc.file_name} />
                               ) : (
-                                doc.title || doc.file_name
+                                doc.title || doc.highlights?.title
                               )}
                             </span>
-
                             {/* --- TAMPILAN HIGHLIGHT FULL-TEXT SEARCH (ELASTICSEARCH) --- */}
                             <Show
                               when={doc.highlights && doc.highlights.content}

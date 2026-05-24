@@ -559,7 +559,6 @@ const DocumentController = {
             const esId = hit._source.id_document;
             // Cari kecocokan data dari DB berdasarkan ID
             const dbData = dbDocuments.find((doc) => doc.id_document === esId);
-
             return {
               id_document: esId,
               score: hit._score,
@@ -567,7 +566,7 @@ const DocumentController = {
 
               // Prioritaskan data dari DB, jika tidak ada fallback ke ES/Default
               title: dbData
-                ? dbData.title || dbData.file_name
+                ? dbData.file_name
                 : hit._source.title,
               created_by: dbData ? dbData.created_by : "-",
               created_at: dbData ? dbData.created_at : null,

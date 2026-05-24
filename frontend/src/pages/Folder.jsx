@@ -319,7 +319,7 @@ function Folder() {
 
   const clearSearch = () => {
     setIsSearching(false);
-    loadFolderContents(null); // Kembali ke Root Home
+    loadFolderContents(currentFolderId()); // Kembali ke konteks folder yang sedang dibuka
   };
 
   const handleEnterFolder = (folderObj) => {
@@ -796,11 +796,10 @@ function Folder() {
                           </svg>
                           <div class="min-w-0">
                             <span class="font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate block">
-                              {/* Gunakan highlights title jika ada (dari Elasticsearch), jika tidak, gunakan title/file_name biasa */}
-                              {doc.highlights?.title ? (
-                                <span innerHTML={doc.highlights.title[0]} />
+                              {doc.file_name? (
+                                <span innerHTML={doc.file_name} />
                               ) : (
-                                doc.title || doc.file_name
+                                doc.title || doc.highlights?.title
                               )}
                             </span>
 

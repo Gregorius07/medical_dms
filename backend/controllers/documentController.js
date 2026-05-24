@@ -112,6 +112,7 @@ const DocumentController = {
         // simpan ke Elasticsearch
         await elasticClient.index({
           index: "medical_documents",
+          id: result.id.toString(), // gunakan ID dari database sebagai ID di Elasticsearch
           document: {
             id_document: result.id,
             title: autoTitle,
@@ -205,7 +206,56 @@ const DocumentController = {
         });
       }
 
+      const docDetail = await DocumentModel.getDocumentById(id);
+
       const restored = await DocumentModel.restoreSoftDeletedDocument(id);
+       try {
+        console.log("Mulai mengekstrak teks dari PDF...");
+
+        // baca file PDF fisik berdasarkan path
+        const dataBuffer = fs.readFileSync(docDetail.file_path);
+
+        // ekstrak teks menggunakan pdf-parse
+        const parsedPdf = await pdf(dataBuffer);
+
+        // bersihkan teks dari enter (\n) yang berlebihan agar rapi
+        const cleanText = parsedPdf.text.replace(/\s+/g, " ").trim();
+
+        console.log("Teks berhasil diekstrak. Mengirim ke Elasticsearch...");
+
+        // Ekstrak OTOMATIS TITLE berdasarkan ukuran font (menggunakan pdf2json)
+        let autoTitle = null;
+        try {
+          console.log("Mengekstrak judul otomatis dengan pdf2json...");
+          autoTitle = await extractTitleFromPdf(docDetail.file_path);
+          if (autoTitle) {
+            console.log(`Judul berhasil diekstrak: "${autoTitle}"`);
+          }
+        } catch (err) {
+          console.error("Gagal mengekstrak judul otomatis:", err.message);
+        }
+
+        // 3. Tentukan Judul Final (Prioritas: Input User -> Hasil Ekstraksi -> Nama File)
+        // const finalTitle = req.body.title || autoTitle || filename;
+        // simpan ke Elasticsearch
+        await elasticClient.index({
+          index: "medical_documents",
+          id: req.params.id.toString(), // gunakan ID dari database sebagai ID di Elasticsearch
+          document: {
+            id_document: req.params.id,
+            title: autoTitle,
+            content: cleanText, // berisi konten pdf
+          },
+        });
+
+        console.log("Dokumen berhasil di-index ke Elasticsearch!");
+      } catch (elasticError) {
+        // tidak di throw agar proses utama tetap sukses
+        console.error(
+          "Dokumen tersimpan di database, tapi gagal di-index ke Elasticsearch:",
+          elasticError.message,
+        );
+      }
       if (!restored) {
         return res
           .status(400)
@@ -225,6 +275,8 @@ const DocumentController = {
         success: true,
         message: "Dokumen berhasil direstore.",
       });
+
+      
     } catch (error) {
       console.error("Error restoreDocument:", error);
       res.status(500).json({ message: "Gagal melakukan restore dokumen." });
@@ -465,7 +517,7 @@ const DocumentController = {
                 filter: [
                   {
                     terms: {
-                      id_document: allowedIds, // Lempar array ID dari PostgreSQL ke sini
+                      id_document: allowedIds, // hanya dokumen yang boleh diakses yang akan muncul di hasil pencarian
                     },
                   },
                 ],

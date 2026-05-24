@@ -249,7 +249,7 @@ function Folder() {
       });
 
       // Refresh tampilan folder
-      loadFolderContents(currentFolderId() || draftId());
+      loadFolderContents(currentFolderId());
     } catch (err) {
       // Jika backend melempar error "Folder tidak kosong", pesan itu akan muncul di sini
       Swal.fire({
@@ -264,8 +264,8 @@ function Folder() {
 
   const handleDeleteDocument = async (id) => {
     const result = await Swal.fire({
-      title: "Hapus dokumen?",
-      text: "Anda tidak akan bisa mengembalikan dokumen ini!",
+      title: "Hapus dokumen",
+      text: "Anda yakin ingin menghapus dokumen ini?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -285,7 +285,7 @@ function Folder() {
         timer: 1500,
         showConfirmButton: false,
       });
-      loadFolderContents(currentFolderId() || draftId());
+      loadFolderContents(currentFolderId());
     } catch (err) {
       Swal.fire({
         icon: "error",

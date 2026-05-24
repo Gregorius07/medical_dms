@@ -78,11 +78,24 @@ const UserController = {
     },
 
     delete: async (req, res) => {
+        const client = await pool.connect();
         try {
-            await UserModel.delete(req.params.id);
+            await client.query('BEGIN');
+
+            const deleteResult = await UserModel.delete(req.params.id, client);
+
+            if (deleteResult.rowCount === 0) {
+                throw new Error('User tidak ditemukan');
+            }
+
+            await client.query('COMMIT');
             res.json({ success: true, message: "User berhasil dihapus" });
         } catch (err) {
-            res.status(500).json({ message: "Gagal menghapus user" });
+            await client.query('ROLLBACK');
+            console.error("Error deleting user:", err);
+            res.status(500).json({ message: err.message || "Gagal menghapus user" });
+        } finally {
+            client.release();
         }
     }
 };

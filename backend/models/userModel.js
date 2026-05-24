@@ -106,8 +106,15 @@ const UserModel = {
   },
 
   // 4. DELETE
-  delete: async (id) => {
-    return await db.query('DELETE FROM "user" WHERE id_user = $1', [id]);
+  delete: async (id, client = db) => {
+    await client.query(
+      'DELETE FROM approval_request WHERE id_requester = $1 OR id_approver = $1',
+      [id]
+    );
+    await client.query('DELETE FROM permission WHERE id_user = $1', [id]);
+    await client.query('DELETE FROM audit_log WHERE id_user = $1', [id]);
+
+    return await client.query('DELETE FROM "user" WHERE id_user = $1', [id]);
   },
 
   // (Tetap pertahankan fungsi findByUsername untuk login)

@@ -60,7 +60,7 @@ function NewFolderModal(props) {
             </div>
 
             <div class="border-t pt-4">
-              <label class="input-label">Custom Metadata Schema</label>
+              <label class="input-label">Additional Metadata Schema (Tag)</label>
               <div class="flex gap-2 mb-3">
                 <input type="text" class="flex-[2] input-field" 
                   placeholder="Nama Field" value={newFieldName()} onInput={(e) => setNewFieldName(e.target.value)} />

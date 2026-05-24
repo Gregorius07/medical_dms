@@ -114,7 +114,7 @@ function ManageAccessModal(props) {
         title: "Berhasil",
         text: "Akses berhasil diberikan",
         icon: "success",
-        timer: 15000,
+        timer: 1500,
       });
       setfullName("");
       // Reset form ke default

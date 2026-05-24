@@ -49,7 +49,7 @@ function Approval() {
               : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
           }`}
         >
-          Inbox (Perlu Review)
+          Perlu Approval
         </button>
         <button
           onClick={() => setActiveTab("outbox")}
@@ -59,7 +59,7 @@ function Approval() {
               : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
           }`}
         >
-          Outbox (Menunggu Jawaban)
+          Menunggu Approval
         </button>
         <button
           onClick={() => setActiveTab("history")}
@@ -69,7 +69,7 @@ function Approval() {
               : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300"
           }`}
         >
-          Riwayat Approval
+          Riwayat
         </button>
       </div>
 

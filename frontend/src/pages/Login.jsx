@@ -27,7 +27,12 @@ const [showPassword, setShowPassword] = createSignal(false);
       if (response.data.user) {
         setIsAuthLoading(false);
         setCurrentUser(response.data.user);
-        navigate("/folders");
+        if (response.data.user.is_admin) {
+          navigate("/folders");
+        }
+        else {
+          navigate("/draft");
+        }
       }
     } catch (err) {
       const msg = err.response?.data?.message || "Gagal terhubung ke server";

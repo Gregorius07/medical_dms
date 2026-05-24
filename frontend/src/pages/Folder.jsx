@@ -225,7 +225,7 @@ function Folder() {
   const handleDeleteFolder = async (folderId) => {
     const result = await Swal.fire({
       title: "Hapus Folder?",
-      text: "Folder HANYA bisa dihapus jika kosong (tidak ada sub-folder atau dokumen aktif di dalamnya).",
+      text: "Folder hanya bisa dihapus jika kosong (tidak ada sub-folder atau dokumen di dalamnya).",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -401,7 +401,12 @@ function Folder() {
                     d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                   />
                 </svg>
-                My Documents
+                <Show when= {currentUser()?.role === "admin"} >
+                  All Documents
+                </Show>
+                <Show when= {currentUser()?.role === "user"} >
+                  Shared Documents
+                </Show>
               </button>
 
               {/* Looping State Lokal Breadcrumb */}

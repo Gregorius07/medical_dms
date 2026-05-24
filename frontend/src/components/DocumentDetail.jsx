@@ -308,7 +308,7 @@ function DocumentDetail() {
   const handleRollback = async (versionId, versionNumber) => {
     const result = await Swal.fire({
       title: `Rollback ke Versi ${versionNumber}?`,
-      text: "Dokumen akan dipulihkan ke versi ini, menjadikannya versi aktif bagi semua pengguna.",
+      text: "Dokumen akan dipulihkan ke versi ini.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -1038,22 +1038,7 @@ function DocumentDetail() {
 
                   {/* TAMPILKAN INFO APPROVAL TYPE DAN TARGET FOLDER UNTUK APPROVER */}
                   <Show when={activeApproval()?.id_target_folder}>
-                    <div class="bg-blue-100 border-l-4 border-blue-600 p-3 rounded">
                       <p class="text-xs text-blue-700 font-bold flex items-center gap-2 mb-1">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          class="h-3.5 w-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                          />
-                        </svg>
                         Approval Otomatis
                       </p>
                       <p class="text-xs text-blue-600">
@@ -1061,9 +1046,8 @@ function DocumentDetail() {
                         <span class="font-semibold">
                           "{activeApproval()?.target_folder_name}"
                         </span>{" "}
-                        jika Anda menyetujuinya.
+                        jika disetujui.
                       </p>
-                    </div>
                   </Show>
 
                   <textarea

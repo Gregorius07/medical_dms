@@ -424,7 +424,6 @@ const DocumentModel = {
     physicalFilename,
     fileSize,
     createdBy,
-    fileFormat,
     customMetadata,
   ) => {
     const client = await pool.connect();
@@ -444,11 +443,11 @@ const DocumentModel = {
       // 2. Insert versi baru (version_number otomatis nambah 1 dari versi tertinggi)
       const insertQuery = `
                 INSERT INTO document_version 
-                (id_document, version_number, file_name, file_path, file_size, file_format, created_by, is_active, approval_status, created_at, custom_metadata)
+                (id_document, version_number, file_name, file_path, file_size, created_by, is_active, approval_status, created_at, custom_metadata)
                 VALUES (
                     $1, 
                     (SELECT COALESCE(MAX(version_number), 0) + 1 FROM document_version WHERE id_document = $1), 
-                    $2, $3, $4, $5, $6, TRUE, 'DRAFT', NOW(), $7
+                    $2, $3, $4, $5, TRUE, 'DRAFT', NOW(), $6
                 )
             `;
       const path = "uploads/" + physicalFilename;
@@ -457,7 +456,6 @@ const DocumentModel = {
         fileName,
         path,
         fileSize,
-        fileFormat,
         createdBy,
         customMetadata,
       ]);

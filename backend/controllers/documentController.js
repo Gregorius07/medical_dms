@@ -396,7 +396,6 @@ const DocumentController = {
         file.filename,
         file.size,
         uploaderName,
-        (file.format = path.extname(req.file.originalname).substring(1)),
         customMetadataParsed,
       );
 

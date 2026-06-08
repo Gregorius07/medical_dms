@@ -504,8 +504,8 @@ const DocumentController = {
                 // MUST: Syarat pencarian teks (Harus cocok dengan keyword)
                 must: [
                   {
-                    query_string: {
-                      query: `${q}*`,
+                    multi_match: {
+                      query: `${q}`,
                       fields: ["content", "title^2"],
                       default_operator: "AND",
                     },

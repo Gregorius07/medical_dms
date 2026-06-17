@@ -803,11 +803,11 @@ function Draft() {
                             </Show>
 
                             {/* Tampilkan Nilai Relevansi (BM25 Score) Jika Ada */}
-                            <Show when={doc.score}>
+                            {/* <Show when={doc.score}>
                               <span class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded mt-1 inline-block border border-gray-200">
                                 Relevansi: {doc.score.toFixed(2)}
                               </span>
-                            </Show>
+                            </Show> */}
                           </div>
                         </div>
                       </td>

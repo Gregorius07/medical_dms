@@ -452,7 +452,9 @@ function MainLayout(props) {
                 : location.pathname.replace("/", "") === "folders" &&
                     currentUser()?.role !== "admin"
                   ? "Shared Document"
-                  : location.pathname.replace("/", "")}
+                  : location.pathname.includes("/document/")
+                    ? "Document Details"
+                    : location.pathname.replace("/", "")}
           </h1>
           <div class="flex items-center gap-3">
             <div class="text-right mr-1 hidden sm:block">

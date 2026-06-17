@@ -53,7 +53,7 @@ function SearchBar(props) {
           class="bg-white border border-gray-200 text-gray-700 text-sm rounded-l-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 border-r-0 cursor-pointer transition-colors"
         >
           <option value="metadata">Metadata Search</option>
-          <option value="fulltext">Full-Text Search (Elastic)</option>
+          <option value="fulltext">Full-Text Search</option>
         </select>
 
         {/* Input Keyword */}

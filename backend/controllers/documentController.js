@@ -161,10 +161,18 @@ const DocumentController = {
           );
         }
       }
+
+      const result = await AuditModel.log("DELETE",
+        "DOCUMENT",
+        req.userId,
+        null,
+        req.params.id,
+        `${req.name} menghapus dokumen ini`,);
       res.json({
         success: true,
         message: "Dokumen berhasil dihapus (Soft Delete)",
       });
+      console.log(result);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
@@ -507,7 +515,7 @@ const DocumentController = {
                     multi_match: {
                       query: `${q}`,
                       fields: ["content", "title^2"],
-                      default_operator: "AND",
+                      operator: "AND",
                     },
                   },
                 ],
@@ -846,7 +854,7 @@ const DocumentController = {
         userId,
         newFolderId,
         id,
-        `${userName} memindahkan dokumen ke folder (ID: ${newFolderId || 'Root'})`,
+        `${userName} memindahkan dokumen ke folder lain)`,
       );
 
       res.status(200).json({

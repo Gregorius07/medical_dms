@@ -378,7 +378,6 @@ function DocumentDetail() {
             <h1 class="text-xl md:text-2xl font-bold text-gray-900 tracking-tight break-words">
               {loading() ? "Memuat..." : doc()?.title || doc()?.file_name}
             </h1>
-            <p class="text-xs text-gray-500 font-mono mt-1">ID: {documentId}</p>
           </div>
         </div>
 

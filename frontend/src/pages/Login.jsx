@@ -27,7 +27,8 @@ const [showPassword, setShowPassword] = createSignal(false);
       if (response.data.user) {
         setIsAuthLoading(false);
         setCurrentUser(response.data.user);
-        if (response.data.user.is_admin) {
+        console.log("USer admin?:", response.data.user.role);
+        if (response.data.user.role === "admin") {
           navigate("/folders");
         }
         else {

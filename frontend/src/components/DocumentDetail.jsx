@@ -237,10 +237,19 @@ function DocumentDetail() {
         text: "Pilih file PDF baru terlebih dahulu!",
       });
     }
+    const file = uploadFile();
+    const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdfFile) {
+      return Swal.fire({
+        icon: "warning",
+        title: "File tidak valid",
+        text: "Hanya file PDF yang diperbolehkan.",
+      });
+    }
 
     setUploadLoading(true);
     const formData = new FormData();
-    formData.append("file", uploadFile());
+    formData.append("file", file);
     formData.append("uploaderName", currentUser().name);
 
     try {
@@ -1721,6 +1730,7 @@ function DocumentDetail() {
               <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:bg-gray-50 transition cursor-pointer relative bg-gray-50/80">
                 <input
                   type="file"
+                  accept="application/pdf,.pdf"
                   onChange={(e) => setUploadFile(e.target.files[0])}
                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   required

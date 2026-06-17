@@ -9,9 +9,21 @@ function UploadDocumentModal(props) {
   const [customMetadata, setCustomMetadata] = createSignal({});
   const [loading, setLoading] = createSignal(false);
 
+  const isPdfFile = (file) => {
+    if (!file) return false;
+    return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  };
+
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile()) return;
+    if (!isPdfFile(uploadFile())) {
+      return Swal.fire({
+        icon: "warning",
+        title: "File tidak valid",
+        text: "Hanya file PDF yang diperbolehkan.",
+      });
+    }
 
     setLoading(true);
     const formData = new FormData();
@@ -50,13 +62,23 @@ function UploadDocumentModal(props) {
           </div>
           <form onSubmit={handleUpload} class="modal-body space-y-4">
             <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center relative bg-gray-50/80 hover:bg-gray-50 transition-colors">
-              <input type="file" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+              <input type="file" accept="application/pdf,.pdf" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                 onChange={(e) => {
                   const file = e.target.files[0];
+                  if (file && !isPdfFile(file)) {
+                    e.target.value = "";
+                    setUploadFile(null);
+                    Swal.fire({
+                      icon: "warning",
+                      title: "File tidak valid",
+                      text: "Silakan pilih file PDF.",
+                    });
+                    return;
+                  }
                   setUploadFile(file);
                   if(!docTitle()) setDocTitle(file.name);
                 }} />
-              <div class="text-primary-600 font-medium text-sm">{uploadFile() ? uploadFile().name : "Click to select file"}</div>
+              <div class="text-primary-600 font-medium text-sm">{uploadFile() ? uploadFile().name : "Click to select PDF file"}</div>
             </div>
 
             <div>

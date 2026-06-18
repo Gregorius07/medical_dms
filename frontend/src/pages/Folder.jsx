@@ -1198,6 +1198,7 @@ function Folder() {
           documentId={selectedDocumentId()}
           title={selectedDocumentTitle()}
           custom_metadata={selectedDocumentSchema()}
+          metadata_schema={currentFolderSchema()}
           onSuccess={() => {
             setIsEditMetadataDocumentOpen(false);
             setSelectedDocumentId(null);

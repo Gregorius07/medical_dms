@@ -14,7 +14,7 @@ const initElasticIndex = async () => {
         const indexExists = await elasticClient.indices.exists({ index: indexName });
         
         if (indexExists) {
-            console.log(`ℹ️  Index Elasticsearch '${indexName}' sudah siap.`);
+            console.log(`Index Elasticsearch '${indexName}' sudah siap.`);
             return;
         }
 
@@ -73,7 +73,7 @@ const initElasticIndex = async () => {
             }
         });
 
-        console.log(`✅ Index '${indexName}' berhasil dibuat dengan Custom Analyzer & BM25!`);
+        console.log(`Index '${indexName}' berhasil dibuat dengan Custom Analyzer & BM25!`);
     } catch (error) {
         console.error("❌ Gagal membuat index Elasticsearch:", error.message);
     }
@@ -83,7 +83,7 @@ const initElasticIndex = async () => {
 const startElastic = async () => {
     try {
         const info = await elasticClient.info();
-        console.log(`✅ Elasticsearch Terhubung! (Versi: ${info.version.number})`);
+        console.log(`Elasticsearch Terhubung! (Versi: ${info.version.number})`);
         
         // Panggil fungsi pembuatan index setelah berhasil terhubung
         await initElasticIndex();

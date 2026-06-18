@@ -1141,6 +1141,7 @@ function Draft() {
             documentId={selectedDocumentId()}
             title={selectedDocumentTitle()}
             custom_metadata={selectedDocumentSchema()}
+            metadata_schema={currentFolderSchema()}
             onClose={() => {
               setIsEditMetadataDocumentOpen(false);
               setSelectedDocumentId(null);

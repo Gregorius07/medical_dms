@@ -58,6 +58,7 @@ function DocumentDetail() {
 
   // STATE UNTUK EDIT METADATA
   const [isEditMetadataOpen, setIsEditMetadataOpen] = createSignal(false);
+  const [documentFolderSchema, setDocumentFolderSchema] = createSignal({});
   // const [editMetadataForm, setEditMetadataForm] = createSignal({});
   // const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
 
@@ -155,6 +156,7 @@ function DocumentDetail() {
       setLogs(res.data.logs || []);
       setActiveApproval(res.data.activeApproval); // Tangkap data approval
       console.log("Detail active approval:", res.data.activeApproval);
+      await fetchDocumentFolderSchema(res.data.document?.id_folder);
       fetchVersions();
     } catch (err) {
       console.error("Gagal mengambil detail dokumen", err);
@@ -171,6 +173,21 @@ function DocumentDetail() {
       setVersions(res.data.data);
     } catch (err) {
       console.error("Gagal mengambil riwayat versi", err);
+    }
+  };
+
+  const fetchDocumentFolderSchema = async (folderId) => {
+    if (!folderId) {
+      setDocumentFolderSchema({});
+      return;
+    }
+
+    try {
+      const res = await api.get(`/folders/${folderId}/metadata`);
+      setDocumentFolderSchema(res.data?.metadata_schema || {});
+    } catch (err) {
+      console.error("Gagal mengambil schema folder dokumen", err);
+      setDocumentFolderSchema({});
     }
   };
 
@@ -1786,6 +1803,7 @@ function DocumentDetail() {
           documentId={documentId}
           title={doc()?.file_name}               
           custom_metadata={doc()?.custom_metadata}
+          metadata_schema={documentFolderSchema()}
           onClose={() => setIsEditMetadataOpen(false)}
           onSuccess={() => fetchDocumentDetail()}
         >

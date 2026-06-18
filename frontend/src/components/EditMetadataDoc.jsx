@@ -13,6 +13,11 @@ function EditMetadataDoc(props) {
   const [fileName, setFileName] = createSignal(props.title || "");
   const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
 
+  const getFieldInputType = (key) => {
+    const fieldType = props.metadata_schema?.[key];
+    return ["number", "date"].includes(fieldType) ? fieldType : "text";
+  };
+
   createEffect(() => {
     // Setiap kali props.custom_metadata atau props.title berubah, update form.
     setEditMetadataForm({
@@ -99,9 +104,10 @@ function EditMetadataDoc(props) {
                     {key.replace(/_/g, " ")}
                   </label>
                   <input
-                    type="text"
+                    type={getFieldInputType(key)}
+                    step={getFieldInputType(key) === "number" ? "any" : undefined}
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition"
-                    value={editMetadataForm()[key] || ""}
+                    value={editMetadataForm()[key] ?? ""}
                     onInput={(e) =>
                       setEditMetadataForm({
                         ...editMetadataForm(),

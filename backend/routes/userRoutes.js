@@ -5,6 +5,7 @@ const {verifyToken} = require('../middleware/authMiddleware');
 
 router.get('/', verifyToken, UserController.findAll);
 router.get('/search',verifyToken, UserController.searchUser)
+router.get('/:id', verifyToken, UserController.findOne);
 router.post('/', verifyToken, UserController.create);
 router.put('/:id', verifyToken, UserController.update);
 router.delete('/:id', verifyToken, UserController.delete);

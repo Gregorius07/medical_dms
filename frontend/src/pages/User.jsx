@@ -19,6 +19,7 @@ function User() {
   const [isModalOpen, setIsModalOpen] = createSignal(false);
   const [editId, setEditId] = createSignal(null);
   const [loading, setLoading] = createSignal(false);
+  const [showPassword, setShowPassword] = createSignal(false);
 
   // State Form Input
   const [formData, setFormData] = createSignal({
@@ -65,20 +66,33 @@ function User() {
   const openAdd = () => {
     setEditId(null);
     setFormData({ fullName: "", username: "", password: "", idPosition: "", idDepartment: "", isAdmin: false });
+    setShowPassword(false);
     setIsModalOpen(true);
   };
 
-  const openEdit = (item) => {
-    setEditId(item.id_user);
-    setFormData({
-        fullName: item.full_name,
-        username: item.username,
-        password: "", // Kosongkan password saat edit (biar gak ketimpa kalau gak diisi)
-        idPosition: item.id_position || "",
-        idDepartment: item.id_department || "",
-        isAdmin: item.is_admin
-    });
-    setIsModalOpen(true);
+  const openEdit = async (item) => {
+    try {
+      const res = await api.get(`/users/${item.id_user}`);
+      const user = res.data.data;
+
+      setEditId(item.id_user);
+      setFormData({
+          fullName: user.full_name,
+          username: user.username,
+          password: user.password || "",
+          idPosition: user.id_position || "",
+          idDepartment: user.id_department || "",
+          isAdmin: user.is_admin
+      });
+      setShowPassword(false);
+      setIsModalOpen(true);
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Membuka Data",
+        text: err.response?.data?.message || "Gagal mengambil detail user.",
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -263,9 +277,24 @@ function User() {
                         <label class="input-label">
                             Password {editId() && <span class="text-gray-400 font-normal normal-case tracking-normal">(Leave blank to keep current)</span>}
                         </label>
-                        <input type="password" class="input-field"
+                        <div class="relative">
+                          <input
+                            type={showPassword() ? "text" : "password"}
+                            class="input-field pr-12"
                             required={!editId()} // Wajib hanya saat Add
-                            value={formData().password} onInput={(e) => updateForm('password', e.target.value)} />
+                            value={formData().password}
+                            onInput={(e) => updateForm('password', e.target.value)}
+                          />
+                          {editId() && (
+                            <button
+                              type="button"
+                              class="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-gray-500 hover:text-gray-700"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                            >
+                              {showPassword() ? "Hide" : "Show"}
+                            </button>
+                          )}
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">

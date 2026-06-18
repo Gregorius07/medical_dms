@@ -1,6 +1,7 @@
 import { createSignal, onMount, For, Show } from "solid-js";
 import Swal from "sweetalert2";
 import api from "../api";
+import { currentUser } from "../store/authStore";
 
 function RecycleBin() {
   const [documents, setDocuments] = createSignal([]);
@@ -56,6 +57,39 @@ function RecycleBin() {
     }
   };
 
+  const handlePermanentDelete = async (idDocument) => {
+    const result = await Swal.fire({
+      title: "Hapus permanen dokumen?",
+      text: "Dokumen akan dihapus secara permanen dan tidak bisa dikembalikan.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus Permanen",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.delete(`/documents/${idDocument}/permanent`);
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "Dokumen berhasil dihapus secara permanen.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      loadDeletedDocuments();
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: error.response?.data?.message || "Delete permanen gagal.",
+      });
+    }
+  };
+
   onMount(() => {
     loadDeletedDocuments();
   });
@@ -95,12 +129,22 @@ function RecycleBin() {
                         </span>
                       </td>
                       <td class="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleRestore(doc.id_document)}
-                          class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors"
-                        >
-                          Restore
-                        </button>
+                        <div class="inline-flex items-center gap-2 justify-end">
+                          <button
+                            onClick={() => handleRestore(doc.id_document)}
+                            class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors"
+                          >
+                            Restore
+                          </button>
+                          <Show when={currentUser()?.role === "admin"}>
+                            <button
+                              onClick={() => handlePermanentDelete(doc.id_document)}
+                              class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 border border-red-100 hover:bg-red-100 transition-colors"
+                            >
+                              Hard Delete
+                            </button>
+                          </Show>
+                        </div>
                       </td>
                     </tr>
                   )}

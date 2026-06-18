@@ -178,6 +178,71 @@ const DocumentController = {
     }
   },
 
+  permanentlyDeleteDocument: async (req, res) => {
+    try {
+      if (req.role !== "admin") {
+        return res.status(403).json({
+          message: "Akses ditolak. Hanya admin yang dapat menghapus permanen.",
+        });
+      }
+
+      const { id } = req.params;
+      const deletedDoc = await DocumentModel.getDeletedDocumentById(id);
+
+      if (!deletedDoc) {
+        return res
+          .status(404)
+          .json({ message: "Dokumen tidak ditemukan di recycle bin." });
+      }
+
+      const filePaths = await DocumentModel.permanentlyDeleteDocument(id);
+
+      for (const filePath of filePaths) {
+        const absolutePath = path.join(__dirname, "../", filePath);
+        try {
+          if (fs.existsSync(absolutePath)) {
+            fs.unlinkSync(absolutePath);
+          }
+        } catch (fileError) {
+          console.error(`Gagal menghapus file ${absolutePath}:`, fileError.message);
+        }
+      }
+
+      try {
+        await elasticClient.delete({
+          index: "medical_documents",
+          id: id.toString(),
+        });
+      } catch (elasticError) {
+        if (elasticError.meta && elasticError.meta.statusCode !== 404) {
+          console.error(
+            "Gagal menghapus dokumen permanen dari Elasticsearch:",
+            elasticError.message,
+          );
+        }
+      }
+
+      await AuditModel.log(
+        "DELETE",
+        "DOCUMENT",
+        req.userId,
+        null,
+        null,
+        `${req.name} menghapus permanen dokumen ${deletedDoc.file_name}`,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Dokumen berhasil dihapus secara permanen.",
+      });
+    } catch (error) {
+      console.error("Error permanentlyDeleteDocument:", error);
+      res.status(500).json({
+        message: error.message || "Gagal menghapus dokumen secara permanen.",
+      });
+    }
+  },
+
   getRecycleBin: async (req, res) => {
     try {
       const deletedDocuments =

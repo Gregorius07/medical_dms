@@ -239,6 +239,64 @@ const DocumentModel = {
     return rows[0] || null;
   },
 
+  permanentlyDeleteDocument: async (idDocument) => {
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const filePathsResult = await client.query(
+        `
+          SELECT DISTINCT file_path
+          FROM document_version
+          WHERE id_document = $1
+            AND file_path IS NOT NULL;
+        `,
+        [idDocument],
+      );
+
+      await client.query(
+        `UPDATE approval_request SET id_document = NULL WHERE id_document = $1`,
+        [idDocument],
+      );
+
+      await client.query(
+        `UPDATE audit_log SET id_document = NULL WHERE id_document = $1`,
+        [idDocument],
+      );
+
+      await client.query(
+        `DELETE FROM permission WHERE id_document = $1`,
+        [idDocument],
+      );
+
+      await client.query(
+        `DELETE FROM document_version WHERE id_document = $1`,
+        [idDocument],
+      );
+
+      const deleteResult = await client.query(
+        `DELETE FROM document WHERE id_document = $1 AND is_deleted = true RETURNING id_document`,
+        [idDocument],
+      );
+
+      if (deleteResult.rows.length === 0) {
+        throw new Error("Dokumen tidak ditemukan di recycle bin.");
+      }
+
+      await client.query("COMMIT");
+
+      return filePathsResult.rows
+        .map((row) => row.file_path)
+        .filter(Boolean);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
   // 2. Ambil SEMUA dokumen yang user punya hak akses SECARA LANGSUNG KECUALI DRAFT miliknya sendiri
   getAccessibleDocuments: async (userId, name) => {
     const query = `

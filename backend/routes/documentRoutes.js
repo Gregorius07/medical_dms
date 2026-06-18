@@ -31,6 +31,7 @@ router.get('/search', verifyToken, DocumentController.searchDocuments);
 router.get('/recycle-bin', verifyToken, DocumentController.getRecycleBin);
 router.patch('/:id/restore', verifyToken, DocumentController.restoreDocument);
 router.delete('/:id', verifyToken,DocumentController.delete);
+router.delete('/:id/permanent', verifyToken, DocumentController.permanentlyDeleteDocument);
 router.get('/:id', verifyToken, requirePermission('preview', 'DOCUMENT'), DocumentController.getDocumentDetail);
 router.get('/:id/versions', verifyToken, DocumentController.getVersions);
 router.post('/:id/rollback', verifyToken, DocumentController.rollbackVersion);

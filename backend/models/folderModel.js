@@ -238,7 +238,7 @@ class FolderModel {
 
       //Cek dokumen AKTIF
       const checkDoc = await client.query(
-        "SELECT COUNT(*) FROM document WHERE id_folder = $1",
+        "SELECT COUNT(*) FROM document WHERE id_folder = $1 AND is_deleted = false",
         [folderId],
       );
       if (parseInt(checkDoc.rows[0].count) > 0) {

@@ -105,7 +105,7 @@ const createFolder = async (req, res) => {
       parent_folder || null,
       userId,
       name,
-      metadata_schema ? JSON.stringify(metadata_schema) : null,
+      metadata_schema ? JSON.stringify(metadata_schema) : {},
       client,
     );
 

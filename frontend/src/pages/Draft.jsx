@@ -564,7 +564,7 @@ function Draft() {
                         </span>
                       </td>
                       <td class="py-3 px-4 truncate">{folder.created_by}</td>
-                      <td class="py-3 px-4 text-gray-800">
+                      <td class="py-3 px-4 text-gray-500">
                         {folder.created_at
                           ? new Date(folder.created_at).toLocaleDateString(
                               "id-ID",

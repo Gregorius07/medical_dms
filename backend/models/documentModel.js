@@ -712,6 +712,24 @@ const DocumentModel = {
     return result.rows[0]; // Mengembalikan data versi yang berhasil diupdate
   },
 
+  updateAllCustomMetadata: async (documentId, customMetadata) => {
+    console.log("nilai parameter customMetadata di model = ", JSON.stringify(customMetadata));
+    const metadataString = customMetadata
+      ? JSON.stringify(customMetadata)
+      : null;
+
+    const query = `
+      UPDATE document_version
+      SET custom_metadata = $1
+      WHERE id_document = $2
+      RETURNING *;
+    `;
+
+    const result = await pool.query(query, [metadataString, documentId]);
+    console.log("Updated versions:", result.rows);
+    return result.rows;
+  },
+
   getDocumentMetadata: async (documentId) => {
     const query = `
       SELECT

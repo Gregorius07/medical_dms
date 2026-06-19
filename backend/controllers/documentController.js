@@ -892,6 +892,20 @@ const DocumentController = {
           });
         }
 
+        console.log("Target Folder:", Object.values(targetFolder));
+        console.log("metadata skema folder", Object.keys(targetFolder.metadata_schema));
+        
+        let newDocMetadata = {};
+        if (targetFolder.metadata_schema) {
+          const key = Object.keys(targetFolder.metadata_schema);
+          newDocMetadata = Object.fromEntries(
+            key.map((k) => [k, ""])
+          );
+          console.log("metadata dokumen yang akan dipindahkan", newDocMetadata);
+        }
+        await DocumentModel.updateAllCustomMetadata(id, newDocMetadata);
+
+        
         // 4. PERMISSION CHECK: Verify user has 'upload' permission in target folder
         // (Memanfaatkan PermissionModel seperti permission middleware)
         if (!isAdmin) {

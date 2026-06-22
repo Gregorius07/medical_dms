@@ -102,19 +102,51 @@ CREATE TABLE approval_request (
 );
 
 INSERT INTO position (position_name) VALUES
-('Medical Records Officer'),
-('Radiology Administrator'),
-('Laboratory Administrator'),
-('Hospital Administrator'),
-('Nursing Documentation Staff');
+('Staff Keuangan'),
+('Kepala Sub Bagian 1 Keuangan'),
+('Kepala Sub Bagian 2 Keuangan'),
+('Kepala Bagian Keuangan'),
+('Staff Administrasi'),
+('Kepala Sub Bagian 1 Administrasi'),
+('Kepala Sub Bagian 2 Administrasi'),
+('Kepala Bagian Administrasi'),
+('Staff Gudang'),
+('Kepala Sub Bagian 1 Gudang'),
+('Kepala Sub Bagian 2 Gudang'),
+('Kepala Bagian Gudang'),
+('Staff Farmasi'),
+('Kepala Sub Bagian 1 Farmasi'),
+('Kepala Sub Bagian 2 Farmasi'),
+('Kepala Bagian Farmasi'),
+('Staff Inventaris'),
+('Kepala Sub Bagian 1 Inventaris'),
+('Kepala Sub Bagian 2 Inventaris'),
+('Kepala Bagian Inventaris'),
+('Staff Teknisi'),
+('Kepala Sub Bagian 1 Teknisi'),
+('Kepala Sub Bagian 2 Teknisi'),
+('Kepala Bagian Teknisi');
 
 INSERT INTO department (department_name) VALUES
-('Medical Records'),
-('Radiology'),
-('Laboratory'),
-('Administration'),
-('Nursing');
+('Keuangan'),
+('Administrasi'),
+('Gudang'),
+('Farmasi'),
+('Inventaris'),
+('Teknisi');
 
 INSERT INTO "user" (id_user, full_name, username, password, is_admin, id_position, id_department)
 VALUES
-(1006, 'Gregorius Denmas', 'bagus', 'bagus123', TRUE, 5, 5);
+(1, 'Gregorius Denmas', 'bagus', 'bagus123', TRUE, 8, 2),
+(2, 'John Doe', 'johndoe', 'password123', FALSE, 1, 1),
+(3, 'Jane Smith', 'janesmith', 'password456', FALSE, 5, 2),
+(4, 'Michael Johnson', 'michaelj', 'password789', FALSE, 9, 3),
+(5, 'Emily Davis', 'emilyd', 'password321', FALSE, 13, 4),
+(6, 'William Brown', 'williamb', 'password654', FALSE, 17, 5),
+(7, 'Olivia Wilson', 'oliviaw', 'password987', FALSE, 21, 6),
+(8, 'James Taylor', 'jamest', 'password111', FALSE, 2, 1),
+(9, 'Sophia Anderson', 'sophiaa', 'password222', FALSE, 6, 2),
+(10, 'Benjamin Thomas', 'benjamint', 'password333', FALSE, 10, 3),
+(11, 'Ava Martinez', 'avam', 'password444', FALSE, 14, 4),
+(12, 'Lucas Lee', 'lucasl', 'password555', FALSE, 18, 5),
+(13, 'Mia Harris', 'miah', 'password666', FALSE, 22, 6);

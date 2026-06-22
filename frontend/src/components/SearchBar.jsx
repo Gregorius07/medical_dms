@@ -1,6 +1,6 @@
 import { createSignal, Show } from "solid-js";
 
-function SearchBar(props) {
+function SearchBar(props) { //search tetap dieksekusi di parent component agar bisa mengakses state dokumen
   // State internal khusus untuk komponen pencarian
   const [searchQuery, setSearchQuery] = createSignal("");
   const [searchType, setSearchType] = createSignal("metadata");

@@ -88,7 +88,7 @@ const startElastic = async () => {
         // Panggil fungsi pembuatan index setelah berhasil terhubung
         await initElasticIndex();
     } catch (error) {
-        console.error("❌ Gagal terhubung ke Elasticsearch. Pastikan server berjalan.");
+        console.error("Gagal terhubung ke Elasticsearch. Pastikan server berjalan.");
     }
 };
 

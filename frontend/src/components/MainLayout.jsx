@@ -20,7 +20,7 @@ function MainLayout(props) {
     navigate("/");
   };
 
-  // Helper untuk class aktif — dark sidebar style
+  // Helper untuk class aktif
   const isActive = (path) => location.pathname === path;
 
   const navLinkClass = (path) =>

@@ -6,7 +6,8 @@ import ManageAccessModal from "./ManageAccessModal";
 import Swal from "sweetalert2";
 // Di atas komponen
 import * as pdfjsLib from "pdfjs-dist";
-// Trik Vite: Tambahkan ?url di akhir agar Vite mengambilkan URL statis dari file worker
+// Worker PDF harus dimuat sebagai URL statis agar pdf.js bisa memproses dokumen di background thread.
+// Dengan cara ini, parsing PDF tidak membebani UI utama dan preview tetap responsif.
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 import EditMetadataDoc from "./EditMetadataDoc";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -62,15 +63,18 @@ function DocumentDetail() {
   // const [editMetadataForm, setEditMetadataForm] = createSignal({});
   // const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
 
-  // Fungsi untuk menggambar halaman PDF ke Canvas
+  // Fungsi inti preview: ambil halaman tertentu dari PDF lalu gambar ulang ke canvas.
+  // Saat scale atau nomor halaman berubah, fungsi ini dipanggil lagi untuk memperbarui tampilan.
   const renderPage = (num, pdfDocument) => {
     if (!pdfDocument || !canvasRef) return;
 
     pdfDocument.getPage(num).then((page) => {
+      // Viewport menentukan ukuran render berdasarkan zoom yang sedang aktif.
       const viewport = page.getViewport({ scale: scale() });
       const canvas = canvasRef;
       const ctx = canvas.getContext("2d");
 
+      // Ukuran canvas harus disamakan dengan viewport supaya hasil render tidak blur atau terpotong.
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
@@ -82,23 +86,28 @@ function DocumentDetail() {
     });
   };
 
-  // Efek reaktif: Load PDF dari backend ketika doc() dan permission preview sudah tersedia
+  // Efek reaktif preview PDF:
+  // 1. Tunggu dokumen selesai dimuat
+  // 2. Pastikan user punya izin preview atau role admin
+  // 3. Ambil file PDF dari backend
+  // 4. Load PDF ke pdf.js lalu render halaman pertama ke canvas
   createEffect(() => {
     const currentDoc = doc();
     if (
       currentDoc?.file_path &&
       (permissions().preview || currentUser()?.role === "admin")
     ) {
-      // PENTING: File harus bisa diakses secara publik atau via auth header yang diizinkan CORS
+      // File harus bisa diakses langsung oleh pdf.js, jadi backend perlu menyajikan file dengan URL yang valid.
       const url = `http://localhost:5000/${currentDoc.file_path}`;
 
-      // Load PDF kustom kustom
+      // pdf.js mengunduh dan mem-parse PDF secara async, lalu menghasilkan objek PDFDocumentProxy.
       pdfjsLib
         .getDocument(url)
         .promise.then((pdf) => {
           setPdfRef(pdf);
           setTotalPages(pdf.numPages);
-          setPageNum(1); // Reset ke halaman 1
+          // Selalu mulai dari halaman pertama ketika dokumen baru dimuat.
+          setPageNum(1);
           renderPage(1, pdf);
         })
         .catch((err) => {

@@ -11,9 +11,10 @@ import Draft from "./pages/Draft";
 import Folder from "./pages/Folder";
 import DocumentDetail from "./components/DocumentDetail";
 import RecycleBin from "./pages/RecycleBin";
+
 function App() {
   onMount(() => {
-    checkSession();
+    checkSession(); //ngecek apakah user sudah login atau belum saat aplikasi pertama kali dimuat
   });
   return (
     <Show when={!isAuthLoading()} fallback={

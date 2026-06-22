@@ -56,7 +56,7 @@ const DocumentController = {
       let customMetadataParsed = null;
       if (customMetadata) {
         try {
-          customMetadataParsed = JSON.parse(customMetadata);
+          customMetadataParsed = JSON.parse(customMetadata); //ubah objek json string ke objek js biasa
         } catch (error) {
           console.error("gagal memparsing custom metadata", error);
         }
@@ -102,6 +102,8 @@ const DocumentController = {
           autoTitle = await extractTitleFromPdf(req.file.path);
           if (autoTitle) {
             console.log(`Judul berhasil diekstrak: "${autoTitle}"`);
+          } else {
+            autoTitle = title; // fallback ke judul dari input user atau nama file
           }
         } catch (err) {
           console.error("Gagal mengekstrak judul otomatis:", err.message);
@@ -162,12 +164,14 @@ const DocumentController = {
         }
       }
 
-      const result = await AuditModel.log("DELETE",
+      const result = await AuditModel.log(
+        "DELETE",
         "DOCUMENT",
         req.userId,
         null,
         req.params.id,
-        `${req.name} menghapus dokumen ini`,);
+        `${req.name} menghapus dokumen ini`,
+      );
       res.json({
         success: true,
         message: "Dokumen berhasil dihapus (Soft Delete)",
@@ -195,19 +199,24 @@ const DocumentController = {
           .json({ message: "Dokumen tidak ditemukan di recycle bin." });
       }
 
+      //cari path semua versi dokumen yang akan dihapus permanen
       const filePaths = await DocumentModel.permanentlyDeleteDocument(id);
 
       for (const filePath of filePaths) {
         const absolutePath = path.join(__dirname, "../", filePath);
         try {
           if (fs.existsSync(absolutePath)) {
-            fs.unlinkSync(absolutePath);
+            fs.unlinkSync(absolutePath); //hapus dokumen
           }
         } catch (fileError) {
-          console.error(`Gagal menghapus file ${absolutePath}:`, fileError.message);
+          console.error(
+            `Gagal menghapus file ${absolutePath}:`,
+            fileError.message,
+          );
         }
       }
 
+      //hapus di indeks elasticsearchnya
       try {
         await elasticClient.delete({
           index: "medical_documents",
@@ -221,7 +230,7 @@ const DocumentController = {
           );
         }
       }
-
+      //catat di log
       await AuditModel.log(
         "DELETE",
         "DOCUMENT",
@@ -247,8 +256,8 @@ const DocumentController = {
     try {
       const deletedDocuments =
         req.role === "admin"
-          ? await DocumentModel.getDeletedDocumentsForAdmin()
-          : await DocumentModel.getDeletedDocumentsForUser(req.userId);
+          ? await DocumentModel.getDeletedDocumentsForAdmin() //kalau admin bisa lihat semua dokumen yang dihapus
+          : await DocumentModel.getDeletedDocumentsForUser(req.userId); //kalau user biasa hanya bisa lihat dokumen yang dia hapus sendiri
 
       res.status(200).json({
         success: true,
@@ -266,6 +275,7 @@ const DocumentController = {
     try {
       const { id } = req.params;
 
+      // Cek apakah dokumen ada di recycle bin (sudah di soft delete)
       const deletedDoc = await DocumentModel.getDeletedDocumentById(id);
       if (!deletedDoc) {
         return res
@@ -273,16 +283,18 @@ const DocumentController = {
           .json({ message: "Dokumen tidak ditemukan di recycle bin." });
       }
 
+      //harus cek apakah user yang melakukan restore adalah pemilik dokumen atau admin
       if (req.role !== "admin" && deletedDoc.created_by !== req.name) {
         return res.status(403).json({
           message: "Akses ditolak. Anda bukan pemilik dokumen ini.",
         });
       }
 
-      const docDetail = await DocumentModel.getDocumentById(id);
+      const docDetail = await DocumentModel.getDocumentById(id); //ambil detail dokumen sebelum di restore
 
       const restored = await DocumentModel.restoreSoftDeletedDocument(id);
-       try {
+      try {
+        //mengindeks dokumen ke elasticsearch setelah di restore
         console.log("Mulai mengekstrak teks dari PDF...");
 
         // baca file PDF fisik berdasarkan path
@@ -303,13 +315,13 @@ const DocumentController = {
           autoTitle = await extractTitleFromPdf(docDetail.file_path);
           if (autoTitle) {
             console.log(`Judul berhasil diekstrak: "${autoTitle}"`);
+          } else {
+            autoTitle = docDetail.file_name; // fallback ke nama file dokumen lama
           }
         } catch (err) {
           console.error("Gagal mengekstrak judul otomatis:", err.message);
         }
 
-        // 3. Tentukan Judul Final (Prioritas: Input User -> Hasil Ekstraksi -> Nama File)
-        // const finalTitle = req.body.title || autoTitle || filename;
         // simpan ke Elasticsearch
         await elasticClient.index({
           index: "medical_documents",
@@ -317,7 +329,7 @@ const DocumentController = {
           document: {
             id_document: req.params.id,
             title: autoTitle,
-            content: cleanText, // berisi konten pdf
+            content: cleanText, // berisi konten pdf (teks)
           },
         });
 
@@ -348,8 +360,6 @@ const DocumentController = {
         success: true,
         message: "Dokumen berhasil direstore.",
       });
-
-      
     } catch (error) {
       console.error("Error restoreDocument:", error);
       res.status(500).json({ message: "Gagal melakukan restore dokumen." });
@@ -373,7 +383,7 @@ const DocumentController = {
       const docId = req.params.id;
       const userId = req.userId; // Dari verifyToken middleware
 
-      // 1. Ambil detail dokumen
+      // Ambil detail dokumen
       const document = await DocumentModel.getDocumentById(docId);
       if (!document) {
         return res
@@ -381,7 +391,7 @@ const DocumentController = {
           .json({ message: "Dokumen tidak ditemukan atau telah dihapus." });
       }
 
-      // 2. Ambil paket permission khusus untuk user yang sedang login
+      // Ambil paket permission khusus untuk user yang sedang login
       const permissions = await PermissionModel.getAllPermissionsForDocument(
         userId,
         docId,
@@ -487,6 +497,8 @@ const DocumentController = {
           autoTitle = await extractTitleFromPdf(req.file.path);
           if (autoTitle) {
             console.log(`Judul berhasil diekstrak: "${autoTitle}"`);
+          } else {
+            autoTitle = existingDoc.file_name; // fallback ke nama file dokumen lama
           }
         } catch (err) {
           console.error("Gagal mengekstrak judul otomatis:", err.message);
@@ -503,7 +515,7 @@ const DocumentController = {
         });
 
         console.log(
-          ` Teks revisi untuk dokumen ID ${docId} berhasil di-update di Elasticsearch!`,
+          `Revisi untuk dokumen ID ${docId} berhasil di-update di Elasticsearch!`,
         );
       } catch (elasticError) {
         console.error(
@@ -514,6 +526,7 @@ const DocumentController = {
       }
 
       res.status(201).json({ message: "Revisi dokumen berhasil diunggah." });
+      //catat di log
       await AuditModel.log(
         "UPLOAD",
         "DOCUMENT",
@@ -533,7 +546,7 @@ const DocumentController = {
       const userId = req.userId;
       const fullname = req.name;
       const { q, type } = req.query; // q = keyword, type = 'metadata' atau 'fulltext'
-      const { location } = req.query;
+      const { location } = req.query; //lokasi pencarian: home, folder, draft
       console.log("location:", location);
       let allowedIds = [];
 
@@ -545,17 +558,24 @@ const DocumentController = {
 
       if (type === "fulltext") {
         try {
-
-          //nanti masih harus diperbaiki (belum keambil semua dokumennya)
           if (location === "home") {
-            const accessibleDocs = await DocumentModel.getAccessibleDocuments(
-              userId,
-              req.name,
-            );
+            // Ambil semua dokumen yang bisa diakses user dari database
+            let accessibleDocs = [];
+            if (req.role === "admin") {
+              console.log("User adalah admin, mengambil semua dokumen...");
+              accessibleDocs = await DocumentModel.getDocumentsInRootForAdmin();
+              console.log(`Total dokumen yang diambil untuk admin: ${accessibleDocs.length}`);
+            } else {
+              accessibleDocs = await DocumentModel.getAccessibleDocuments(
+                userId,
+                req.name,
+              );
+            }
             console.log(`Isi getaccesibledocs: ${accessibleDocs}`);
-            allowedIds = accessibleDocs.map((doc) => doc.id_document);
+            allowedIds = accessibleDocs.map((doc) => doc.id_document); //berisi id dokumen yang bisa diakses user
             console.log(`Isi allowedIds: ${allowedIds}`);
           } else {
+            //ambil semua dokumen yang bisa diakses user dari draft
             const draftId =
               await FolderModel.getDraftFolderByFullname(fullname);
             console.log("Draft id :", draftId);
@@ -569,7 +589,7 @@ const DocumentController = {
           }
           console.log(`Mencari dokumen dengan keyword: "${q}"...`);
 
-          // 1. Lakukan pencarian ke Elasticsearch
+          // Lakukan pencarian ke Elasticsearch
           const result = await elasticClient.search({
             index: "medical_documents",
             query: {
@@ -585,7 +605,6 @@ const DocumentController = {
                   },
                 ],
                 // FILTER: Syarat keamanan (ID dokumen harus ada di dalam array allowedIds)
-                // Filter ini sangat cepat karena tidak ikut dihitung dalam skor BM25
                 filter: [
                   {
                     terms: {
@@ -602,8 +621,8 @@ const DocumentController = {
               post_tags: ["</mark>"],
               fields: {
                 content: {
-                  fragment_size: 150,
-                  number_of_fragments: 3,
+                  fragment_size: 150, //150 karakter
+                  number_of_fragments: 3, // maksimal 3 potongan teks yang ditampilkan
                 },
                 title: {},
               },
@@ -638,9 +657,7 @@ const DocumentController = {
               highlights: hit.highlight,
 
               // Prioritaskan data dari DB, jika tidak ada fallback ke ES/Default
-              title: dbData
-                ? dbData.file_name
-                : hit._source.title,
+              title: dbData ? dbData.file_name : hit._source.title,
               created_by: dbData ? dbData.created_by : "-",
               created_at: dbData ? dbData.created_at : null,
               approval_status: dbData ? dbData.approval_status : "UNKNOWN",
@@ -658,31 +675,35 @@ const DocumentController = {
             .status(500)
             .json({ message: "Terjadi kesalahan pada mesin pencari." });
         }
-      } else {
-        // Pencarian Metadata Default (MELALUI MODEL)
+      } else {// Pencarian Metadata Default (MELALUI MODEL)
+        
         if (location === "home") {
-            const accessibleDocs = await DocumentModel.getAccessibleDocuments(
-              userId,
-              req.name,
-            );
-            // console.log(`Isi getaccesibledocs: ${accessibleDocs}`);
-            allowedIds = accessibleDocs.map((doc) => doc.id_document);
-            console.log(`Isi allowedIds: ${allowedIds}`);
-          } else {
-            
-            const draftId = await FolderModel.getDraftFolderByFullname(fullname);
-            // console.log("Draft id :", draftId);
-            
-            const accessibleDocs = await DocumentModel.getAllDocumentsInFolderRecursive(
+          const accessibleDocs = await DocumentModel.getAccessibleDocuments(
+            userId,
+            req.name,
+          );
+          // console.log(`Isi getaccesibledocs: ${accessibleDocs}`);
+          allowedIds = accessibleDocs.map((doc) => doc.id_document);
+          console.log(`Isi allowedIds: ${allowedIds}`);
+        } else {
+          const draftId = await FolderModel.getDraftFolderByFullname(fullname);
+          // console.log("Draft id :", draftId);
+
+          const accessibleDocs =
+            await DocumentModel.getAllDocumentsInFolderRecursive(
               draftId.id_folder,
             );
-            allowedIds = accessibleDocs.map((doc) => doc.id_document);
-            console.log(`Isi allowedIds: ${allowedIds}`);
-          }
+          allowedIds = accessibleDocs.map((doc) => doc.id_document);
+          console.log(`Isi allowedIds: ${allowedIds}`);
+        }
+
+        //mengambil data metadata dari database berdasarkan keyword pencarian
         let metadataResults = await DocumentModel.searchMetadata(userId, q);
-        metadataResults = metadataResults.filter(doc=>allowedIds.includes(doc.id_document));
+        metadataResults = metadataResults.filter((doc) => //filtering dokumen yang bisa diakses user
+          allowedIds.includes(doc.id_document),
+        );
         console.log("Metadata Result :", Object.values(metadataResults));
-        
+
         return res.json({ data: metadataResults });
       }
     } catch (error) {
@@ -758,11 +779,11 @@ const DocumentController = {
           document: {
             id_document: id,
             title:
-              rolledBackDoc.custom_metadata?.title || rolledBackDoc.file_name,
+              rolledBackDoc.file_name,
             content: cleanText,
           },
         });
-        console.log(`✅ Teks Rollback dokumen ID ${id} berhasil di-index!`);
+        console.log(`Teks Rollback dokumen ID ${id} berhasil di-index!`);
       } catch (esError) {
         console.error(
           "⚠️ Peringatan: Rollback database sukses, tapi Elasticsearch gagal:",
@@ -780,12 +801,11 @@ const DocumentController = {
   updateMetadata: async (req, res) => {
     try {
       const { id } = req.params;
-      const { custom_metadata, file_name} = req.body;
+      const { custom_metadata, file_name } = req.body;
       const userId = req.userId;
       const userRole = req.userRole; // Asumsi dari middleware auth
 
       // 1. Cek eksistensi dokumen & Hak Akses (Otorisasi)
-      // (Anda juga bisa menggunakan middleware permission yang sudah ada)
       const doc = await DocumentModel.getDocumentById(id);
       if (!doc) {
         return res.status(404).json({ message: "Dokumen tidak ditemukan." });
@@ -799,7 +819,7 @@ const DocumentController = {
       );
 
       console.log("updated version", updatedVersion);
-      
+
       await AuditModel.log(
         "EDIT",
         "DOCUMENT",
@@ -841,7 +861,8 @@ const DocumentController = {
     } catch (error) {
       console.error("Error getDocumentMetadata:", error);
       res.status(500).json({
-        message: "Terjadi kesalahan pada server saat mengambil metadata dokumen.",
+        message:
+          "Terjadi kesalahan pada server saat mengambil metadata dokumen.",
       });
     }
   },
@@ -893,19 +914,19 @@ const DocumentController = {
         }
 
         console.log("Target Folder:", Object.values(targetFolder));
-        console.log("metadata skema folder", Object.keys(targetFolder.metadata_schema));
-        
+        console.log(
+          "metadata skema folder",
+          Object.keys(targetFolder.metadata_schema),
+        );
+
         let newDocMetadata = {};
         if (targetFolder.metadata_schema) {
           const key = Object.keys(targetFolder.metadata_schema);
-          newDocMetadata = Object.fromEntries(
-            key.map((k) => [k, ""])
-          );
+          newDocMetadata = Object.fromEntries(key.map((k) => [k, ""]));
           console.log("metadata dokumen yang akan dipindahkan", newDocMetadata);
         }
         await DocumentModel.updateAllCustomMetadata(id, newDocMetadata);
 
-        
         // 4. PERMISSION CHECK: Verify user has 'upload' permission in target folder
         // (Memanfaatkan PermissionModel seperti permission middleware)
         if (!isAdmin) {
@@ -913,7 +934,7 @@ const DocumentController = {
             userId,
             [newFolderId],
             "FOLDER",
-            "upload"
+            "upload",
           );
           if (!hasUploadAccess) {
             return res.status(403).json({

@@ -12,14 +12,14 @@ const login = async (req, res) => {
       if (user && user.password === password) {
         //buat jwt token
         const token = jwt.sign(
-          {
-            id: user.id_user, //payload
+          {//payload
+            id: user.id_user, 
             name: user.full_name,
             role: user.is_admin? "admin" : "user"
           },
           "secret", //secret key
           {
-            expiresIn: "2h",
+            expiresIn: "2h", //batas waktu token berlaku
           },
         );
 
@@ -27,9 +27,9 @@ const login = async (req, res) => {
         // console.log(token);
 
         res.cookie("token", token, {
-          httpOnly: true,
-          secure: false,
-          sameSite: "lax",
+          httpOnly: true, //biar token gak bisa diakses lewat JavaScript (XSS protection)
+          secure: false, //http biasa, bukan https
+          sameSite: "lax", //biar bisa dipakai di localhost
           maxAge: 2 * 60 * 60 * 1000,
         });
 

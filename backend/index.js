@@ -42,7 +42,7 @@ app.use('/api/approvals', approvalRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {
-    res.json({ message: "MedAdmin API is Running (MVC Version)" });
+    res.json({ message: "MedDocs API is Running" });
 });
 
 //server dimulai

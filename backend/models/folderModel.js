@@ -68,29 +68,6 @@ class FolderModel {
     }
   }
 
-  static async createFolder(
-    folderName,
-    createdBy,
-    parentFolder = null,
-    client,
-  ) {
-    const query = `
-            INSERT INTO folder (folder_name, metadata_schema, created_by, parent_folder)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id_folder, folder_name;
-        `;
-    // metadata_schema kita isi '{}' (kosong) sebagai default untuk folder draft
-    const metadataSchema = {};
-
-    const { rows } = await client.query(query, [
-      folderName,
-      metadataSchema,
-      createdBy,
-      parentFolder ?? null,
-    ]);
-    return rows[0]; // Mengembalikan data folder yang baru dibuat (termasuk id_folder-nya)
-  }
-
   static async getDraftFolderByFullname(fullname) {
     const query = `
             SELECT f.* FROM folder f

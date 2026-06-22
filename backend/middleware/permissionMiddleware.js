@@ -1,19 +1,35 @@
 const PermissionModel = require ('../models/permissionModel');
 const pool = require ('../config/db');
 
+/*
+  Contoh data yang diproses middleware ini sebelum permission dicek:
+
+  req.userId = 12
+  req.role = "user"
+  req.params.id = "45"
+  req.query.parentId = undefined
+
+  Contoh pemanggilan:
+  requirePermission("preview", "DOCUMENT")
+
+  Artinya:
+  - user dengan id 12 sedang mencoba preview dokumen 45
+  - middleware akan cek apakah user ini admin
+  - jika bukan admin, middleware akan cek permission ke tabel permission
+*/
 const requirePermission = (action, resourceType) => {
     return async (req, res, next) => {
         try {
-            // console.log("PERMISSION MIDDLEWARE, USER ID:", userId);
-            
-            // cek apakah admin?
+            // Ambil id user dari middleware auth sebelumnya.
             const userId = req.userId; 
+
+            // Admin selalu lolos, karena hak aksesnya dianggap penuh.
             const adminQuery = await pool.query(`SELECT is_admin FROM "user" WHERE id_user = $1`, [userId]);
             if (adminQuery.rows[0]?.is_admin) {
                 return next(); 
             }
 
-            // kumpulin id resource ke array
+            // Kumpulkan resource ID ke array agar bisa dicek satu atau banyak sekaligus.
             let resourceIds = [];
 
             if (req.id_folder && Array.isArray(req.id_folder)) {
@@ -32,19 +48,16 @@ const requirePermission = (action, resourceType) => {
                 resourceIds.push(req.query.parentId);
             }
 
-            // kalau root
+            // Kalau tidak ada resource ID, berarti request kemungkinan ke Root.
+            // Dalam kasus ini, controller biasanya sudah memfilter data yang boleh dilihat.
             if (resourceIds.length === 0) {
-                // jika tidak ada ID sama sekali, berarti user sedang meminta Root
-                // lolos, karena Controller 'getAccessibleFolders' sudah memfilter izinnya.
                 return next(); 
             }
             
-            // console.log(resourceIds);
-            
-            // cek permission ke database
+            // Cek permission ke database untuk semua resource yang diminta.
             const hasAccess = await PermissionModel.checkMultipleAccess(userId, resourceIds, resourceType, action);
-            // console.log(hasAccess);
             
+            // Jika tidak punya akses, request ditolak.
             if (!hasAccess) {
                 console.warn(`[SECURITY] User ${userId} mencoba aksi ${action} pada ${resourceType} [${resourceIds.join(', ')}] tanpa izin.`);
                 return res.status(403).json({ 
@@ -52,6 +65,7 @@ const requirePermission = (action, resourceType) => {
                 });
             }
 
+            // Lolos permission, lanjut ke controller berikutnya.
             next();
 
         } catch (error) {

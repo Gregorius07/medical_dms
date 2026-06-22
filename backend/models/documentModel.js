@@ -288,7 +288,7 @@ const DocumentModel = {
 
       return filePathsResult.rows
         .map((row) => row.file_path)
-        .filter(Boolean);
+        .filter(Boolean); //membuang nilai null atau undefined
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

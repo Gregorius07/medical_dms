@@ -26,7 +26,7 @@ function UploadDocumentModal(props) {
     }
 
     setLoading(true);
-    const formData = new FormData();
+    const formData = new FormData(); //data yang akan dikirim ke backend
     formData.append("file", uploadFile());
     formData.append("title", docTitle());
     formData.append("uploaderId", currentUser().id);

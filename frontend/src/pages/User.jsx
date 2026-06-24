@@ -79,7 +79,7 @@ function User() {
       setFormData({
           fullName: user.full_name,
           username: user.username,
-          password: user.password || "",
+          password: "",
           idPosition: user.id_position || "",
           idDepartment: user.id_department || "",
           isAdmin: user.is_admin

@@ -3,9 +3,10 @@ const { getPagination } = require('../utils/pagination');
 const PermissionModel = require('../models/permissionModel');
 const FolderModel = require('../models/folderModel');
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
+const SALT_ROUNDS = 12;
 
 const UserController = {
-
     searchUser: async(req,res) =>{
         try {
             const keyword = req.query.q;
@@ -64,7 +65,9 @@ const UserController = {
             // console.log('Memulai create user!');
             
             await client.query('BEGIN');
-
+            const hashedPassword = await bcrypt.hash(req.body.password, SALT_ROUNDS);
+            req.body.password = hashedPassword;
+            // console.log("Isi req.body setelah di hash:", req.body);
             const newUser = await UserModel.create(req.body, client);
             // console.log("Variabel newUser :", newUser);
             const folderName = `Draft - ${newUser.full_name}`;
@@ -87,6 +90,12 @@ const UserController = {
 
     update: async (req, res) => {
         try {
+            // Hash the password if it's being updated
+            if (req.body.password) {
+                const hashedPassword = await bcrypt.hash(req.body.password, SALT_ROUNDS);
+                req.body.password = hashedPassword;
+            }
+
             await UserModel.update(req.params.id, req.body);
             res.json({ success: true, message: "User berhasil diupdate" });
         } catch (err) {

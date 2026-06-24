@@ -1,5 +1,7 @@
 const UserModel = require("../models/userModel");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const SALT_ROUNDS = 12;
 
 const login = async (req, res) => {
     const { email, password } = req.body;
@@ -9,7 +11,7 @@ const login = async (req, res) => {
       const user = await UserModel.findByUsername(email);
 
       //cek Password
-      if (user && user.password === password) {
+      if (user && await bcrypt.compare(password, user.password)) {
         //buat jwt token
         const token = jwt.sign(
           {//payload
@@ -73,7 +75,10 @@ const getMe = async (req, res) => {
       position: userData.position_name,
       department: userData.department_name,
     });
-  } catch (error) {}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Terjadi kesalahan server" });
+  }
 };
 
 const logout = (req, res) => {

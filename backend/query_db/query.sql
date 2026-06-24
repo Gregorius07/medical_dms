@@ -4,6 +4,8 @@ CREATE SCHEMA public;
 GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO public;
 
+-- Ekstensi untuk hashing password (bcrypt via crypt() + gen_salt('bf'))
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE position (
     id_position     SERIAL PRIMARY KEY,
@@ -135,18 +137,23 @@ INSERT INTO department (department_name) VALUES
 ('Inventaris'),
 ('Teknisi');
 
+-- Password di-hash menggunakan bcrypt (pgcrypto), bukan plaintext
 INSERT INTO "user" (id_user, full_name, username, password, is_admin, id_position, id_department)
 VALUES
-(1, 'Gregorius Denmas', 'bagus', 'bagus123', TRUE, 8, 2),
-(2, 'John Doe', 'johndoe', 'password123', FALSE, 1, 1),
-(3, 'Jane Smith', 'janesmith', 'password456', FALSE, 5, 2),
-(4, 'Michael Johnson', 'michaelj', 'password789', FALSE, 9, 3),
-(5, 'Emily Davis', 'emilyd', 'password321', FALSE, 13, 4),
-(6, 'William Brown', 'williamb', 'password654', FALSE, 17, 5),
-(7, 'Olivia Wilson', 'oliviaw', 'password987', FALSE, 21, 6),
-(8, 'James Taylor', 'jamest', 'password111', FALSE, 2, 1),
-(9, 'Sophia Anderson', 'sophiaa', 'password222', FALSE, 6, 2),
-(10, 'Benjamin Thomas', 'benjamint', 'password333', FALSE, 10, 3),
-(11, 'Ava Martinez', 'avam', 'password444', FALSE, 14, 4),
-(12, 'Lucas Lee', 'lucasl', 'password555', FALSE, 18, 5),
-(13, 'Mia Harris', 'miah', 'password666', FALSE, 22, 6);
+(1, 'Gregorius Denmas', 'bagus', crypt('bagus123', gen_salt('bf')), TRUE, 8, 2),
+(2, 'John Doe', 'johndoe', crypt('password123', gen_salt('bf')), FALSE, 1, 1),
+(3, 'Jane Smith', 'janesmith', crypt('password456', gen_salt('bf')), FALSE, 5, 2),
+(4, 'Michael Johnson', 'michaelj', crypt('password789', gen_salt('bf')), FALSE, 9, 3),
+(5, 'Emily Davis', 'emilyd', crypt('password321', gen_salt('bf')), FALSE, 13, 4),
+(6, 'William Brown', 'williamb', crypt('password654', gen_salt('bf')), FALSE, 17, 5),
+(7, 'Olivia Wilson', 'oliviaw', crypt('password987', gen_salt('bf')), FALSE, 21, 6),
+(8, 'James Taylor', 'jamest', crypt('password111', gen_salt('bf')), FALSE, 2, 1),
+(9, 'Sophia Anderson', 'sophiaa', crypt('password222', gen_salt('bf')), FALSE, 6, 2),
+(10, 'Benjamin Thomas', 'benjamint', crypt('password333', gen_salt('bf')), FALSE, 10, 3),
+(11, 'Ava Martinez', 'avam', crypt('password444', gen_salt('bf')), FALSE, 14, 4),
+(12, 'Lucas Lee', 'lucasl', crypt('password555', gen_salt('bf')), FALSE, 18, 5),
+(13, 'Mia Harris', 'miah', crypt('password666', gen_salt('bf')), FALSE, 22, 6);
+ 
+-- Reset sequence id_user agar insert berikutnya (lewat aplikasi) tidak bentrok
+-- dengan id yang sudah dipakai secara manual di atas
+SELECT setval('user_id_user_seq', (SELECT MAX(id_user) FROM "user"));

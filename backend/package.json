@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "@elastic/elasticsearch": "^9.3.4",
+    "bcrypt": "^6.0.0",
     "body-parser": "^2.2.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

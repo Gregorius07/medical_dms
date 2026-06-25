@@ -63,16 +63,15 @@ function DocumentDetail() {
   // const [editMetadataForm, setEditMetadataForm] = createSignal({});
   // const [editMetadataLoading, setEditMetadataLoading] = createSignal(false);
 
-  // Fungsi inti preview: ambil halaman tertentu dari PDF lalu gambar ulang ke canvas.
+  // ambil halaman tertentu dari PDF lalu gambar ulang ke canvas.
   // Saat scale atau nomor halaman berubah, fungsi ini dipanggil lagi untuk memperbarui tampilan.
   const renderPage = (num, pdfDocument) => {
-    if (!pdfDocument || !canvasRef) return;
+    if (!pdfDocument || !canvasRef) return; //kalau pdfDocument belum siap atau canvas belum ada, hentikan render.
 
-    pdfDocument.getPage(num).then((page) => {
-      // Viewport menentukan ukuran render berdasarkan zoom yang sedang aktif.
-      const viewport = page.getViewport({ scale: scale() });
-      const canvas = canvasRef;
-      const ctx = canvas.getContext("2d");
+    pdfDocument.getPage(num).then((page) => { // Ambil halaman PDF tertentu
+      const viewport = page.getViewport({ scale: scale() }); //tentukan ukuran halaman sesuai zoom level
+      const canvas = canvasRef; // Ambil referensi canvas dari state
+      const ctx = canvas.getContext("2d");  // Ambil context 2D untuk menggambar di canvas
 
       // Ukuran canvas harus disamakan dengan viewport supaya hasil render tidak blur atau terpotong.
       canvas.height = viewport.height;
@@ -145,7 +144,7 @@ function DocumentDetail() {
     return logs().filter((log) => log.action === logFilter());
   };
 
-  // Nanti kita akan isi ini dari API berdasarkan tabel 'permission'
+  // Nanti isi ini dari API berdasarkan tabel 'permission'
   const [permissions, setPermissions] = createSignal({
     preview: false,
     download: false,
@@ -228,7 +227,7 @@ function DocumentDetail() {
         responseType: "blob",
       });
 
-      // Trik Javascript untuk memaksa browser mengunduh file
+      //memaksa browser mengunduh file
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -236,10 +235,10 @@ function DocumentDetail() {
       link.setAttribute("download", doc()?.file_name || "document.pdf");
       document.body.appendChild(link);
       link.click();
-
       // Bersihkan memori browser setelah klik
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
+
     } catch (error) {
       console.error(error);
       Swal.fire({

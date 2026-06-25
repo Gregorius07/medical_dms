@@ -53,6 +53,7 @@ const DocumentController = {
     try {
       // Data dari Frontend (FormData)
       const { title, folderId, uploaderName, customMetadata } = req.body;
+
       let customMetadataParsed = null;
       if (customMetadata) {
         try {
@@ -61,16 +62,19 @@ const DocumentController = {
           console.error("gagal memparsing custom metadata", error);
         }
       }
+
       const docData = {
         title: title,
         folderId: folderId ? parseInt(folderId) : null,
         storedFilename: req.file.filename,
         fileSize: req.file.size,
         uploader: uploaderName || "Unknown",
-        metadata: customMetadataParsed, // Nanti diisi dari dynamic form
+        metadata: customMetadataParsed, 
       };
 
-      const result = await DocumentModel.create(docData);
+      const result = await DocumentModel.create(docData); //buat dokumennya
+
+      //langsung berikan akses penuh ke user yang mengupload dokumen ini
       await PermissionModel.grantAccess(
         uploaderName,
         result.id,
@@ -109,8 +113,6 @@ const DocumentController = {
           console.error("Gagal mengekstrak judul otomatis:", err.message);
         }
 
-        // 3. Tentukan Judul Final (Prioritas: Input User -> Hasil Ekstraksi -> Nama File)
-        // const finalTitle = req.body.title || autoTitle || filename;
         // simpan ke Elasticsearch
         await elasticClient.index({
           index: "medical_documents",
@@ -675,7 +677,7 @@ const DocumentController = {
             .status(500)
             .json({ message: "Terjadi kesalahan pada mesin pencari." });
         }
-      } else {// Pencarian Metadata Default (MELALUI MODEL)
+      } else {// Pencarian Metadata Default 
         
         if (location === "home") {
           const accessibleDocs = await DocumentModel.getAccessibleDocuments(
@@ -786,7 +788,7 @@ const DocumentController = {
         console.log(`Teks Rollback dokumen ID ${id} berhasil di-index!`);
       } catch (esError) {
         console.error(
-          "⚠️ Peringatan: Rollback database sukses, tapi Elasticsearch gagal:",
+          "Peringatan: Rollback database sukses, tapi Elasticsearch gagal:",
           esError.message,
         );
       }

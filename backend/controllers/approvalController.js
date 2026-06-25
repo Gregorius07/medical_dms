@@ -5,6 +5,7 @@ const PermissionModel = require("../models/permissionModel");
 
 const requestApproval = async (req, res) => {
   try {
+    //isautomatic untuk menentukan apakah approval ini otomatis (misal karena dokumen masuk ke folder tertentu) atau manual (user mengajukan approval)
     const { approverFullName, isAutomatic, idTargetFolder } = req.body;
     const docId = req.params.id;
 
@@ -14,6 +15,7 @@ const requestApproval = async (req, res) => {
       ? `Mengajukan approval ke: ${approverFullName} (Otomatis ke folder target)`
       : `Mengajukan approval ke: ${approverFullName}`;
     
+    //catat di log
     AuditModel.log(
       "REQUEST_APPROVAL",
       "DOCUMENT",
@@ -22,6 +24,8 @@ const requestApproval = async (req, res) => {
       docId,
       logMessage,
     );
+
+    //berikan akses preview ke approver
     await PermissionModel.grantAccess(
       approverFullName,
       docId,
@@ -37,7 +41,7 @@ const requestApproval = async (req, res) => {
 
 const respondApproval = async (req, res) => {
   try {
-    const { status, notes } = req.body; // 'APPROVED' atau 'REJECTED'
+    const { status, notes } = req.body; // status 'APPROVED' atau 'REJECTED', notes optional
     const docId = req.params.id;
 
     // Get approval info sebelum update untuk logging
@@ -80,6 +84,7 @@ const respondApproval = async (req, res) => {
   }
 };
 
+//untuk ngambil dokumen dokumen yang butuh approval ke user ini (inbox)
 const getInbox = async (req, res) => {
   try {
     const userId = req.userId;
@@ -91,6 +96,8 @@ const getInbox = async (req, res) => {
   }
 };
 
+
+//untuk ngambil dokumen yang diajukan approval oleh user ini (outbox)
 const getOutbox = async (req, res) => {
   try {
     const userId = req.userId;
@@ -102,6 +109,7 @@ const getOutbox = async (req, res) => {
   }
 };
 
+//untuk ngambil dokumen dokumen yang sudah diapprove/reject 
 const getHistory = async (req, res) => {
   try {
     const userId = req.userId;

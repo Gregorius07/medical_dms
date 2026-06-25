@@ -49,7 +49,6 @@ const requirePermission = (action, resourceType) => {
             }
 
             // Kalau tidak ada resource ID, berarti request kemungkinan ke Root.
-            // Dalam kasus ini, controller biasanya sudah memfilter data yang boleh dilihat.
             if (resourceIds.length === 0) {
                 return next(); 
             }
